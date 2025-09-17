@@ -1,0 +1,100 @@
+
+services:
+  app:
+    build: .
+    container_name: springboot-app
+    ports:
+      - "8080:8080"
+      - "5005:5005"   # Debug port
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/dbbox
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_MAIL_HOST: mailhog
+      SPRING_MAIL_PORT: 1025
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+      mailhog:
+        condition: service_started
+    networks:
+      - kafka-net
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_DB: dbbox
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - kafka-net
+
+  kafka:
+    image: apache/kafka:4.1.0
+    container_name: kafka
+    hostname: kafka
+    ports:
+      - "9092:9092"   # broker
+      - "9093:9093"   # controller
+    environment:
+      # Listeners for both broker and controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,CONTROLLER://kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+
+      # Must include broker and controller roles
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      # Node and controller quorum
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      # **Critical fix** for this error
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # Data and offsets
+      KAFKA_LOG_DIRS: /kafka-logs
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - ./kafka-logs:/kafka-logs
+    networks:
+      - kafka-net
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "9092" ]
+      interval: 5s
+      retries: 12
+    # no depends_on needed for ZooKeeper since it's removed
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - kafka-net
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8081:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - kafka-net
+networks:
+  kafka-net:
+    driver: bridge
+
+volumes:
+  pgdata:

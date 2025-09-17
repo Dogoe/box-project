@@ -1,0 +1,23 @@
+# src/test/resources/application-test.yml
+
+spring:
+  kafka:
+    listener:
+      auto-startup: false
+    bootstrap-servers: localhost:9092  # placeholder, won't actually connect
+
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+logging:
+  level:
+    root: INFO
+    org.springframework.kafka: WARN
