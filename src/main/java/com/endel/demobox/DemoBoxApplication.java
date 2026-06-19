@@ -8,5 +8,4 @@ public class DemoBoxApplication {
     public static void main(String[] args) {
         SpringApplication.run(DemoBoxApplication.class, args);
     }
-
 }
