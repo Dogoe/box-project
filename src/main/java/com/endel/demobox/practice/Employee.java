@@ -10,4 +10,5 @@ public class Employee {
     private String id;
     private Float salary;
     private String name;
+    private String department;
 }

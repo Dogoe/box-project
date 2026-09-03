@@ -10,10 +10,10 @@ public class MainTest {
 
          Map<String,Employee> employeeMap = new LinkedHashMap<>();
 
-         Employee empl1 = new Employee("1", 1.0F,"Angel");
-         Employee empl2 = new Employee("2", 50.0F,"Lugardo");
-         Employee empl3 = new Employee("3", 99.500F,"Angel");
-         Employee empl4 = new Employee("4", 10.0F,"Edgar");
+         Employee empl1 = new Employee("1", 1.0F,"Angel","IT");
+         Employee empl2 = new Employee("2", 50.0F,"Lugardo","IT");
+         Employee empl3 = new Employee("3", 99.500F,"Angel","IT");
+         Employee empl4 = new Employee("4", 10.0F,"Edgar","IT");
 
          employeeMap.put(empl1.getName(),empl1);
          employeeMap.put(empl2.getName(),empl2);
