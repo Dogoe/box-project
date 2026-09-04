@@ -38,7 +38,8 @@ public class JwtConfig {
                                 "/kafka/api/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
-                                "/swagger-ui/**").permitAll()
+                                "/swagger-ui/**",
+                                "/home/**").permitAll()
                         .anyRequest().authenticated()
                 )
 
