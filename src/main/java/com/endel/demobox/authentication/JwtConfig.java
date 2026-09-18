@@ -39,7 +39,8 @@ public class JwtConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
-                                "/home/**").permitAll()
+                                "/home/**",
+                                "/api/quotes/calculate").permitAll()
                         .anyRequest().authenticated()
                 )
 
