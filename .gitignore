@@ -4,6 +4,7 @@
 /target/
 /build/
 /out/
+/.gradle/
 /*.class
 *.jar
 *.war

@@ -27,4 +27,11 @@ public class GlobalControllerExceptionHandler {
                 HttpStatus.resolve(ex.getStatus()));
     }
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<CustomErrorDTO> handleResourceNotFoundException(ResourceNotFoundException ex){
+        return new ResponseEntity<>(
+                new CustomErrorDTO("not_found", ex.getMessage()),
+                HttpStatus.NOT_FOUND);
+    }
+
 }
