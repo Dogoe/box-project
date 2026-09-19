@@ -1,0 +1,212 @@
+[
+  {
+    "id": "fridge_small",
+    "category": "REFRIGERATOR",
+    "label": "Refrigerator — Small (150–250L, single door)",
+    "wattage": 100,
+    "defaultHoursPerDay": 24,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "fridge_medium",
+    "category": "REFRIGERATOR",
+    "label": "Refrigerator — Medium (250–450L, top-freezer)",
+    "wattage": 150,
+    "defaultHoursPerDay": 24,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "fridge_large",
+    "category": "REFRIGERATOR",
+    "label": "Refrigerator — Large (450L+, French-door/side-by-side)",
+    "wattage": 200,
+    "defaultHoursPerDay": 24,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "freezer_chest",
+    "category": "FREEZER",
+    "label": "Chest Freezer",
+    "wattage": 150,
+    "defaultHoursPerDay": 24,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "freezer_upright",
+    "category": "FREEZER",
+    "label": "Upright Freezer",
+    "wattage": 200,
+    "defaultHoursPerDay": 24,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "tv_small",
+    "category": "TV",
+    "label": "TV — 32–43\"",
+    "wattage": 60,
+    "defaultHoursPerDay": 4,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "tv_medium",
+    "category": "TV",
+    "label": "TV — 50–65\"",
+    "wattage": 120,
+    "defaultHoursPerDay": 4,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "tv_large",
+    "category": "TV",
+    "label": "TV — 65\"+",
+    "wattage": 200,
+    "defaultHoursPerDay": 4,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "led_bulb_9w",
+    "category": "LIGHTING",
+    "label": "LED Bulb — 9W",
+    "wattage": 9,
+    "defaultHoursPerDay": 5,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "led_bulb_12w",
+    "category": "LIGHTING",
+    "label": "LED Bulb — 12W",
+    "wattage": 12,
+    "defaultHoursPerDay": 5,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "led_bulb_15w",
+    "category": "LIGHTING",
+    "label": "LED Bulb — 15W",
+    "wattage": 15,
+    "defaultHoursPerDay": 5,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "fan_pedestal",
+    "category": "FAN",
+    "label": "Pedestal / Stand Fan",
+    "wattage": 60,
+    "defaultHoursPerDay": 6,
+    "motorLoad": true,
+    "surgeMultiplier": 2.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "fan_ceiling",
+    "category": "FAN",
+    "label": "Ceiling Fan",
+    "wattage": 75,
+    "defaultHoursPerDay": 6,
+    "motorLoad": true,
+    "surgeMultiplier": 2.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "ac_1_ton",
+    "category": "AIR_CONDITIONER",
+    "label": "Air Conditioner — 1 Ton (~9,000 BTU)",
+    "wattage": 1000,
+    "defaultHoursPerDay": 6,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "ac_1_5_ton",
+    "category": "AIR_CONDITIONER",
+    "label": "Air Conditioner — 1.5 Ton (~12,000 BTU)",
+    "wattage": 1500,
+    "defaultHoursPerDay": 6,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "ac_2_ton",
+    "category": "AIR_CONDITIONER",
+    "label": "Air Conditioner — 2 Ton (~18,000 BTU)",
+    "wattage": 2000,
+    "defaultHoursPerDay": 6,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "washer_standard",
+    "category": "WASHING_MACHINE",
+    "label": "Washing Machine — Standard",
+    "wattage": 500,
+    "defaultHoursPerDay": 1,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": false
+  },
+  {
+    "id": "microwave_standard",
+    "category": "MICROWAVE",
+    "label": "Microwave — Standard",
+    "wattage": 1000,
+    "defaultHoursPerDay": 0.25,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": false
+  },
+  {
+    "id": "pump_small",
+    "category": "PUMP",
+    "label": "Water Pump — 0.5 HP",
+    "wattage": 400,
+    "defaultHoursPerDay": 1,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "pump_medium",
+    "category": "PUMP",
+    "label": "Water Pump — 1 HP",
+    "wattage": 750,
+    "defaultHoursPerDay": 1,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "pump_large",
+    "category": "PUMP",
+    "label": "Water Pump — 1.5 HP",
+    "wattage": 1100,
+    "defaultHoursPerDay": 1,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  }
+]

@@ -34,4 +34,11 @@ public class GlobalControllerExceptionHandler {
                 HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(InvalidApplianceTemplateException.class)
+    public ResponseEntity<CustomErrorDTO> handleInvalidApplianceTemplateException(InvalidApplianceTemplateException ex){
+        return new ResponseEntity<>(
+                new CustomErrorDTO("invalid_request", ex.getMessage()),
+                HttpStatus.BAD_REQUEST);
+    }
+
 }
