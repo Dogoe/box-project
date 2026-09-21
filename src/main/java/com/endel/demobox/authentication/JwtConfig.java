@@ -35,7 +35,6 @@ public class JwtConfig {
                                 "/auth/login2",
                                 "/auth/register",
                                 "/actuator/**",
-                                "/kafka/api/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
