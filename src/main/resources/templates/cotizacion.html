@@ -145,7 +145,21 @@
                         </button>
                     </div>
 
-                    <div id="appliances-container" class="mt-3"></div>
+                    <div class="table-responsive mt-3">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr class="small text-muted">
+                                    <th style="width: 130px;">Tipo</th>
+                                    <th>Aparato</th>
+                                    <th style="width: 80px;">Cant.</th>
+                                    <th style="width: 100px;">Horas/día</th>
+                                    <th style="width: 50px;" title="Tiene motor o compresor">Motor</th>
+                                    <th style="width: 40px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="appliances-container"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -205,77 +219,35 @@
 <!-- ========================================================= -->
 
 <template id="appliance-row-template">
-    <div class="appliance-row card mb-3 bg-light">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <h6 class="mb-0">Aparato</h6>
-                <button type="button" class="btn btn-sm btn-outline-danger remove-row">
-                    <i class="bi bi-trash"></i>
-                </button>
+    <tr class="appliance-row">
+        <td>
+            <select class="form-select form-select-sm mode-select">
+                <option value="preset">De la lista</option>
+                <option value="custom">Personalizado</option>
+            </select>
+        </td>
+        <td>
+            <select class="form-select form-select-sm preset-select"></select>
+            <div class="custom-fields d-none" style="display: flex; gap: 4px;">
+                <input type="text" class="form-control form-control-sm custom-name" placeholder="Nombre del aparato">
+                <input type="number" class="form-control form-control-sm custom-watts" placeholder="W" min="1" style="width: 90px;">
             </div>
-
-            <div class="mb-3">
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input mode-toggle" type="radio" name="mode" value="preset" checked>
-                    <label class="form-check-label">Elegir de la lista</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input mode-toggle" type="radio" name="mode" value="custom">
-                    <label class="form-check-label">Personalizado</label>
-                </div>
-            </div>
-
-            <div class="preset-fields row g-2">
-                <div class="col-md-4">
-                    <label class="form-label small">Categoría</label>
-                    <select class="form-select category-select"></select>
-                </div>
-                <div class="col-md-5">
-                    <label class="form-label small">Modelo / tamaño</label>
-                    <select class="form-select preset-select"></select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small">Cantidad</label>
-                    <input type="number" class="form-control quantity-input" min="1" value="1">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label small">Horas de uso al día</label>
-                    <input type="number" class="form-control hours-input" min="0" max="24" step="0.5">
-                </div>
-            </div>
-
-            <div class="custom-fields row g-2 d-none">
-                <div class="col-md-6">
-                    <label class="form-label small">Nombre del aparato</label>
-                    <input type="text" class="form-control custom-name" placeholder="Ej. Bomba sumergible">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small">Potencia (W)</label>
-                    <input type="number" class="form-control custom-watts" min="1">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small">Cantidad</label>
-                    <input type="number" class="form-control custom-quantity" min="1" value="1">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label small">Horas de uso al día</label>
-                    <input type="number" class="form-control custom-hours" min="0" max="24" step="0.5" value="1">
-                </div>
-                <div class="col-md-8 d-flex align-items-end">
-                    <div class="form-check">
-                        <input class="form-check-input custom-motor" type="checkbox">
-                        <label class="form-check-label small">
-                            Tiene motor o compresor (arranca con un pico de consumo)
-                        </label>
-                    </div>
-                </div>
-                <div class="col-md-4 custom-surge-wrap d-none">
-                    <label class="form-label small">Factor de arranque</label>
-                    <input type="number" class="form-control custom-surge" min="1" step="0.1" value="3.0">
-                </div>
-            </div>
-        </div>
-    </div>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm quantity-input" min="1" value="1">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm hours-input" min="0" max="24" step="0.5">
+        </td>
+        <td class="text-center">
+            <input type="checkbox" class="form-check-input custom-motor d-none" title="Tiene motor o compresor">
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-row">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    </tr>
 </template>
 
 

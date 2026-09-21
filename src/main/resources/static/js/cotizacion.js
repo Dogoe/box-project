@@ -14,6 +14,8 @@
         OTHER: 'Otro'
     };
 
+    const DEFAULT_CUSTOM_SURGE_MULTIPLIER = 3.0;
+
     let presetsByCategory = {};
     let presetsById = {};
 
@@ -53,15 +55,14 @@
         });
     }
 
-    function categoryOptionsHtml() {
-        return Object.keys(presetsByCategory)
-            .map((category) => `<option value="${category}">${CATEGORY_LABELS[category] || category}</option>`)
-            .join('');
-    }
-
-    function presetOptionsHtml(category) {
-        return (presetsByCategory[category] || [])
-            .map((template) => `<option value="${template.id}">${template.label}</option>`)
+    function presetSelectOptionsHtml() {
+        return Object.entries(presetsByCategory)
+            .map(([category, templates]) => {
+                const options = templates
+                    .map((template) => `<option value="${template.id}">${template.label}</option>`)
+                    .join('');
+                return `<optgroup label="${CATEGORY_LABELS[category] || category}">${options}</optgroup>`;
+            })
             .join('');
     }
 
@@ -75,37 +76,26 @@
     function createApplianceRow() {
         const node = rowTemplate.content.firstElementChild.cloneNode(true);
 
-        const categorySelect = node.querySelector('.category-select');
+        const modeSelect = node.querySelector('.mode-select');
         const presetSelect = node.querySelector('.preset-select');
-        const hoursInput = node.querySelector('.hours-input');
-        const presetFields = node.querySelector('.preset-fields');
         const customFields = node.querySelector('.custom-fields');
-        const modeToggles = node.querySelectorAll('.mode-toggle');
+        const hoursInput = node.querySelector('.hours-input');
         const motorCheck = node.querySelector('.custom-motor');
-        const surgeWrap = node.querySelector('.custom-surge-wrap');
         const removeBtn = node.querySelector('.remove-row');
 
-        categorySelect.innerHTML = categoryOptionsHtml();
-        const firstCategory = Object.keys(presetsByCategory)[0];
-        categorySelect.value = firstCategory;
-        presetSelect.innerHTML = presetOptionsHtml(firstCategory);
+        presetSelect.innerHTML = presetSelectOptionsHtml();
         updateHoursFromPreset(presetSelect, hoursInput);
-
-        categorySelect.addEventListener('change', () => {
-            presetSelect.innerHTML = presetOptionsHtml(categorySelect.value);
-            updateHoursFromPreset(presetSelect, hoursInput);
-        });
 
         presetSelect.addEventListener('change', () => updateHoursFromPreset(presetSelect, hoursInput));
 
-        modeToggles.forEach((radio) => radio.addEventListener('change', () => {
-            const isCustom = node.querySelector('.mode-toggle[value="custom"]').checked;
-            presetFields.classList.toggle('d-none', isCustom);
+        modeSelect.addEventListener('change', () => {
+            const isCustom = modeSelect.value === 'custom';
+            presetSelect.classList.toggle('d-none', isCustom);
             customFields.classList.toggle('d-none', !isCustom);
-        }));
-
-        motorCheck.addEventListener('change', () => {
-            surgeWrap.classList.toggle('d-none', !motorCheck.checked);
+            motorCheck.classList.toggle('d-none', !isCustom);
+            if (!isCustom) {
+                motorCheck.checked = false;
+            }
         });
 
         removeBtn.addEventListener('click', () => {
@@ -116,24 +106,26 @@
     }
 
     function buildApplianceEntry(row) {
-        const isCustom = row.querySelector('.mode-toggle[value="custom"]').checked;
+        const isCustom = row.querySelector('.mode-select').value === 'custom';
+        const quantity = parseInt(row.querySelector('.quantity-input').value, 10);
+        const hoursPerDay = parseFloat(row.querySelector('.hours-input').value);
 
         if (isCustom) {
             const motorLoad = row.querySelector('.custom-motor').checked;
             return {
                 name: row.querySelector('.custom-name').value,
                 watts: parseFloat(row.querySelector('.custom-watts').value),
-                hoursPerDay: parseFloat(row.querySelector('.custom-hours').value),
-                quantity: parseInt(row.querySelector('.custom-quantity').value, 10),
+                hoursPerDay: hoursPerDay,
+                quantity: quantity,
                 motorLoad: motorLoad,
-                surgeMultiplier: motorLoad ? parseFloat(row.querySelector('.custom-surge').value) : 1.0
+                surgeMultiplier: motorLoad ? DEFAULT_CUSTOM_SURGE_MULTIPLIER : 1.0
             };
         }
 
         return {
             templateId: row.querySelector('.preset-select').value,
-            quantity: parseInt(row.querySelector('.quantity-input').value, 10),
-            hoursPerDayOverride: parseFloat(row.querySelector('.hours-input').value)
+            quantity: quantity,
+            hoursPerDayOverride: hoursPerDay
         };
     }
 
