@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Panel de administración | SolarTech</title>
+
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+            rel="stylesheet">
+    <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+</head>
+
+<body>
+
+<nav class="navbar navbar-expand-lg bg-white border-bottom">
+    <div class="container">
+        <a class="navbar-brand fw-bold fs-4" href="/admin">SolarTech Admin</a>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="logout-btn">
+            <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+        </button>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">Administración de catálogo</h2>
+
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a href="#" class="nav-link active entity-tab" data-entity="panels">Paneles Solares</a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link entity-tab" data-entity="batteries">Baterías</a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link entity-tab" data-entity="inverters">Inversores</a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link entity-tab" data-entity="kits">Kits</a>
+        </li>
+    </ul>
+
+    <div id="list-alert" class="alert alert-danger d-none" role="alert"></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0" id="entity-title">Paneles Solares</h5>
+        <button type="button" class="btn btn-success btn-sm" id="new-entity-btn">
+            <i class="bi bi-plus-lg"></i> Nuevo
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead id="entity-table-head"></thead>
+            <tbody id="entity-table-body"></tbody>
+        </table>
+    </div>
+</div>
+
+
+<!-- ========================================================= -->
+<!-- ENTITY MODAL -->
+<!-- ========================================================= -->
+
+<div class="modal fade" id="entity-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="entity-form">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="entity-modal-title">Nuevo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="entity-modal-error" class="alert alert-danger d-none"></div>
+                    <div id="entity-form-fields"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- Bootstrap JS -->
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
+</script>
+
+<script th:src="@{/js/admin.js}"></script>
+
+</body>
+</html>
