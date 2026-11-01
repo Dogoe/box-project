@@ -11,6 +11,7 @@
         WASHING_MACHINE: 'Lavadora',
         MICROWAVE: 'Microondas',
         PUMP: 'Bomba de agua',
+        ELECTRONICS: 'Electrónica',
         OTHER: 'Otro'
     };
 

@@ -208,5 +208,45 @@
     "motorLoad": true,
     "surgeMultiplier": 3.0,
     "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "starlink_standard",
+    "category": "ELECTRONICS",
+    "label": "Starlink — Standard Kit (Router + Dish)",
+    "wattage": 75,
+    "defaultHoursPerDay": 24,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "starlink_mini",
+    "category": "ELECTRONICS",
+    "label": "Starlink Mini",
+    "wattage": 30,
+    "defaultHoursPerDay": 24,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "laptop_standard",
+    "category": "ELECTRONICS",
+    "label": "Laptop / Notebook Computer",
+    "wattage": 65,
+    "defaultHoursPerDay": 6,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "cellphone_charger",
+    "category": "ELECTRONICS",
+    "label": "Cell Phone Charger",
+    "wattage": 10,
+    "defaultHoursPerDay": 2,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
   }
 ]
