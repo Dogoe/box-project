@@ -10,5 +10,6 @@ public enum ApplianceCategory {
     WASHING_MACHINE,
     MICROWAVE,
     PUMP,
+    ELECTRONICS,
     OTHER
 }

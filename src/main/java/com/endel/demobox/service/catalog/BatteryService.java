@@ -20,6 +20,13 @@ public class BatteryService {
         return repository.findAll().stream().map(this::toDto).toList();
     }
 
+    public List<BatteryDto> findAllActive() {
+        return repository.findAll().stream()
+                .filter(Battery::isActive)
+                .map(this::toDto)
+                .toList();
+    }
+
     public BatteryDto getById(Long id) {
         return toDto(findEntity(id));
     }

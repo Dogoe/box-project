@@ -40,6 +40,10 @@ dependencies {
     runtimeOnly ("io.jsonwebtoken:jjwt-jackson:0.12.6")  // for JSON processing with Jackson
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
+    // Auto-restarts the app on recompile when run locally (IDE or ./gradlew bootRun).
+    // developmentOnly is excluded from bootJar by Spring Boot's Gradle plugin, so it
+    // never ships in the Docker image built from that jar.
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
     //testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("com.h2database:h2")

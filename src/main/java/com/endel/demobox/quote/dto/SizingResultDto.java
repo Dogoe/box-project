@@ -1,5 +1,6 @@
 package com.endel.demobox.quote.dto;
 
+import com.endel.demobox.model.dto.catalog.KitDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -12,4 +13,5 @@ public class SizingResultDto {
     private double recommendedInverterKw;
     private double recommendedBatteryCapacityKwh;
     private double recommendedPanelArrayKwp;
+    private KitDto recommendedKit;
 }

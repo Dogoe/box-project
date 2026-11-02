@@ -20,6 +20,13 @@ public class SolarPanelService {
         return repository.findAll().stream().map(this::toDto).toList();
     }
 
+    public List<SolarPanelDto> findAllActive() {
+        return repository.findAll().stream()
+                .filter(SolarPanel::isActive)
+                .map(this::toDto)
+                .toList();
+    }
+
     public SolarPanelDto getById(Long id) {
         return toDto(findEntity(id));
     }

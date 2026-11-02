@@ -44,7 +44,8 @@ public class SizingCalculatorService {
                 round(peakLoadKw),
                 round(recommendedInverterKw),
                 round(recommendedBatteryCapacityKwh),
-                round(recommendedPanelArrayKwp)
+                round(recommendedPanelArrayKwp),
+                null
         );
     }
 

@@ -45,6 +45,15 @@ jwt:
   secret: K0zDf0M5GyPlZtX7RhV0I5uPzZsZ3YgYV7Z7XgWyfL0=
   expiration-ms: 43_200_000
 
+admin:
+  bootstrap:
+    # Seeded on startup if no user with this email exists yet, so the catalog
+    # admin panel (/admin) is reachable out of the box. Override both via
+    # ADMIN_BOOTSTRAP_EMAIL / ADMIN_BOOTSTRAP_PASSWORD env vars before
+    # deploying anywhere the default password would be a real risk.
+    email: admin@solartech.com
+    password: admin123
+
 management:
   endpoints:
     web:

@@ -40,10 +40,12 @@ public class JwtConfig {
                                 "/swagger-ui/**",
                                 "/home/**",
                                 "/cotizacion",
+                                "/admin/**",
                                 "/css/**",
                                 "/js/**",
                                 "/api/quotes/calculate",
                                 "/api/quotes/appliance-presets").permitAll()
+                        .requestMatchers("/api/catalog/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
 
