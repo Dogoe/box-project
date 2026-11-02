@@ -4,6 +4,7 @@ import com.endel.demobox.quote.ApplianceCategory;
 import com.endel.demobox.quote.AppliancePresetResolver;
 import com.endel.demobox.quote.ApplianceTemplate;
 import com.endel.demobox.quote.ApplianceTemplateCatalog;
+import com.endel.demobox.quote.KitRecommendationService;
 import com.endel.demobox.quote.SizingCalculatorService;
 import com.endel.demobox.quote.dto.ApplianceLoadDto;
 import com.endel.demobox.quote.dto.LoadSurveyDto;
@@ -24,13 +25,16 @@ public class QuoteCalculatorController {
     private final SizingCalculatorService sizingCalculatorService;
     private final AppliancePresetResolver presetResolver;
     private final ApplianceTemplateCatalog templateCatalog;
+    private final KitRecommendationService kitRecommendationService;
 
     public QuoteCalculatorController(SizingCalculatorService sizingCalculatorService,
                                       AppliancePresetResolver presetResolver,
-                                      ApplianceTemplateCatalog templateCatalog) {
+                                      ApplianceTemplateCatalog templateCatalog,
+                                      KitRecommendationService kitRecommendationService) {
         this.sizingCalculatorService = sizingCalculatorService;
         this.presetResolver = presetResolver;
         this.templateCatalog = templateCatalog;
+        this.kitRecommendationService = kitRecommendationService;
     }
 
     @GetMapping("/appliance-presets")
@@ -44,6 +48,9 @@ public class QuoteCalculatorController {
                 .map(presetResolver::resolve)
                 .toList();
         survey.setAppliances(resolved);
-        return sizingCalculatorService.calculate(survey);
+
+        SizingResultDto result = sizingCalculatorService.calculate(survey);
+        kitRecommendationService.findBestMatch(result).ifPresent(result::setRecommendedKit);
+        return result;
     }
 }

@@ -139,6 +139,18 @@
             : 'No aplica (On-Grid)';
         document.getElementById('result-panels').textContent = result.recommendedPanelArrayKwp.toFixed(2) + ' kWp';
 
+        const kitSuggestion = document.getElementById('kit-suggestion');
+        if (result.recommendedKit) {
+            const kit = result.recommendedKit;
+            const price = kit.priceOverride != null ? kit.priceOverride : kit.computedPrice;
+            document.getElementById('kit-suggestion-name').textContent = kit.name;
+            document.getElementById('kit-suggestion-description').textContent = kit.description || '';
+            document.getElementById('kit-suggestion-price').textContent = '$' + Number(price).toFixed(2);
+            kitSuggestion.classList.remove('d-none');
+        } else {
+            kitSuggestion.classList.add('d-none');
+        }
+
         resultsPanel.classList.remove('d-none');
         resultsPanel.scrollIntoView({ behavior: 'smooth' });
     }

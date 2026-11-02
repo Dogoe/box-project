@@ -20,6 +20,13 @@ public class InverterService {
         return repository.findAll().stream().map(this::toDto).toList();
     }
 
+    public List<InverterDto> findAllActive() {
+        return repository.findAll().stream()
+                .filter(Inverter::isActive)
+                .map(this::toDto)
+                .toList();
+    }
+
     public InverterDto getById(Long id) {
         return toDto(findEntity(id));
     }

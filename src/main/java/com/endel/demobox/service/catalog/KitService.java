@@ -27,6 +27,13 @@ public class KitService {
         return kitRepository.findAll().stream().map(this::toDto).toList();
     }
 
+    public List<KitDto> findAllActive() {
+        return kitRepository.findAll().stream()
+                .filter(Kit::isActive)
+                .map(this::toDto)
+                .toList();
+    }
+
     public KitDto getById(Long id) {
         return toDto(findEntity(id));
     }
