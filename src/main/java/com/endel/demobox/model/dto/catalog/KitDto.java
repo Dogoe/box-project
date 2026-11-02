@@ -24,6 +24,11 @@ public class KitDto {
 
     private BigDecimal computedPrice;
 
+    /** Sum of this kit's panel wattages (kWp), battery capacities (kWh), and inverter ratings (kW). */
+    private double totalPanelArrayKwp;
+    private double totalBatteryCapacityKwh;
+    private double totalInverterPowerKw;
+
     @NotEmpty
     @Valid
     private List<KitItemDto> items = new ArrayList<>();

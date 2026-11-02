@@ -1,14 +1,7 @@
 package com.endel.demobox.quote;
 
-import com.endel.demobox.model.catalog.Battery;
-import com.endel.demobox.model.catalog.Inverter;
-import com.endel.demobox.model.catalog.Kit;
-import com.endel.demobox.model.catalog.KitItem;
-import com.endel.demobox.model.catalog.Product;
-import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.dto.catalog.KitDto;
 import com.endel.demobox.quote.dto.SizingResultDto;
-import com.endel.demobox.repository.catalog.KitRepository;
 import com.endel.demobox.service.catalog.KitService;
 import org.springframework.stereotype.Service;
 
@@ -28,42 +21,22 @@ public class KitRecommendationService {
 
     private static final double UNDERSIZED_PENALTY_FACTOR = 2.0;
 
-    private final KitRepository kitRepository;
     private final KitService kitService;
 
-    public KitRecommendationService(KitRepository kitRepository, KitService kitService) {
-        this.kitRepository = kitRepository;
+    public KitRecommendationService(KitService kitService) {
         this.kitService = kitService;
     }
 
     public Optional<KitDto> findBestMatch(SizingResultDto target) {
-        return kitRepository.findAll().stream()
-                .filter(Kit::isActive)
+        return kitService.findAllActive().stream()
                 .filter(kit -> !kit.getItems().isEmpty())
-                .min(Comparator.comparingDouble(kit -> score(kit, target)))
-                .map(kit -> kitService.getById(kit.getId()));
+                .min(Comparator.comparingDouble(kit -> score(kit, target)));
     }
 
-    private double score(Kit kit, SizingResultDto target) {
-        double kitBatteryKwh = 0;
-        double kitPanelKwp = 0;
-        double kitInverterKw = 0;
-
-        for (KitItem item : kit.getItems()) {
-            Product product = item.getProduct();
-            int quantity = item.getQuantity();
-            if (product instanceof Battery battery) {
-                kitBatteryKwh += battery.getCapacityKwh() * quantity;
-            } else if (product instanceof SolarPanel panel) {
-                kitPanelKwp += panel.getWattage() * quantity / 1000.0;
-            } else if (product instanceof Inverter inverter) {
-                kitInverterKw += inverter.getRatedPowerKw() * quantity;
-            }
-        }
-
-        return dimensionScore(kitBatteryKwh, target.getRecommendedBatteryCapacityKwh())
-                + dimensionScore(kitPanelKwp, target.getRecommendedPanelArrayKwp())
-                + dimensionScore(kitInverterKw, target.getRecommendedInverterKw());
+    private double score(KitDto kit, SizingResultDto target) {
+        return dimensionScore(kit.getTotalBatteryCapacityKwh(), target.getRecommendedBatteryCapacityKwh())
+                + dimensionScore(kit.getTotalPanelArrayKwp(), target.getRecommendedPanelArrayKwp())
+                + dimensionScore(kit.getTotalInverterPowerKw(), target.getRecommendedInverterKw());
     }
 
     private double dimensionScore(double kitValue, double targetValue) {

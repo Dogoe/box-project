@@ -1,9 +1,12 @@
 package com.endel.demobox.service.catalog;
 
 import com.endel.demobox.exception.ResourceNotFoundException;
+import com.endel.demobox.model.catalog.Battery;
+import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.catalog.Kit;
 import com.endel.demobox.model.catalog.KitItem;
 import com.endel.demobox.model.catalog.Product;
+import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.dto.catalog.KitDto;
 import com.endel.demobox.model.dto.catalog.KitItemDto;
 import com.endel.demobox.repository.catalog.KitRepository;
@@ -90,6 +93,24 @@ public class KitService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         dto.setComputedPrice(computed);
 
+        double totalPanelArrayKwp = 0;
+        double totalBatteryCapacityKwh = 0;
+        double totalInverterPowerKw = 0;
+        for (KitItem item : kit.getItems()) {
+            Product product = item.getProduct();
+            int quantity = item.getQuantity();
+            if (product instanceof SolarPanel panel) {
+                totalPanelArrayKwp += panel.getWattage() * quantity / 1000.0;
+            } else if (product instanceof Battery battery) {
+                totalBatteryCapacityKwh += battery.getCapacityKwh() * quantity;
+            } else if (product instanceof Inverter inverter) {
+                totalInverterPowerKw += inverter.getRatedPowerKw() * quantity;
+            }
+        }
+        dto.setTotalPanelArrayKwp(round(totalPanelArrayKwp));
+        dto.setTotalBatteryCapacityKwh(round(totalBatteryCapacityKwh));
+        dto.setTotalInverterPowerKw(round(totalInverterPowerKw));
+
         dto.setItems(kit.getItems().stream().map(item -> {
             KitItemDto itemDto = new KitItemDto();
             itemDto.setId(item.getId());
@@ -102,5 +123,9 @@ public class KitService {
         }).toList());
 
         return dto;
+    }
+
+    private double round(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 }

@@ -130,6 +130,33 @@
         };
     }
 
+    function renderKitComparisonRow(prefix, kitValue, targetValue, unit) {
+        const row = document.getElementById('kit-compare-' + prefix);
+        const valueEl = document.getElementById('kit-compare-' + prefix + '-value');
+        const iconEl = document.getElementById('kit-compare-' + prefix + '-icon');
+        const diffEl = document.getElementById('kit-compare-' + prefix + '-diff');
+
+        if (targetValue <= 0) {
+            row.classList.add('d-none');
+            return;
+        }
+        row.classList.remove('d-none');
+
+        valueEl.textContent = kitValue.toFixed(2) + ' ' + unit;
+
+        if (kitValue >= targetValue) {
+            const surplus = kitValue - targetValue;
+            iconEl.className = 'bi bi-check-circle-fill text-success ms-1';
+            diffEl.className = 'text-success ms-1';
+            diffEl.textContent = surplus >= 0.01 ? '(+' + surplus.toFixed(2) + ' ' + unit + ' de sobra)' : '';
+        } else {
+            const deficit = targetValue - kitValue;
+            iconEl.className = 'bi bi-x-circle-fill text-danger ms-1';
+            diffEl.className = 'text-danger ms-1';
+            diffEl.textContent = '(faltan ' + deficit.toFixed(2) + ' ' + unit + ')';
+        }
+    }
+
     function renderResults(result) {
         document.getElementById('result-daily').textContent = result.dailyConsumptionKwh.toFixed(2) + ' kWh/día';
         document.getElementById('result-peak').textContent = result.peakLoadKw.toFixed(2) + ' kW';
@@ -146,6 +173,11 @@
             document.getElementById('kit-suggestion-name').textContent = kit.name;
             document.getElementById('kit-suggestion-description').textContent = kit.description || '';
             document.getElementById('kit-suggestion-price').textContent = '$' + Number(price).toFixed(2);
+
+            renderKitComparisonRow('panels', kit.totalPanelArrayKwp, result.recommendedPanelArrayKwp, 'kWp');
+            renderKitComparisonRow('battery', kit.totalBatteryCapacityKwh, result.recommendedBatteryCapacityKwh, 'kWh');
+            renderKitComparisonRow('inverter', kit.totalInverterPowerKw, result.recommendedInverterKw, 'kW');
+
             kitSuggestion.classList.remove('d-none');
         } else {
             kitSuggestion.classList.add('d-none');
