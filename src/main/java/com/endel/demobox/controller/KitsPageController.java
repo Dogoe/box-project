@@ -79,7 +79,7 @@ public class KitsPageController {
 
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"catalogo-kits-solartech.pdf\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"catalogo-kits-baja-solar-supply.pdf\"")
                 .body(pdf);
     }
 }

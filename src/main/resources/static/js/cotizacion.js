@@ -253,7 +253,7 @@
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'cotizacion-solartech.pdf';
+            link.download = 'cotizacion-baja-solar-supply.pdf';
             document.body.appendChild(link);
             link.click();
             link.remove();
