@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Kits Solares | SolarTech</title>
+
+    <!-- Bootstrap 5.3.8 -->
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+            rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+</head>
+
+<body>
+
+<!-- ========================================================= -->
+<!-- NAVBAR -->
+<!-- ========================================================= -->
+
+<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
+    <div class="container">
+
+        <a class="navbar-brand fw-bold fs-3" href="/home">
+            Solar<span>Tech</span>
+        </a>
+
+        <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#mainNavbar">
+
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNavbar">
+
+            <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/home">Inicio</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link text-success fw-semibold" href="/cotizacion">
+                        <i class="bi bi-calculator"></i> Cotizador
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link active" href="/kits">Kits</a>
+                </li>
+
+            </ul>
+
+        </div>
+    </div>
+</nav>
+
+
+<!-- ========================================================= -->
+<!-- HEADER -->
+<!-- ========================================================= -->
+
+<section class="py-5 bg-light border-bottom">
+    <div class="container text-center">
+        <span class="badge bg-success mb-2">SOLUCIONES COMPLETAS</span>
+        <h1 class="fw-bold">Kits solares</h1>
+        <p class="lead text-secondary mb-0">
+            Paquetes de paneles, batería e inversor ya dimensionados juntos,
+            con su capacidad y lo que pueden alimentar.
+        </p>
+    </div>
+</section>
+
+
+<!-- ========================================================= -->
+<!-- KITS LIST -->
+<!-- ========================================================= -->
+
+<section class="py-5">
+    <div class="container" style="max-width: 900px;">
+
+        <div class="text-center text-secondary py-5" th:if="${#lists.isEmpty(kits)}">
+            Aún no hay kits publicados.
+        </div>
+
+        <div class="card mb-4" th:each="kit : ${kits}">
+            <div class="card-body">
+
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                    <div>
+                        <h4 class="fw-bold mb-1" th:text="${kit.name}">Nombre del kit</h4>
+                        <p class="text-secondary mb-0" th:text="${kit.description}">Descripción</p>
+                    </div>
+                    <strong class="fs-3 text-success"
+                            th:text="'$' + ${kit.priceOverride != null ? kit.priceOverride : kit.computedPrice}">
+                        $0.00
+                    </strong>
+                </div>
+
+                <!-- CAPACITY OVERVIEW -->
+                <div class="row g-4 text-center my-4">
+                    <div class="col-4">
+                        <div class="text-muted small">Arreglo de paneles</div>
+                        <div class="fs-4 fw-bold" th:text="${kit.totalPanelArrayKwp} + ' kWp'">-</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-muted small">Capacidad de batería</div>
+                        <div class="fs-4 fw-bold" th:text="${kit.totalBatteryCapacityKwh} + ' kWh'">-</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-muted small">Inversor</div>
+                        <div class="fs-4 fw-bold" th:text="${kit.totalInverterPowerKw} + ' kW'">-</div>
+                    </div>
+                </div>
+
+                <!-- INCLUDED PRODUCTS -->
+                <h6 class="fw-semibold">Qué incluye</h6>
+                <ul class="list-unstyled small mb-4">
+                    <li class="d-flex justify-content-between border-bottom py-1" th:each="item : ${kit.items}">
+                        <span>
+                            <strong th:text="${item.quantity} + '×'">1×</strong>
+                            <span th:text="${item.productName}">Producto</span>
+                        </span>
+                        <span class="text-muted" th:text="${item.specLabel}">-</span>
+                    </li>
+                </ul>
+
+                <!-- WHAT IT CAN POWER -->
+                <div class="bg-light rounded p-3" th:with="capacity=${capacityByKitId.get(kit.id)}">
+                    <h6 class="fw-semibold mb-2">
+                        <i class="bi bi-lightning-charge-fill text-success"></i>
+                        Qué puede alimentar
+                    </h6>
+
+                    <p class="small text-secondary mb-2">
+                        Estimado hasta
+                        <strong th:text="${capacity.estimatedMaxDailyKwh} + ' kWh/día'">-</strong>
+                        de consumo, con una carga simultánea de hasta
+                        <strong th:text="${capacity.estimatedMaxContinuousKw} + ' kW'">-</strong>
+                        (asumiendo 5 horas de sol pico y 1 día de autonomía).
+                    </p>
+
+                    <div th:if="${not #lists.isEmpty(capacity.compatibleAppliances)}">
+                        <span class="badge bg-white text-dark border me-1 mb-1"
+                              th:each="appliance : ${capacity.compatibleAppliances}"
+                              th:text="${appliance}">
+                            Aparato
+                        </span>
+                    </div>
+                    <p class="small text-muted mb-0" th:if="${#lists.isEmpty(capacity.compatibleAppliances)}">
+                        Ningún aparato de nuestro catálogo cabe cómodamente en este kit por sí solo.
+                    </p>
+                </div>
+
+                <div class="text-center mt-4">
+                    <a href="/cotizacion" class="btn btn-outline-dark btn-sm">
+                        Cotizar mi sistema
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</section>
+
+
+<!-- ========================================================= -->
+<!-- FOOTER -->
+<!-- ========================================================= -->
+
+<footer class="footer bg-dark text-white-50 py-4 mt-5">
+    <div class="container text-center">
+        <small>© 2026 SolarTech. Todos los derechos reservados.</small>
+    </div>
+</footer>
+
+
+<!-- Bootstrap JS -->
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
+</script>
+
+</body>
+</html>

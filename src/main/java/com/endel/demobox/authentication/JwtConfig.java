@@ -40,6 +40,7 @@ public class JwtConfig {
                                 "/swagger-ui/**",
                                 "/home/**",
                                 "/cotizacion",
+                                "/kits",
                                 "/admin/**",
                                 "/css/**",
                                 "/js/**",
