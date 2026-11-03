@@ -38,6 +38,8 @@ dependencies {
     //Utility
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
     runtimeOnly ("io.jsonwebtoken:jjwt-jackson:0.12.6")  // for JSON processing with Jackson
+    // Pure-Java HTML -> PDF rendering for downloadable quotes/kit spec sheets.
+    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.108")
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
     // Auto-restarts the app on recompile when run locally (IDE or ./gradlew bootRun).

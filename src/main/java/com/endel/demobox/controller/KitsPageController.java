@@ -2,12 +2,19 @@ package com.endel.demobox.controller;
 
 import com.endel.demobox.model.dto.catalog.KitCapacityDto;
 import com.endel.demobox.model.dto.catalog.KitDto;
+import com.endel.demobox.pdf.PdfRenderingService;
 import com.endel.demobox.service.catalog.KitCapacityEstimator;
 import com.endel.demobox.service.catalog.KitService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.thymeleaf.context.Context;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -17,10 +24,14 @@ public class KitsPageController {
 
     private final KitService kitService;
     private final KitCapacityEstimator kitCapacityEstimator;
+    private final PdfRenderingService pdfRenderingService;
 
-    public KitsPageController(KitService kitService, KitCapacityEstimator kitCapacityEstimator) {
+    public KitsPageController(KitService kitService,
+                               KitCapacityEstimator kitCapacityEstimator,
+                               PdfRenderingService pdfRenderingService) {
         this.kitService = kitService;
         this.kitCapacityEstimator = kitCapacityEstimator;
+        this.pdfRenderingService = pdfRenderingService;
     }
 
     @GetMapping("/kits")
@@ -32,5 +43,43 @@ public class KitsPageController {
         model.addAttribute("kits", kits);
         model.addAttribute("capacityByKitId", capacityByKitId);
         return "kits";
+    }
+
+    @GetMapping("/kits/{id}/pdf")
+    public ResponseEntity<byte[]> kitPdf(@PathVariable Long id) {
+        KitDto kit = kitService.getById(id);
+        KitCapacityDto capacity = kitCapacityEstimator.estimate(kit);
+
+        Context context = new Context();
+        context.setVariable("kit", kit);
+        context.setVariable("capacity", capacity);
+        context.setVariable("generatedAt", LocalDateTime.now());
+
+        byte[] pdf = pdfRenderingService.render("pdf/kit", context);
+        String filename = "kit-" + kit.getName().toLowerCase().replaceAll("[^a-z0-9]+", "-") + ".pdf";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(pdf);
+    }
+
+    @GetMapping("/kits/pdf")
+    public ResponseEntity<byte[]> kitsCatalogPdf() {
+        List<KitDto> kits = kitService.findAllActive();
+        Map<Long, KitCapacityDto> capacityByKitId = kits.stream()
+                .collect(Collectors.toMap(KitDto::getId, kitCapacityEstimator::estimate));
+
+        Context context = new Context();
+        context.setVariable("kits", kits);
+        context.setVariable("capacityByKitId", capacityByKitId);
+        context.setVariable("generatedAt", LocalDateTime.now());
+
+        byte[] pdf = pdfRenderingService.render("pdf/kit-catalog", context);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"catalogo-kits-solartech.pdf\"")
+                .body(pdf);
     }
 }

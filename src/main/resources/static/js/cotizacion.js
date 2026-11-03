@@ -27,6 +27,9 @@
     const alertBox = document.getElementById('quote-alert');
     const resultsPanel = document.getElementById('results-panel');
     const submitBtn = document.getElementById('submit-btn');
+    const downloadPdfBtn = document.getElementById('download-pdf-btn');
+
+    let lastPayload = null;
 
     function showAlert(message) {
         alertBox.textContent = message;
@@ -219,11 +222,46 @@
                 return;
             }
 
+            lastPayload = payload;
             renderResults(await response.json());
         } catch (err) {
             showAlert('Ocurrió un error de conexión. Intenta nuevamente.');
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function handleDownloadPdf() {
+        if (!lastPayload) {
+            return;
+        }
+
+        downloadPdfBtn.disabled = true;
+        try {
+            const response = await fetch('/api/quotes/calculate/pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(lastPayload)
+            });
+
+            if (!response.ok) {
+                showAlert('No se pudo generar el PDF. Intenta nuevamente.');
+                return;
+            }
+
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'cotizacion-solartech.pdf';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            showAlert('Ocurrió un error de conexión al generar el PDF.');
+        } finally {
+            downloadPdfBtn.disabled = false;
         }
     }
 
@@ -240,6 +278,7 @@
             appliancesContainer.appendChild(createApplianceRow());
         });
         form.addEventListener('submit', handleSubmit);
+        downloadPdfBtn.addEventListener('click', handleDownloadPdf);
     }
 
     document.addEventListener('DOMContentLoaded', init);

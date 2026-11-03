@@ -77,6 +77,9 @@
             Paquetes de paneles, batería e inversor ya dimensionados juntos,
             con su capacidad y lo que pueden alimentar.
         </p>
+        <a href="/kits/pdf" class="btn btn-outline-dark btn-sm mt-3" th:unless="${#lists.isEmpty(kits)}">
+            <i class="bi bi-file-earmark-pdf"></i> Descargar catálogo en PDF
+        </a>
     </div>
 </section>
 
@@ -164,6 +167,9 @@
                 <div class="text-center mt-4">
                     <a href="/cotizacion" class="btn btn-outline-dark btn-sm">
                         Cotizar mi sistema
+                    </a>
+                    <a th:href="@{'/kits/' + ${kit.id} + '/pdf'}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-file-earmark-pdf"></i> Descargar ficha PDF
                     </a>
                 </div>
 
