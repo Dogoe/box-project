@@ -1,5 +1,6 @@
 package com.endel.demobox.controller.quote;
 
+import com.endel.demobox.model.dto.ExchangeRateDto;
 import com.endel.demobox.pdf.PdfRenderingService;
 import com.endel.demobox.quote.ApplianceCategory;
 import com.endel.demobox.quote.AppliancePresetResolver;
@@ -11,6 +12,7 @@ import com.endel.demobox.quote.dto.ApplianceLoadDto;
 import com.endel.demobox.quote.dto.KitComparisonRowDto;
 import com.endel.demobox.quote.dto.LoadSurveyDto;
 import com.endel.demobox.quote.dto.SizingResultDto;
+import com.endel.demobox.service.ExchangeRateService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.thymeleaf.context.Context;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -34,17 +37,20 @@ public class QuoteCalculatorController {
     private final ApplianceTemplateCatalog templateCatalog;
     private final KitRecommendationService kitRecommendationService;
     private final PdfRenderingService pdfRenderingService;
+    private final ExchangeRateService exchangeRateService;
 
     public QuoteCalculatorController(SizingCalculatorService sizingCalculatorService,
                                       AppliancePresetResolver presetResolver,
                                       ApplianceTemplateCatalog templateCatalog,
                                       KitRecommendationService kitRecommendationService,
-                                      PdfRenderingService pdfRenderingService) {
+                                      PdfRenderingService pdfRenderingService,
+                                      ExchangeRateService exchangeRateService) {
         this.sizingCalculatorService = sizingCalculatorService;
         this.presetResolver = presetResolver;
         this.templateCatalog = templateCatalog;
         this.kitRecommendationService = kitRecommendationService;
         this.pdfRenderingService = pdfRenderingService;
+        this.exchangeRateService = exchangeRateService;
     }
 
     @GetMapping("/appliance-presets")
@@ -69,6 +75,14 @@ public class QuoteCalculatorController {
         context.setVariable("result", result);
         context.setVariable("comparison", comparison);
         context.setVariable("generatedAt", LocalDateTime.now());
+
+        if (result.getRecommendedKit() != null) {
+            ExchangeRateDto rate = exchangeRateService.getCurrentRate();
+            BigDecimal kitPriceMxn = result.getRecommendedKit().getPriceOverride() != null
+                    ? result.getRecommendedKit().getPriceOverride()
+                    : result.getRecommendedKit().getComputedPrice();
+            context.setVariable("kitPriceUsd", exchangeRateService.toUsd(kitPriceMxn, rate.getUsdToMxnRate()));
+        }
 
         byte[] pdf = pdfRenderingService.render("pdf/quote", context);
 

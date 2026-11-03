@@ -175,7 +175,9 @@
             const price = kit.priceOverride != null ? kit.priceOverride : kit.computedPrice;
             document.getElementById('kit-suggestion-name').textContent = kit.name;
             document.getElementById('kit-suggestion-description').textContent = kit.description || '';
-            document.getElementById('kit-suggestion-price').textContent = '$' + Number(price).toFixed(2);
+            const priceEl = document.getElementById('kit-suggestion-price');
+            priceEl.dataset.priceMxn = price;
+            priceEl.textContent = window.BajaSolarCurrency.formatPrice(price);
 
             renderKitComparisonRow('panels', kit.totalPanelArrayKwp, result.recommendedPanelArrayKwp, 'kWp');
             renderKitComparisonRow('battery', kit.totalBatteryCapacityKwh, result.recommendedBatteryCapacityKwh, 'kWh');

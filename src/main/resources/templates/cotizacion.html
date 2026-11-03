@@ -54,6 +54,11 @@
 
             </ul>
 
+            <div class="btn-group btn-group-sm" role="group" aria-label="Moneda">
+                <button type="button" class="btn btn-outline-dark currency-toggle-btn" data-currency="MXN">MXN</button>
+                <button type="button" class="btn btn-outline-dark currency-toggle-btn" data-currency="USD">USD</button>
+            </div>
+
         </div>
     </div>
 </nav>
@@ -310,6 +315,7 @@
         src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
 </script>
 
+<script th:src="@{/js/currency.js}"></script>
 <script th:src="@{/js/cotizacion.js}"></script>
 
 </body>

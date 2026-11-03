@@ -18,7 +18,8 @@
         .stat-value { font-size: 13pt; font-weight: bold; display: block; }
         .kit-box { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 14px; margin-top: 10px; }
         .kit-name { font-size: 13pt; font-weight: bold; margin: 0; }
-        .kit-price { color: #198754; font-size: 13pt; font-weight: bold; }
+        .kit-price { color: #198754; font-size: 13pt; font-weight: bold; margin-bottom: 0; }
+        .kit-price-usd { color: #6c757d; font-size: 9.5pt; margin-top: 0; }
         .ok { color: #198754; font-weight: bold; }
         .short { color: #dc3545; font-weight: bold; }
         .footer { margin-top: 30px; color: #adb5bd; font-size: 8pt; text-align: center; }
@@ -95,9 +96,10 @@
         <p class="kit-name" th:text="${result.recommendedKit.name}">Kit</p>
         <p th:text="${result.recommendedKit.description}">Descripcion</p>
         <p class="kit-price"
-           th:text="'$' + ${#numbers.formatDecimal(result.recommendedKit.priceOverride != null ? result.recommendedKit.priceOverride : result.recommendedKit.computedPrice, 1, 2)}">
-            $0.00
+           th:text="'$' + ${#numbers.formatDecimal(result.recommendedKit.priceOverride != null ? result.recommendedKit.priceOverride : result.recommendedKit.computedPrice, 1, 2)} + ' MXN'">
+            $0.00 MXN
         </p>
+        <p class="kit-price-usd" th:text="'~ $' + ${#numbers.formatDecimal(kitPriceUsd, 1, 2)} + ' USD'">~ $0.00 USD</p>
 
         <table>
             <thead>

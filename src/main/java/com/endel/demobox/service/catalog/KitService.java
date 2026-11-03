@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -35,7 +36,12 @@ public class KitService {
         return kitRepository.findAll().stream()
                 .filter(Kit::isActive)
                 .map(this::toDto)
+                .sorted(Comparator.comparing(KitService::effectivePrice))
                 .toList();
+    }
+
+    private static BigDecimal effectivePrice(KitDto kit) {
+        return kit.getPriceOverride() != null ? kit.getPriceOverride() : kit.getComputedPrice();
     }
 
     public KitDto getById(Long id) {

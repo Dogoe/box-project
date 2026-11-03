@@ -1,8 +1,10 @@
 package com.endel.demobox.controller;
 
+import com.endel.demobox.model.dto.ExchangeRateDto;
 import com.endel.demobox.model.dto.catalog.KitCapacityDto;
 import com.endel.demobox.model.dto.catalog.KitDto;
 import com.endel.demobox.pdf.PdfRenderingService;
+import com.endel.demobox.service.ExchangeRateService;
 import com.endel.demobox.service.catalog.KitCapacityEstimator;
 import com.endel.demobox.service.catalog.KitService;
 import org.springframework.http.HttpHeaders;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.thymeleaf.context.Context;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -25,13 +28,20 @@ public class KitsPageController {
     private final KitService kitService;
     private final KitCapacityEstimator kitCapacityEstimator;
     private final PdfRenderingService pdfRenderingService;
+    private final ExchangeRateService exchangeRateService;
 
     public KitsPageController(KitService kitService,
                                KitCapacityEstimator kitCapacityEstimator,
-                               PdfRenderingService pdfRenderingService) {
+                               PdfRenderingService pdfRenderingService,
+                               ExchangeRateService exchangeRateService) {
         this.kitService = kitService;
         this.kitCapacityEstimator = kitCapacityEstimator;
         this.pdfRenderingService = pdfRenderingService;
+        this.exchangeRateService = exchangeRateService;
+    }
+
+    private static BigDecimal effectivePrice(KitDto kit) {
+        return kit.getPriceOverride() != null ? kit.getPriceOverride() : kit.getComputedPrice();
     }
 
     @GetMapping("/kits")
@@ -49,10 +59,12 @@ public class KitsPageController {
     public ResponseEntity<byte[]> kitPdf(@PathVariable Long id) {
         KitDto kit = kitService.getById(id);
         KitCapacityDto capacity = kitCapacityEstimator.estimate(kit);
+        ExchangeRateDto rate = exchangeRateService.getCurrentRate();
 
         Context context = new Context();
         context.setVariable("kit", kit);
         context.setVariable("capacity", capacity);
+        context.setVariable("priceUsd", exchangeRateService.toUsd(effectivePrice(kit), rate.getUsdToMxnRate()));
         context.setVariable("generatedAt", LocalDateTime.now());
 
         byte[] pdf = pdfRenderingService.render("pdf/kit", context);
@@ -69,10 +81,15 @@ public class KitsPageController {
         List<KitDto> kits = kitService.findAllActive();
         Map<Long, KitCapacityDto> capacityByKitId = kits.stream()
                 .collect(Collectors.toMap(KitDto::getId, kitCapacityEstimator::estimate));
+        ExchangeRateDto rate = exchangeRateService.getCurrentRate();
+        Map<Long, BigDecimal> usdPriceByKitId = kits.stream()
+                .collect(Collectors.toMap(KitDto::getId,
+                        kit -> exchangeRateService.toUsd(effectivePrice(kit), rate.getUsdToMxnRate())));
 
         Context context = new Context();
         context.setVariable("kits", kits);
         context.setVariable("capacityByKitId", capacityByKitId);
+        context.setVariable("usdPriceByKitId", usdPriceByKitId);
         context.setVariable("generatedAt", LocalDateTime.now());
 
         byte[] pdf = pdfRenderingService.render("pdf/kit-catalog", context);

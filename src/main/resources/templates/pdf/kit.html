@@ -9,7 +9,8 @@
         h2 { font-size: 13pt; margin-top: 24px; margin-bottom: 8px; border-bottom: 1px solid #dee2e6; padding-bottom: 4px; }
         .subtitle { color: #6c757d; margin-top: 2px; }
         .meta { color: #6c757d; font-size: 9pt; margin-top: 8px; }
-        .price { color: #198754; font-size: 16pt; font-weight: bold; }
+        .price { color: #198754; font-size: 16pt; font-weight: bold; margin-bottom: 0; }
+        .price-usd { color: #6c757d; font-size: 10pt; margin-top: 0; }
         table { width: 100%; border-collapse: collapse; margin-top: 8px; }
         th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid #e9ecef; font-size: 10pt; }
         th { color: #6c757d; font-weight: normal; font-size: 9pt; text-transform: uppercase; }
@@ -31,9 +32,10 @@
 <h2 th:text="${kit.name}">Nombre del kit</h2>
 <p th:text="${kit.description}">Descripcion</p>
 <p class="price"
-   th:text="'$' + ${#numbers.formatDecimal(kit.priceOverride != null ? kit.priceOverride : kit.computedPrice, 1, 2)}">
-    $0.00
+   th:text="'$' + ${#numbers.formatDecimal(kit.priceOverride != null ? kit.priceOverride : kit.computedPrice, 1, 2)} + ' MXN'">
+    $0.00 MXN
 </p>
+<p class="price-usd" th:text="'~ $' + ${#numbers.formatDecimal(priceUsd, 1, 2)} + ' USD'">~ $0.00 USD</p>
 
 <table class="stats">
     <tr>
