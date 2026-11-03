@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Panel de administración | SolarTech</title>
+    <title>Panel de administración | Baja Solar Supply</title>
 
     <link
             href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
@@ -19,7 +19,7 @@
 
 <nav class="navbar navbar-expand-lg bg-white border-bottom">
     <div class="container">
-        <a class="navbar-brand fw-bold fs-4" href="/admin">SolarTech Admin</a>
+        <a class="navbar-brand fw-bold fs-4" href="/admin">Baja Solar Supply Admin</a>
         <button type="button" class="btn btn-outline-secondary btn-sm" id="logout-btn">
             <i class="bi bi-box-arrow-right"></i> Cerrar sesión
         </button>
@@ -42,22 +42,46 @@
         <li class="nav-item">
             <a href="#" class="nav-link entity-tab" data-entity="kits">Kits</a>
         </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link entity-tab" data-entity="settings">Configuración</a>
+        </li>
     </ul>
 
     <div id="list-alert" class="alert alert-danger d-none" role="alert"></div>
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3" id="entity-toolbar">
         <h5 class="mb-0" id="entity-title">Paneles Solares</h5>
         <button type="button" class="btn btn-success btn-sm" id="new-entity-btn">
             <i class="bi bi-plus-lg"></i> Nuevo
         </button>
     </div>
 
-    <div class="table-responsive">
+    <div class="table-responsive" id="entity-table-wrapper">
         <table class="table table-hover align-middle">
             <thead id="entity-table-head"></thead>
             <tbody id="entity-table-body"></tbody>
         </table>
+    </div>
+
+    <div id="settings-panel" class="d-none" style="max-width: 420px;">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">Tipo de cambio</h6>
+                <p class="text-secondary small">
+                    Se usa para mostrar los precios en dólares en el sitio público. Los precios
+                    del catálogo siempre se guardan en pesos (MXN).
+                </p>
+                <div id="settings-error" class="alert alert-danger d-none"></div>
+                <div id="settings-success" class="alert alert-success d-none"></div>
+                <form id="settings-form">
+                    <div class="mb-3">
+                        <label class="form-label" for="exchange-rate-input">1 USD equivale a (MXN)</label>
+                        <input type="number" step="0.01" min="0.01" class="form-control" id="exchange-rate-input" required>
+                    </div>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 

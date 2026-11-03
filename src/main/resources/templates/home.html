@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>SolarTech | Energía Solar</title>
+    <title>Baja Solar Supply | Energía Solar</title>
 
     <!-- Bootstrap 5.3.8 -->
     <link
@@ -50,7 +50,7 @@
     <div class="container">
 
         <a class="navbar-brand fw-bold fs-3" href="/">
-            Solar<span>Tech</span>
+            Baja Solar<span>Supply</span>
         </a>
 
         <button
@@ -76,58 +76,18 @@
                     </a>
                 </li>
 
-                <li class="nav-item dropdown">
-                    <a
-                            class="nav-link dropdown-toggle"
-                            href="#"
-                            role="button"
-                            data-bs-toggle="dropdown">
-
-                        Paneles Solares
-                    </a>
-
-                    <ul class="dropdown-menu">
-                        <li>
-                            <a class="dropdown-item" href="#">
-                                Paneles rígidos
-                            </a>
-                        </li>
-
-                        <li>
-                            <a class="dropdown-item" href="#">
-                                Paneles portátiles
-                            </a>
-                        </li>
-
-                        <li>
-                            <a class="dropdown-item" href="#">
-                                Kits solares
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Baterías</a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Inversores</a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Kits</a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link text-danger fw-semibold" href="#">
-                        Ofertas
-                    </a>
+                    <a class="nav-link" href="/kits">Kits</a>
                 </li>
 
             </ul>
 
             <div class="d-flex align-items-center gap-3">
+
+                <div class="btn-group btn-group-sm" role="group" aria-label="Moneda">
+                    <button type="button" class="btn btn-outline-dark currency-toggle-btn" data-currency="MXN">MXN</button>
+                    <button type="button" class="btn btn-outline-dark currency-toggle-btn" data-currency="USD">USD</button>
+                </div>
 
                 <button class="btn btn-link text-dark p-0">
                     <i class="bi bi-search fs-5"></i>
@@ -179,7 +139,7 @@
 
                 <div class="d-flex flex-wrap gap-3 mt-4">
 
-                    <a href="#productos"
+                    <a href="/kits"
                        class="btn btn-solar btn-lg px-4">
 
                         Comprar ahora
@@ -261,309 +221,10 @@
 
 
 <!-- ========================================================= -->
-<!-- CATEGORÍAS -->
-<!-- ========================================================= -->
-
-<section class="py-5">
-
-    <div class="container">
-
-        <div class="text-center mb-5">
-
-            <span class="section-label">
-                EXPLORA
-            </span>
-
-            <h2 class="fw-bold mt-2">
-                Encuentra tu solución energética
-            </h2>
-
-            <p class="text-secondary">
-                Todo lo que necesitas para generar, almacenar y utilizar
-                tu propia energía.
-            </p>
-
-        </div>
-
-        <div class="row g-4">
-
-            <div class="col-6 col-lg-3">
-
-                <a href="#" class="category-card">
-
-                    <div class="category-icon">
-                        <i class="bi bi-sun"></i>
-                    </div>
-
-                    <h5>Paneles solares</h5>
-
-                    <p>
-                        Genera energía limpia
-                    </p>
-
-                    <span>
-                        Ver productos
-                        <i class="bi bi-arrow-right"></i>
-                    </span>
-
-                </a>
-
-            </div>
-
-            <div class="col-6 col-lg-3">
-
-                <a href="#" class="category-card">
-
-                    <div class="category-icon">
-                        <i class="bi bi-battery-charging"></i>
-                    </div>
-
-                    <h5>Baterías</h5>
-
-                    <p>
-                        Almacena tu energía
-                    </p>
-
-                    <span>
-                        Ver productos
-                        <i class="bi bi-arrow-right"></i>
-                    </span>
-
-                </a>
-
-            </div>
-
-            <div class="col-6 col-lg-3">
-
-                <a href="#" class="category-card">
-
-                    <div class="category-icon">
-                        <i class="bi bi-lightning-charge"></i>
-                    </div>
-
-                    <h5>Inversores</h5>
-
-                    <p>
-                        Convierte tu energía
-                    </p>
-
-                    <span>
-                        Ver productos
-                        <i class="bi bi-arrow-right"></i>
-                    </span>
-
-                </a>
-
-            </div>
-
-            <div class="col-6 col-lg-3">
-
-                <a href="#" class="category-card">
-
-                    <div class="category-icon">
-                        <i class="bi bi-box-seam"></i>
-                    </div>
-
-                    <h5>Kits solares</h5>
-
-                    <p>
-                        Soluciones completas
-                    </p>
-
-                    <span>
-                        Ver productos
-                        <i class="bi bi-arrow-right"></i>
-                    </span>
-
-                </a>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- ========================================================= -->
-<!-- PRODUCTOS DESTACADOS -->
-<!-- ========================================================= -->
-
-<section id="productos" class="py-5 bg-light">
-
-    <div class="container">
-
-        <div class="d-flex justify-content-between align-items-end mb-4">
-
-            <div>
-
-                <span class="section-label">
-                    MÁS POPULARES
-                </span>
-
-                <h2 class="fw-bold mt-2 mb-0">
-                    Productos destacados
-                </h2>
-
-            </div>
-
-            <a href="#" class="link-dark fw-semibold d-none d-md-block">
-                Ver todos
-                <i class="bi bi-arrow-right"></i>
-            </a>
-
-        </div>
-
-        <div class="row g-4" th:if="${not #lists.isEmpty(panels) or not #lists.isEmpty(batteries) or not #lists.isEmpty(inverters)}">
-
-            <!-- PANELS -->
-
-            <div class="col-md-6 col-lg-3" th:each="p : ${panels}">
-
-                <div class="product-card">
-
-                    <div class="product-image">
-
-                        <img th:if="${p.imageUrl != null and !p.imageUrl.isEmpty()}"
-                             th:src="${p.imageUrl}" alt="" class="w-100 h-100" style="object-fit: cover;">
-
-                        <div th:unless="${p.imageUrl != null and !p.imageUrl.isEmpty()}" class="product-placeholder">
-                            <i class="bi bi-sun"></i>
-                        </div>
-
-                    </div>
-
-                    <div class="p-3">
-
-                        <small class="text-muted">
-                            PANEL SOLAR
-                        </small>
-
-                        <h5 class="mt-2" th:text="${p.name}">Panel</h5>
-
-                        <p class="small text-secondary" th:text="${p.brand}">Marca</p>
-
-                        <div class="d-flex justify-content-between align-items-center">
-
-                            <strong class="fs-5" th:text="'$' + ${p.price}">$0.00</strong>
-
-                            <button class="btn btn-dark btn-sm rounded-circle">
-                                <i class="bi bi-plus"></i>
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- BATTERIES -->
-
-            <div class="col-md-6 col-lg-3" th:each="b : ${batteries}">
-
-                <div class="product-card">
-
-                    <div class="product-image">
-
-                        <img th:if="${b.imageUrl != null and !b.imageUrl.isEmpty()}"
-                             th:src="${b.imageUrl}" alt="" class="w-100 h-100" style="object-fit: cover;">
-
-                        <div th:unless="${b.imageUrl != null and !b.imageUrl.isEmpty()}" class="product-placeholder battery">
-                            <i class="bi bi-battery-full"></i>
-                        </div>
-
-                    </div>
-
-                    <div class="p-3">
-
-                        <small class="text-muted">
-                            BATERÍA
-                        </small>
-
-                        <h5 class="mt-2" th:text="${b.name}">Batería</h5>
-
-                        <p class="small text-secondary" th:text="${b.brand}">Marca</p>
-
-                        <div class="d-flex justify-content-between align-items-center">
-
-                            <strong class="fs-5" th:text="'$' + ${b.price}">$0.00</strong>
-
-                            <button class="btn btn-dark btn-sm rounded-circle">
-                                <i class="bi bi-plus"></i>
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- INVERTERS -->
-
-            <div class="col-md-6 col-lg-3" th:each="i : ${inverters}">
-
-                <div class="product-card">
-
-                    <div class="product-image">
-
-                        <img th:if="${i.imageUrl != null and !i.imageUrl.isEmpty()}"
-                             th:src="${i.imageUrl}" alt="" class="w-100 h-100" style="object-fit: cover;">
-
-                        <div th:unless="${i.imageUrl != null and !i.imageUrl.isEmpty()}" class="product-placeholder inverter">
-                            <i class="bi bi-lightning-charge"></i>
-                        </div>
-
-                    </div>
-
-                    <div class="p-3">
-
-                        <small class="text-muted">
-                            INVERSOR
-                        </small>
-
-                        <h5 class="mt-2" th:text="${i.name}">Inversor</h5>
-
-                        <p class="small text-secondary" th:text="${i.brand}">Marca</p>
-
-                        <div class="d-flex justify-content-between align-items-center">
-
-                            <strong class="fs-5" th:text="'$' + ${i.price}">$0.00</strong>
-
-                            <button class="btn btn-dark btn-sm rounded-circle">
-                                <i class="bi bi-plus"></i>
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="text-center text-secondary py-5" th:if="${#lists.isEmpty(panels) and #lists.isEmpty(batteries) and #lists.isEmpty(inverters)}">
-            Aún no hay productos publicados.
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- ========================================================= -->
 <!-- KITS -->
 <!-- ========================================================= -->
 
-<section id="kits" class="py-5" th:if="${not #lists.isEmpty(kits)}">
+<section id="kits" class="py-5">
 
     <div class="container">
 
@@ -577,9 +238,14 @@
                 Kits solares
             </h2>
 
+            <a href="/kits" class="link-dark fw-semibold d-inline-block mt-2">
+                Ver todos los kits
+                <i class="bi bi-arrow-right"></i>
+            </a>
+
         </div>
 
-        <div class="row g-4">
+        <div class="row g-4" th:if="${not #lists.isEmpty(kits)}">
 
             <div class="col-md-6 col-lg-3" th:each="kit : ${kits}">
 
@@ -606,7 +272,7 @@
                         <div class="d-flex justify-content-between align-items-center">
 
                             <strong class="fs-5"
-                                    th:text="'$' + ${kit.priceOverride != null ? kit.priceOverride : kit.computedPrice}">
+                                    th:data-price-mxn="${kit.priceOverride != null ? kit.priceOverride : kit.computedPrice}">
                                 $0.00
                             </strong>
 
@@ -622,6 +288,10 @@
 
             </div>
 
+        </div>
+
+        <div class="text-center text-secondary py-5" th:if="${#lists.isEmpty(kits)}">
+            Aún no hay kits publicados.
         </div>
 
     </div>
@@ -924,7 +594,7 @@
             <div class="col-lg-4">
 
                 <a class="footer-brand" href="/">
-                    Solar<span>Tech</span>
+                    Baja Solar<span>Supply</span>
                 </a>
 
                 <p class="text-white-50 mt-3">
@@ -955,10 +625,8 @@
                 <h6>Productos</h6>
 
                 <ul>
-                    <li><a href="#">Paneles solares</a></li>
-                    <li><a href="#">Baterías</a></li>
-                    <li><a href="#">Inversores</a></li>
-                    <li><a href="#">Kits</a></li>
+                    <li><a href="/kits">Kits</a></li>
+                    <li><a href="/cotizacion">Cotizador</a></li>
                 </ul>
 
             </div>
@@ -1006,7 +674,7 @@
 
         <div class="footer-bottom">
             <small>
-                © 2026 SolarTech. Todos los derechos reservados.
+                © 2026 Baja Solar Supply. Todos los derechos reservados.
             </small>
         </div>
 
@@ -1019,6 +687,8 @@
 <script
         src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
 </script>
+
+<script th:src="@{/js/currency.js}"></script>
 
 </body>
 </html>

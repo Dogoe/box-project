@@ -12,6 +12,10 @@
     const tableBody = document.getElementById('entity-table-body');
     const entityTitle = document.getElementById('entity-title');
     const newBtn = document.getElementById('new-entity-btn');
+    const entityTableWrapper = document.getElementById('entity-table-wrapper');
+    const settingsPanel = document.getElementById('settings-panel');
+    const settingsError = document.getElementById('settings-error');
+    const settingsSuccess = document.getElementById('settings-success');
     const modalEl = document.getElementById('entity-modal');
     const modal = new bootstrap.Modal(modalEl);
     const modalFormEl = document.getElementById('entity-form');
@@ -140,6 +144,18 @@
         return currentEntity === 'kits' ? '/api/catalog/kits' : ENTITY_CONFIGS[currentEntity].endpoint;
     }
 
+    function showEntityTable() {
+        newBtn.classList.remove('d-none');
+        entityTableWrapper.classList.remove('d-none');
+        settingsPanel.classList.add('d-none');
+    }
+
+    function showSettingsPanel() {
+        newBtn.classList.add('d-none');
+        entityTableWrapper.classList.add('d-none');
+        settingsPanel.classList.remove('d-none');
+    }
+
     // ---- Generic (panels/batteries/inverters) rendering ----
 
     function formatValue(item, column) {
@@ -176,6 +192,7 @@
 
     async function loadEntity(entityKey) {
         currentEntity = entityKey;
+        showEntityTable();
         listAlert.classList.add('d-none');
         const config = ENTITY_CONFIGS[entityKey];
         entityTitle.textContent = config.label;
@@ -299,6 +316,7 @@
 
     async function loadKits() {
         currentEntity = 'kits';
+        showEntityTable();
         listAlert.classList.add('d-none');
         entityTitle.textContent = 'Kits';
         tableHead.innerHTML = '<tr><th>Nombre</th><th>Precio</th><th># Ítems</th><th>Activo</th><th></th></tr>';
@@ -377,6 +395,47 @@
         };
     }
 
+    // ---- Settings (exchange rate) ----
+
+    async function loadSettings() {
+        currentEntity = 'settings';
+        listAlert.classList.add('d-none');
+        entityTitle.textContent = 'Configuración';
+        showSettingsPanel();
+        settingsError.classList.add('d-none');
+        settingsSuccess.classList.add('d-none');
+
+        try {
+            const response = await authFetch('/api/settings/exchange-rate');
+            const data = await response.json();
+            document.getElementById('exchange-rate-input').value = data.usdToMxnRate;
+        } catch (err) {
+            settingsError.textContent = 'No se pudo cargar el tipo de cambio.';
+            settingsError.classList.remove('d-none');
+        }
+    }
+
+    document.getElementById('settings-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        settingsError.classList.add('d-none');
+        settingsSuccess.classList.add('d-none');
+
+        const rate = Number(document.getElementById('exchange-rate-input').value);
+        const response = await authFetch('/api/settings/exchange-rate', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ usdToMxnRate: rate })
+        });
+
+        if (response.ok) {
+            settingsSuccess.textContent = 'Tipo de cambio actualizado.';
+            settingsSuccess.classList.remove('d-none');
+        } else {
+            settingsError.textContent = await errorMessage(response, 'No se pudo guardar el tipo de cambio.');
+            settingsError.classList.remove('d-none');
+        }
+    });
+
     // ---- Shared: delete + create/update submit ----
 
     async function deleteItem(id) {
@@ -422,7 +481,13 @@
             event.preventDefault();
             document.querySelectorAll('.entity-tab').forEach((t) => t.classList.remove('active'));
             tab.classList.add('active');
-            tab.dataset.entity === 'kits' ? loadKits() : loadEntity(tab.dataset.entity);
+            if (tab.dataset.entity === 'kits') {
+                loadKits();
+            } else if (tab.dataset.entity === 'settings') {
+                loadSettings();
+            } else {
+                loadEntity(tab.dataset.entity);
+            }
         });
     });
 

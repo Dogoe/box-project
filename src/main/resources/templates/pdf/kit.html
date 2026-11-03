@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title th:text="'Kit Baja Solar Supply - ' + ${kit.name}">Kit Baja Solar Supply</title>
+    <style>
+        body { font-family: Helvetica, Arial, sans-serif; color: #212529; font-size: 11pt; }
+        h1 { font-size: 18pt; color: #198754; margin-bottom: 0; }
+        h2 { font-size: 13pt; margin-top: 24px; margin-bottom: 8px; border-bottom: 1px solid #dee2e6; padding-bottom: 4px; }
+        .subtitle { color: #6c757d; margin-top: 2px; }
+        .meta { color: #6c757d; font-size: 9pt; margin-top: 8px; }
+        .price { color: #198754; font-size: 16pt; font-weight: bold; margin-bottom: 0; }
+        .price-usd { color: #6c757d; font-size: 10pt; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid #e9ecef; font-size: 10pt; }
+        th { color: #6c757d; font-weight: normal; font-size: 9pt; text-transform: uppercase; }
+        .stats { width: 100%; margin-top: 8px; }
+        .stats td { border: none; padding: 10px 4px; width: 33%; }
+        .stat-label { color: #6c757d; font-size: 9pt; display: block; }
+        .stat-value { font-size: 13pt; font-weight: bold; display: block; }
+        .power-box { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 14px; margin-top: 10px; }
+        .badge { display: inline-block; border: 1px solid #ced4da; border-radius: 4px; padding: 2px 8px; margin: 2px; font-size: 9pt; }
+        .footer { margin-top: 30px; color: #adb5bd; font-size: 8pt; text-align: center; }
+    </style>
+</head>
+<body>
+
+<h1>Baja Solar Supply</h1>
+<p class="subtitle">Ficha tecnica de kit solar</p>
+<p class="meta" th:text="'Generado el ' + ${#temporals.format(generatedAt, 'dd/MM/yyyy HH:mm')}">Generado el -</p>
+
+<h2 th:text="${kit.name}">Nombre del kit</h2>
+<p th:text="${kit.description}">Descripcion</p>
+<p class="price"
+   th:text="'$' + ${#numbers.formatDecimal(kit.priceOverride != null ? kit.priceOverride : kit.computedPrice, 1, 2)} + ' MXN'">
+    $0.00 MXN
+</p>
+<p class="price-usd" th:text="'~ $' + ${#numbers.formatDecimal(priceUsd, 1, 2)} + ' USD'">~ $0.00 USD</p>
+
+<table class="stats">
+    <tr>
+        <td>
+            <span class="stat-label">Arreglo de paneles</span>
+            <span class="stat-value" th:text="${#numbers.formatDecimal(kit.totalPanelArrayKwp, 1, 2)} + ' kWp'">-</span>
+        </td>
+        <td>
+            <span class="stat-label">Capacidad de bateria</span>
+            <span class="stat-value" th:text="${#numbers.formatDecimal(kit.totalBatteryCapacityKwh, 1, 2)} + ' kWh'">-</span>
+        </td>
+        <td>
+            <span class="stat-label">Inversor</span>
+            <span class="stat-value" th:text="${#numbers.formatDecimal(kit.totalInverterPowerKw, 1, 2)} + ' kW'">-</span>
+        </td>
+    </tr>
+</table>
+
+<h2>Que incluye</h2>
+<table>
+    <thead>
+    <tr>
+        <th>Cantidad</th>
+        <th>Producto</th>
+        <th>Especificacion</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="item : ${kit.items}">
+        <td th:text="${item.quantity} + 'x'">-</td>
+        <td th:text="${item.productName}">-</td>
+        <td th:text="${item.specLabel}">-</td>
+    </tr>
+    </tbody>
+</table>
+
+<h2>Que puede alimentar</h2>
+<div class="power-box">
+    <p>
+        Estimado hasta
+        <strong th:text="${#numbers.formatDecimal(capacity.estimatedMaxDailyKwh, 1, 2)} + ' kWh/dia'">-</strong>
+        de consumo, con una carga simultanea de hasta
+        <strong th:text="${#numbers.formatDecimal(capacity.estimatedMaxContinuousKw, 1, 2)} + ' kW'">-</strong>
+        (asumiendo 5 horas de sol pico y 1 dia de autonomia).
+    </p>
+    <div th:if="${not #lists.isEmpty(capacity.compatibleAppliances)}">
+        <span class="badge" th:each="appliance : ${capacity.compatibleAppliances}" th:text="${appliance}">Aparato</span>
+    </div>
+    <p th:if="${#lists.isEmpty(capacity.compatibleAppliances)}">
+        Ningun aparato de nuestro catalogo cabe comodamente en este kit por si solo.
+    </p>
+</div>
+
+<p class="footer">Baja Solar Supply - Ficha generada automaticamente, sujeta a disponibilidad de inventario.</p>
+
+</body>
+</html>

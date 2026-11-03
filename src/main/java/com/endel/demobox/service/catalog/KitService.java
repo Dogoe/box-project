@@ -14,6 +14,8 @@ import com.endel.demobox.repository.catalog.ProductRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -34,7 +36,12 @@ public class KitService {
         return kitRepository.findAll().stream()
                 .filter(Kit::isActive)
                 .map(this::toDto)
+                .sorted(Comparator.comparing(KitService::effectivePrice))
                 .toList();
+    }
+
+    private static BigDecimal effectivePrice(KitDto kit) {
+        return kit.getPriceOverride() != null ? kit.getPriceOverride() : kit.getComputedPrice();
     }
 
     public KitDto getById(Long id) {
@@ -88,44 +95,59 @@ public class KitService {
         dto.setActive(kit.isActive());
         dto.setPriceOverride(kit.getPriceOverride());
 
-        BigDecimal computed = kit.getItems().stream()
-                .map(item -> item.getProduct().getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        dto.setComputedPrice(computed);
-
+        BigDecimal computedPrice = BigDecimal.ZERO;
         double totalPanelArrayKwp = 0;
         double totalBatteryCapacityKwh = 0;
         double totalInverterPowerKw = 0;
+        List<KitItemDto> itemDtos = new ArrayList<>();
+
         for (KitItem item : kit.getItems()) {
             Product product = item.getProduct();
             int quantity = item.getQuantity();
+            computedPrice = computedPrice.add(product.getPrice().multiply(BigDecimal.valueOf(quantity)));
+
+            KitItemDto itemDto = new KitItemDto();
+            itemDto.setId(item.getId());
+            itemDto.setProductId(product.getId());
+            itemDto.setProductSku(product.getSku());
+            itemDto.setProductName(product.getName());
+            itemDto.setUnitPrice(product.getPrice());
+            itemDto.setQuantity(quantity);
+
             if (product instanceof SolarPanel panel) {
                 totalPanelArrayKwp += panel.getWattage() * quantity / 1000.0;
+                itemDto.setProductType("PANEL");
+                itemDto.setSpecLabel(formatNumber(panel.getWattage()) + " W");
             } else if (product instanceof Battery battery) {
                 totalBatteryCapacityKwh += battery.getCapacityKwh() * quantity;
+                itemDto.setProductType("BATTERY");
+                itemDto.setSpecLabel(formatNumber(battery.getCapacityKwh()) + " kWh");
             } else if (product instanceof Inverter inverter) {
                 totalInverterPowerKw += inverter.getRatedPowerKw() * quantity;
+                itemDto.setProductType("INVERTER");
+                itemDto.setSpecLabel(formatNumber(inverter.getRatedPowerKw()) + " kW");
+            } else {
+                itemDto.setProductType("OTHER");
             }
+
+            itemDtos.add(itemDto);
         }
+
+        dto.setComputedPrice(computedPrice);
         dto.setTotalPanelArrayKwp(round(totalPanelArrayKwp));
         dto.setTotalBatteryCapacityKwh(round(totalBatteryCapacityKwh));
         dto.setTotalInverterPowerKw(round(totalInverterPowerKw));
-
-        dto.setItems(kit.getItems().stream().map(item -> {
-            KitItemDto itemDto = new KitItemDto();
-            itemDto.setId(item.getId());
-            itemDto.setProductId(item.getProduct().getId());
-            itemDto.setProductSku(item.getProduct().getSku());
-            itemDto.setProductName(item.getProduct().getName());
-            itemDto.setUnitPrice(item.getProduct().getPrice());
-            itemDto.setQuantity(item.getQuantity());
-            return itemDto;
-        }).toList());
+        dto.setItems(itemDtos);
 
         return dto;
     }
 
     private double round(double value) {
         return Math.round(value * 100.0) / 100.0;
+    }
+
+    private String formatNumber(double value) {
+        double rounded = round(value);
+        return rounded == Math.rint(rounded) ? String.format("%.0f", rounded) : String.format("%.2f", rounded);
     }
 }

@@ -3,6 +3,7 @@ package com.endel.demobox.authentication;
 import com.endel.demobox.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -40,11 +41,15 @@ public class JwtConfig {
                                 "/swagger-ui/**",
                                 "/home/**",
                                 "/cotizacion",
+                                "/kits/**",
                                 "/admin/**",
                                 "/css/**",
                                 "/js/**",
                                 "/api/quotes/calculate",
+                                "/api/quotes/calculate/pdf",
                                 "/api/quotes/appliance-presets").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/settings/exchange-rate").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/settings/exchange-rate").hasRole("ADMIN")
                         .requestMatchers("/api/catalog/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

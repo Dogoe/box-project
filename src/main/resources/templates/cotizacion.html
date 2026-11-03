@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Cotizador Solar | SolarTech</title>
+    <title>Cotizador Solar | Baja Solar Supply</title>
 
     <!-- Bootstrap 5.3.8 -->
     <link
@@ -28,7 +28,7 @@
     <div class="container">
 
         <a class="navbar-brand fw-bold fs-3" href="/home">
-            Solar<span>Tech</span>
+            Baja Solar<span>Supply</span>
         </a>
 
         <button
@@ -53,6 +53,11 @@
                 </li>
 
             </ul>
+
+            <div class="btn-group btn-group-sm" role="group" aria-label="Moneda">
+                <button type="button" class="btn btn-outline-dark currency-toggle-btn" data-currency="MXN">MXN</button>
+                <button type="button" class="btn btn-outline-dark currency-toggle-btn" data-currency="USD">USD</button>
+            </div>
 
         </div>
     </div>
@@ -203,9 +208,12 @@
                 </div>
 
                 <div class="text-center mt-4">
-                    <a href="/home#kits" class="btn btn-outline-dark">
+                    <a href="/kits" class="btn btn-outline-dark">
                         Ver productos que coinciden
                     </a>
+                    <button type="button" id="download-pdf-btn" class="btn btn-outline-secondary">
+                        <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+                    </button>
                 </div>
 
                 <div id="kit-suggestion" class="card mt-4 bg-light d-none">
@@ -243,7 +251,7 @@
 
                         <div class="d-flex justify-content-between align-items-center">
                             <strong class="fs-5" id="kit-suggestion-price">-</strong>
-                            <a href="/home#kits" class="btn btn-success btn-sm">Ver kit</a>
+                            <a href="/kits" class="btn btn-success btn-sm">Ver kit</a>
                         </div>
                     </div>
                 </div>
@@ -297,7 +305,7 @@
 
 <footer class="footer bg-dark text-white-50 py-4 mt-5">
     <div class="container text-center">
-        <small>© 2026 SolarTech. Todos los derechos reservados.</small>
+        <small>© 2026 Baja Solar Supply. Todos los derechos reservados.</small>
     </div>
 </footer>
 
@@ -307,6 +315,7 @@
         src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
 </script>
 
+<script th:src="@{/js/currency.js}"></script>
 <script th:src="@{/js/cotizacion.js}"></script>
 
 </body>

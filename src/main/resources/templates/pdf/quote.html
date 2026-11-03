@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Cotizacion Baja Solar Supply</title>
+    <style>
+        body { font-family: Helvetica, Arial, sans-serif; color: #212529; font-size: 11pt; }
+        h1 { font-size: 18pt; color: #198754; margin-bottom: 0; }
+        h2 { font-size: 13pt; margin-top: 24px; margin-bottom: 8px; border-bottom: 1px solid #dee2e6; padding-bottom: 4px; }
+        .subtitle { color: #6c757d; margin-top: 2px; }
+        .meta { color: #6c757d; font-size: 9pt; margin-top: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid #e9ecef; font-size: 10pt; }
+        th { color: #6c757d; font-weight: normal; font-size: 9pt; text-transform: uppercase; }
+        .stats { width: 100%; margin-top: 8px; }
+        .stats td { border: none; padding: 10px 4px; width: 20%; }
+        .stat-label { color: #6c757d; font-size: 9pt; display: block; }
+        .stat-value { font-size: 13pt; font-weight: bold; display: block; }
+        .kit-box { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 14px; margin-top: 10px; }
+        .kit-name { font-size: 13pt; font-weight: bold; margin: 0; }
+        .kit-price { color: #198754; font-size: 13pt; font-weight: bold; margin-bottom: 0; }
+        .kit-price-usd { color: #6c757d; font-size: 9.5pt; margin-top: 0; }
+        .ok { color: #198754; font-weight: bold; }
+        .short { color: #dc3545; font-weight: bold; }
+        .footer { margin-top: 30px; color: #adb5bd; font-size: 8pt; text-align: center; }
+    </style>
+</head>
+<body>
+
+<h1>Baja Solar Supply</h1>
+<p class="subtitle">Cotizacion de sistema solar</p>
+<p class="meta" th:text="'Generado el ' + ${#temporals.format(generatedAt, 'dd/MM/yyyy HH:mm')}">Generado el -</p>
+
+<h2>Tipo de sistema</h2>
+<p th:switch="${survey.systemType.name()}">
+    <span th:case="'OFF_GRID'">Fuera de la red (Off-Grid)</span>
+    <span th:case="'HYBRID'">Hibrido (red + bateria)</span>
+    <span th:case="'ON_GRID'">Conectado a la red (On-Grid)</span>
+</p>
+
+<h2>Aparatos considerados</h2>
+<table>
+    <thead>
+    <tr>
+        <th>Aparato</th>
+        <th>Potencia</th>
+        <th>Horas/dia</th>
+        <th>Cantidad</th>
+        <th>Motor</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="appliance : ${survey.appliances}">
+        <td th:text="${appliance.name}">-</td>
+        <td th:text="${#numbers.formatDecimal(appliance.watts, 1, 0)} + ' W'">-</td>
+        <td th:text="${#numbers.formatDecimal(appliance.hoursPerDay, 1, 1)}">-</td>
+        <td th:text="${appliance.quantity}">-</td>
+        <td th:text="${appliance.motorLoad} ? 'Si' : 'No'">-</td>
+    </tr>
+    </tbody>
+</table>
+
+<h2>Sistema recomendado</h2>
+<table class="stats">
+    <tr>
+        <td>
+            <span class="stat-label">Consumo diario</span>
+            <span class="stat-value" th:text="${#numbers.formatDecimal(result.dailyConsumptionKwh, 1, 2)} + ' kWh/dia'">-</span>
+        </td>
+        <td>
+            <span class="stat-label">Carga pico</span>
+            <span class="stat-value" th:text="${#numbers.formatDecimal(result.peakLoadKw, 1, 2)} + ' kW'">-</span>
+        </td>
+        <td>
+            <span class="stat-label">Inversor recomendado</span>
+            <span class="stat-value" th:text="${#numbers.formatDecimal(result.recommendedInverterKw, 1, 2)} + ' kW'">-</span>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <span class="stat-label">Bateria recomendada</span>
+            <span class="stat-value"
+                  th:text="${result.recommendedBatteryCapacityKwh > 0} ? ${#numbers.formatDecimal(result.recommendedBatteryCapacityKwh, 1, 2)} + ' kWh' : 'No aplica'">-</span>
+        </td>
+        <td>
+            <span class="stat-label">Arreglo de paneles</span>
+            <span class="stat-value" th:text="${#numbers.formatDecimal(result.recommendedPanelArrayKwp, 1, 2)} + ' kWp'">-</span>
+        </td>
+        <td></td>
+    </tr>
+</table>
+
+<div th:if="${result.recommendedKit != null}">
+    <h2>Kit sugerido</h2>
+    <div class="kit-box">
+        <p class="kit-name" th:text="${result.recommendedKit.name}">Kit</p>
+        <p th:text="${result.recommendedKit.description}">Descripcion</p>
+        <p class="kit-price"
+           th:text="'$' + ${#numbers.formatDecimal(result.recommendedKit.priceOverride != null ? result.recommendedKit.priceOverride : result.recommendedKit.computedPrice, 1, 2)} + ' MXN'">
+            $0.00 MXN
+        </p>
+        <p class="kit-price-usd" th:text="'~ $' + ${#numbers.formatDecimal(kitPriceUsd, 1, 2)} + ' USD'">~ $0.00 USD</p>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Dimension</th>
+                <th>Kit</th>
+                <th>Necesario</th>
+                <th>Resultado</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="row : ${comparison}">
+                <td th:text="${row.label}">-</td>
+                <td th:text="${#numbers.formatDecimal(row.kitValue, 1, 2)} + ' ' + ${row.unit}">-</td>
+                <td th:text="${#numbers.formatDecimal(row.targetValue, 1, 2)} + ' ' + ${row.unit}">-</td>
+                <td>
+                    <span th:if="${row.meets}" class="ok"
+                          th:text="'Cumple (+' + ${#numbers.formatDecimal(row.diff, 1, 2)} + ' ' + ${row.unit} + ' de sobra)'">Cumple</span>
+                    <span th:unless="${row.meets}" class="short"
+                          th:text="'Falta (' + ${#numbers.formatDecimal(row.diff, 1, 2)} + ' ' + ${row.unit} + ')'">Falta</span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<p class="footer">Baja Solar Supply - Cotizacion generada automaticamente, sujeta a validacion tecnica en sitio.</p>
+
+</body>
+</html>

@@ -51,7 +51,7 @@ admin:
     # admin panel (/admin) is reachable out of the box. Override both via
     # ADMIN_BOOTSTRAP_EMAIL / ADMIN_BOOTSTRAP_PASSWORD env vars before
     # deploying anywhere the default password would be a real risk.
-    email: admin@solartech.com
+    email: admin@bajasolarsupply.com
     password: admin123
 
 management:

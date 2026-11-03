@@ -1,6 +1,6 @@
 # box-project
 
-SolarTech — a Spring Boot (3.5, Java 17) backend for selling solar systems (panels, batteries, inverters, kits), with a quick-quote sizing wizard and a catalog admin panel.
+Baja Solar Supply — a Spring Boot (3.5, Java 17) backend for selling solar systems (panels, batteries, inverters, kits), with a quick-quote sizing wizard and a catalog admin panel.
 
 ## Running locally
 
@@ -42,4 +42,4 @@ Without those, you can still trigger a reload manually with Build → Recompile.
 
 ## Default accounts
 
-- A default admin account for the catalog admin panel (`/admin`) is seeded on startup if it doesn't already exist: `admin@solartech.com` / `admin123` (see `admin.bootstrap.*` in `application.yml`). **Override `ADMIN_BOOTSTRAP_EMAIL`/`ADMIN_BOOTSTRAP_PASSWORD` before deploying anywhere this default would be a real risk.**
+- A default admin account for the catalog admin panel (`/admin`) is seeded on startup if it doesn't already exist: `admin@bajasolarsupply.com` / `admin123` (see `admin.bootstrap.*` in `application.yml`). **Override `ADMIN_BOOTSTRAP_EMAIL`/`ADMIN_BOOTSTRAP_PASSWORD` before deploying anywhere this default would be a real risk.**

@@ -19,6 +19,12 @@ public class KitItemDto {
 
     private BigDecimal unitPrice;
 
+    /** PANEL, BATTERY, or INVERTER - which catalog subtype the referenced product is. */
+    private String productType;
+
+    /** Formatted headline spec for display, e.g. "400 W", "5 kWh", "2 kW". */
+    private String specLabel;
+
     @NotNull
     @Positive
     private Integer quantity;
