@@ -74,6 +74,7 @@ public class KitService {
         kit.setDescription(dto.getDescription());
         kit.setActive(dto.isActive());
         kit.setPriceOverride(dto.getPriceOverride());
+        kit.setImageUrl(dto.getImageUrl());
 
         kit.getItems().clear();
         for (KitItemDto itemDto : dto.getItems()) {
@@ -94,6 +95,7 @@ public class KitService {
         dto.setDescription(kit.getDescription());
         dto.setActive(kit.isActive());
         dto.setPriceOverride(kit.getPriceOverride());
+        dto.setImageUrl(kit.getImageUrl());
 
         BigDecimal computedPrice = BigDecimal.ZERO;
         double totalPanelArrayKwp = 0;

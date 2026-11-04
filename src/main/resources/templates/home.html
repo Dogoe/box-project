@@ -253,7 +253,10 @@
 
                     <div class="product-image">
 
-                        <div class="product-placeholder kit">
+                        <img th:if="${kit.imageUrl != null and !kit.imageUrl.isEmpty()}"
+                             th:src="${kit.imageUrl}" alt="" class="w-100 h-100" style="object-fit: cover;">
+
+                        <div th:unless="${kit.imageUrl != null and !kit.imageUrl.isEmpty()}" class="product-placeholder kit">
                             <i class="bi bi-box-seam"></i>
                         </div>
 
