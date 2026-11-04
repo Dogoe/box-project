@@ -194,6 +194,45 @@ class KitCompatibilityServiceTest {
         assertTrue(hasCheck(report, CompatibilitySeverity.WARNING, "no se reparten en cadenas iguales"));
     }
 
+    // 3600 W / 24 V all-in-one: 120 A MPPT, 60-500 V window, datasheet allows 4200 W of PV.
+    private Inverter allInOne3600(Double maxPvInputPowerW) {
+        Inverter inverter = inverter(3.6, 24.0, InverterType.HYBRID);
+        inverter.setMpptMinVoltage(60.0);
+        inverter.setMpptMaxChargeCurrentA(120.0);
+        inverter.setMaxPvInputPowerW(maxPvInputPowerW);
+        return inverter;
+    }
+
+    @Test
+    void withoutDatasheetPvPower_overPanelingIsEstimatedFromChargePower() {
+        // 7 x 550 W = 3850 W > 120 A x 24 V x 1.3 = 3744 W
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(allInOne3600(null), 1),
+                new KitLine(panel(), 7)), lengths);
+
+        assertTrue(hasCheck(report, CompatibilitySeverity.WARNING, "potencia de carga del MPPT"));
+    }
+
+    @Test
+    void datasheetPvPowerReplacesTheEstimate() {
+        // Same 3850 W array is within the 4200 W the manufacturer allows.
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(allInOne3600(4200.0), 1),
+                new KitLine(panel(), 7)), lengths);
+
+        assertTrue(report.getChecks().stream().noneMatch(c -> c.getMessage().contains("supera")), report.getChecks().toString());
+    }
+
+    @Test
+    void arrayAboveDatasheetPvPowerIsAWarning() {
+        // 8 x 550 W = 4400 W > 4200 W
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(allInOne3600(4200.0), 1),
+                new KitLine(panel(), 8)), lengths);
+
+        assertTrue(hasCheck(report, CompatibilitySeverity.WARNING, "potencia PV máxima del inversor (4200 W según ficha)"));
+    }
+
     @Test
     void kitCableOfTheRightGaugeAndLengthCoversTheBatteryRun() {
         KitCompatibilityReportDto report = service.analyze(List.of(

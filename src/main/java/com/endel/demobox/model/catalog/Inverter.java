@@ -53,6 +53,13 @@ public class Inverter extends Product {
     @Positive
     private Double mpptMaxChargeCurrentA;
 
+    /**
+     * Manufacturer's max PV array power. Optional: often higher than charge power because surplus
+     * feeds loads directly. When empty, the over-paneling check estimates from charge power instead.
+     */
+    @Positive
+    private Double maxPvInputPowerW;
+
     /** Max PV input current per MPPT channel. */
     @Positive
     private Double mpptMaxInputCurrentA;

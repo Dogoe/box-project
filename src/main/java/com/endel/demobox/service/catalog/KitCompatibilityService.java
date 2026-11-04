@@ -231,7 +231,14 @@ public class KitCompatibilityService {
 
         double arrayWatts = count * panel.getWattage();
         double maxChargeWatts = inverter.getMaxChargePowerW() * inverterCount;
-        if (maxChargeWatts > 0 && arrayWatts > maxChargeWatts * OVERPANELING_LIMIT) {
+        if (inverter.getMaxPvInputPowerW() != null) {
+            double maxPvWatts = inverter.getMaxPvInputPowerW() * inverterCount;
+            if (arrayWatts > maxPvWatts) {
+                report.warn(String.format(Locale.US,
+                        "El arreglo de %s W supera la potencia PV máxima del inversor (%s W según ficha).",
+                        fmt(arrayWatts), fmt(maxPvWatts)));
+            }
+        } else if (maxChargeWatts > 0 && arrayWatts > maxChargeWatts * OVERPANELING_LIMIT) {
             report.warn(String.format(Locale.US,
                     "El arreglo de %s W supera por mucho la potencia de carga del MPPT (%s W); parte de la producción se desperdiciará.",
                     fmt(arrayWatts), fmt(maxChargeWatts)));

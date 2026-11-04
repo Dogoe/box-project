@@ -71,6 +71,7 @@ public class InverterService {
         inverter.setMpptMinVoltage(dto.getMpptMinVoltage());
         inverter.setMpptMaxChargeCurrentA(dto.getMpptMaxChargeCurrentA());
         inverter.setMpptMaxInputCurrentA(dto.getMpptMaxInputCurrentA());
+        inverter.setMaxPvInputPowerW(dto.getMaxPvInputPowerW());
     }
 
     private InverterDto toDto(Inverter inverter) {
@@ -94,6 +95,7 @@ public class InverterService {
         dto.setMpptMinVoltage(inverter.getMpptMinVoltage());
         dto.setMpptMaxChargeCurrentA(inverter.getMpptMaxChargeCurrentA());
         dto.setMpptMaxInputCurrentA(inverter.getMpptMaxInputCurrentA());
+        dto.setMaxPvInputPowerW(inverter.getMaxPvInputPowerW());
         dto.setMaxChargePowerW(inverter.getMaxChargePowerW());
         return dto;
     }
