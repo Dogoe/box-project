@@ -59,6 +59,13 @@ public class GlobalControllerExceptionHandler {
                 HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InvalidKitCompositionException.class)
+    public ResponseEntity<CustomErrorDTO> handleInvalidKitCompositionException(InvalidKitCompositionException ex){
+        return new ResponseEntity<>(
+                new CustomErrorDTO("invalid_request", ex.getMessage()),
+                HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(InvalidApplianceTemplateException.class)
     public ResponseEntity<CustomErrorDTO> handleInvalidApplianceTemplateException(InvalidApplianceTemplateException ex){
         return new ResponseEntity<>(

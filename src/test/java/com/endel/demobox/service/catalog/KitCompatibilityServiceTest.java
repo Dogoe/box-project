@@ -1,5 +1,6 @@
 package com.endel.demobox.service.catalog;
 
+import com.endel.demobox.model.catalog.AluminumStructure;
 import com.endel.demobox.model.catalog.Battery;
 import com.endel.demobox.model.catalog.BatteryChemistry;
 import com.endel.demobox.model.catalog.ConnectionCable;
@@ -263,6 +264,49 @@ class KitCompatibilityServiceTest {
         KitCompatibilityReportDto report = service.analyze(List.of(new KitLine(panel(), 56)), lengths);
 
         assertTrue(hasCheck(report, CompatibilitySeverity.WARNING, "Los paneles suman 30.8 kWp"));
+    }
+
+    @Test
+    void twoBatteryModelsAreAnErrorAndStopTheAnalysis() {
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverter(5.0, 48.0, InverterType.HYBRID), 1),
+                new KitLine(battery(12.8, 100), 4),
+                new KitLine(battery(12.8, 200), 4)), lengths);
+
+        assertTrue(hasCheck(report, CompatibilitySeverity.ERROR, "un modelo de batería; este trae 2"));
+        assertNull(report.getBatteryBank());
+        assertTrue(report.getWiring().isEmpty());
+    }
+
+    @Test
+    void twoPanelModelsAreAnError() {
+        assertTrue(service.compositionErrors(List.of(
+                new KitLine(panel(), 4),
+                new KitLine(panel(), 2))).get(0).contains("un modelo de panel"));
+    }
+
+    @Test
+    void moreThanOneInverterUnitOrModelIsAnError() {
+        Inverter inverter = inverter(3.6, 24.0, InverterType.HYBRID);
+        assertTrue(service.compositionErrors(List.of(new KitLine(inverter, 2))).get(0).contains("cantidad 1"));
+        assertTrue(service.compositionErrors(List.of(
+                new KitLine(inverter, 1),
+                new KitLine(inverter(5.0, 48.0, InverterType.HYBRID), 1))).get(0).contains("2 modelos"));
+    }
+
+    @Test
+    void extrasCanRepeatAndOneOfEachMainComponentIsValid() {
+        AluminumStructure structure = new AluminumStructure();
+        structure.setId(nextId++);
+        structure.setName("Estructura");
+        assertTrue(service.compositionErrors(List.of(
+                new KitLine(inverter(5.0, 48.0, InverterType.HYBRID), 1),
+                new KitLine(battery(12.8, 100), 8),
+                new KitLine(panel(), 6),
+                new KitLine(cable("C-1", WireGauge.AWG_2_0, 2), 2),
+                new KitLine(cable("C-2", WireGauge.AWG_10, 20), 1),
+                new KitLine(structure, 1),
+                new KitLine(structure, 1))).isEmpty());
     }
 
     @Test

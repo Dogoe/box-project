@@ -518,7 +518,7 @@
         const wiring = report.wiring.length
             ? '<table class="table table-sm small mt-3 mb-0"><thead><tr><th>Tramo</th><th>Corriente</th><th>Calibre</th><th>Caída</th><th>Fusible</th></tr></thead><tbody>' +
               report.wiring.map((w) =>
-                  '<tr><td>' + escapeHtml(w.segment) + (w.runs > 1 ? ' (×' + w.runs + ')' : '') + '</td>' +
+                  '<tr><td>' + escapeHtml(w.segment) + '</td>' +
                   '<td>' + w.operatingCurrentA + ' A</td>' +
                   '<td>' + (w.gaugeLabel ? escapeHtml(w.gaugeLabel) : '—') + ' · ' + w.lengthMeters + ' m</td>' +
                   '<td>' + (w.gaugeLabel ? w.voltageDropPercent + ' %' : '—') + '</td>' +

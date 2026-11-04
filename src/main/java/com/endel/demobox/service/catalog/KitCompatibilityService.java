@@ -18,6 +18,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Checks that a kit's inverter (with its built-in MPPT charger), batteries and panels work
@@ -65,6 +66,13 @@ public class KitCompatibilityService {
 
         checkSanityLimits(report, panels, batteries, inverters);
 
+        // A kit with mixed models isn't valid (and can't be saved), so there's nothing sound to size.
+        List<String> compositionErrors = compositionErrors(lines);
+        if (!compositionErrors.isEmpty()) {
+            compositionErrors.forEach(report::error);
+            return report;
+        }
+
         if (inverters.isEmpty()) {
             if (!panels.isEmpty() || !batteries.isEmpty()) {
                 report.warn("El kit no incluye inversor; no se puede validar la compatibilidad ni calcular el cableado.");
@@ -73,17 +81,13 @@ public class KitCompatibilityService {
         }
 
         Inverter inverter = (Inverter) inverters.get(0).product();
-        int inverterCount = inverters.get(0).quantity();
-        if (distinctProducts(inverters) > 1) {
-            report.warn("El kit mezcla modelos de inversor; se valida solo con " + inverter.getName() + ".");
-        }
 
         BatteryBank bank = analyzeBatteryBank(report, batteries, inverter);
-        PvArray pv = analyzePanels(report, panels, inverter, inverterCount);
+        PvArray pv = analyzePanels(report, panels, inverter);
 
         List<WiringSegmentDto> segments = new ArrayList<>();
         if (bank != null) {
-            segments.add(batteryToInverterSegment(report, inverter, inverterCount, bank, lengths.getBatteryToInverterMeters()));
+            segments.add(batteryToInverterSegment(report, inverter, bank, lengths.getBatteryToInverterMeters()));
         }
         if (pv != null) {
             segments.add(pvToInverterSegment(report, pv, lengths.getPvToInverterMeters()));
@@ -92,6 +96,37 @@ public class KitCompatibilityService {
         checkKitCables(report, cables, segments);
 
         return report;
+    }
+
+    // ---- Composition ----
+
+    /**
+     * Residential kits use one all-in-one inverter (these units can't be paralleled), and a single
+     * battery model and panel model: mixed batteries charge/discharge unevenly, and mixed panels in a
+     * string are limited by the weakest one (single-MPPT inverters can't separate them). Extras like
+     * cables and structures are unrestricted. Used both to block saving and in the live review.
+     */
+    public List<String> compositionErrors(List<KitLine> lines) {
+        List<String> errors = new ArrayList<>();
+        List<KitLine> inverters = ofType(lines, Inverter.class);
+        if (distinctProducts(inverters) > 1) {
+            errors.add("Un kit solo puede tener un inversor; este trae " + distinctProducts(inverters) + " modelos: " + names(inverters) + ".");
+        } else if (totalQuantity(inverters) > 1) {
+            errors.add("Un kit solo puede tener un inversor (cantidad 1); este trae " + totalQuantity(inverters) + ".");
+        }
+        List<KitLine> batteries = ofType(lines, Battery.class);
+        if (distinctProducts(batteries) > 1) {
+            errors.add("Un kit solo puede tener un modelo de batería; este trae " + distinctProducts(batteries) + ": " + names(batteries) + ".");
+        }
+        List<KitLine> panels = ofType(lines, SolarPanel.class);
+        if (distinctProducts(panels) > 1) {
+            errors.add("Un kit solo puede tener un modelo de panel; este trae " + distinctProducts(panels) + ": " + names(panels) + ".");
+        }
+        return errors;
+    }
+
+    private static String names(List<KitLine> lines) {
+        return lines.stream().map(l -> l.product().getName()).distinct().collect(Collectors.joining(", "));
     }
 
     // ---- Capture sanity ----
@@ -139,14 +174,6 @@ public class KitCompatibilityService {
         }
 
         Battery battery = (Battery) batteries.get(0).product();
-        if (distinctProducts(batteries) > 1) {
-            boolean sameVoltage = batteries.stream().allMatch(l -> ((Battery) l.product()).getVoltage() == battery.getVoltage());
-            if (!sameVoltage) {
-                report.error("El kit mezcla baterías de distinto voltaje; no se pueden conectar en un mismo banco.");
-                return null;
-            }
-            report.warn("El kit mezcla modelos de batería; se recomienda un solo modelo por banco.");
-        }
         if (inverter.getBatteryVoltage() == null) {
             report.warn("Falta capturar el voltaje de baterías del inversor " + inverter.getName()
                     + "; no se puede validar el banco ni calcular su cable.");
@@ -187,14 +214,11 @@ public class KitCompatibilityService {
     private record PvArray(int series, int strings, int stringsPerChannel, double panelIscA, double stringVmp) {
     }
 
-    private PvArray analyzePanels(KitCompatibilityReportDto report, List<KitLine> panels, Inverter inverter, int inverterCount) {
+    private PvArray analyzePanels(KitCompatibilityReportDto report, List<KitLine> panels, Inverter inverter) {
         if (panels.isEmpty()) {
             return null;
         }
         SolarPanel panel = (SolarPanel) panels.get(0).product();
-        if (distinctProducts(panels) > 1) {
-            report.warn("El kit mezcla modelos de panel; cada cadena debe llevar un solo modelo. Se valida con " + panel.getName() + ".");
-        }
         if (panel.getVoc() <= 0 || panel.getIsc() <= 0) {
             report.warn("Falta capturar Voc/Isc del panel " + panel.getName() + "; no se puede validar el acomodo de paneles.");
             return null;
@@ -243,7 +267,7 @@ public class KitCompatibilityService {
         }
 
         int strings = (int) Math.ceil((double) count / series);
-        int channels = Math.max(1, inverter.getMpptChannels() == null ? 1 : inverter.getMpptChannels()) * inverterCount;
+        int channels = Math.max(1, inverter.getMpptChannels() == null ? 1 : inverter.getMpptChannels());
         int stringsPerChannel = (int) Math.ceil((double) strings / channels);
         double channelIsc = panel.getIsc() * stringsPerChannel;
 
@@ -257,13 +281,13 @@ public class KitCompatibilityService {
         }
 
         double arrayWatts = count * panel.getWattage();
-        double maxPvWatts = inverter.getEffectiveMaxPvPowerW() * inverterCount;
+        double maxPvWatts = inverter.getEffectiveMaxPvPowerW();
         if (maxPvWatts > 0 && arrayWatts > maxPvWatts) {
             report.warn(inverter.isMaxPvPowerEstimated()
                     ? String.format(Locale.US,
                     "El arreglo de %s W supera la potencia PV máxima estimada del inversor (~%s W: carga de %s W + 30 %%); "
                             + "parte de la producción se desperdiciará. Captura la potencia PV máx. de la ficha para usar el dato exacto.",
-                    fmt(arrayWatts), fmt(maxPvWatts), fmt(inverter.getMaxChargePowerW() * inverterCount))
+                    fmt(arrayWatts), fmt(maxPvWatts), fmt(inverter.getMaxChargePowerW()))
                     : String.format(Locale.US,
                     "El arreglo de %s W supera la potencia PV máxima del inversor (%s W según ficha).",
                     fmt(arrayWatts), fmt(maxPvWatts)));
@@ -280,7 +304,7 @@ public class KitCompatibilityService {
 
     // ---- Wiring ----
 
-    private WiringSegmentDto batteryToInverterSegment(KitCompatibilityReportDto report, Inverter inverter, int inverterCount,
+    private WiringSegmentDto batteryToInverterSegment(KitCompatibilityReportDto report, Inverter inverter,
                                                       BatteryBank bank, double lengthMeters) {
         double busVolts = inverter.getBatteryVoltage();
         double dischargeA = inverter.getRatedPowerKw() * 1000 / (busVolts * INVERTER_DC_EFFICIENCY);
@@ -292,7 +316,6 @@ public class KitCompatibilityService {
         double operatingA = Math.max(dischargeA, chargeA);
 
         WiringSegmentDto segment = sizeSegment(report, "Batería – inversor", operatingA, busVolts, lengthMeters);
-        segment.setRuns(inverterCount);
         segment.setFuseNote("Fusible o breaker DC entre batería e inversor");
 
         if (operatingA > HIGH_CURRENT_WARNING_A && busVolts < 48) {
@@ -300,11 +323,10 @@ public class KitCompatibilityService {
                     "La corriente batería–inversor llega a %s A en %s V; considera un banco de 24 V o 48 V.",
                     fmt(operatingA), fmt(busVolts)));
         }
-        double totalDischargeA = dischargeA * inverterCount;
-        if (bank.maxDischargeA() > 0 && totalDischargeA > bank.maxDischargeA()) {
+        if (bank.maxDischargeA() > 0 && dischargeA > bank.maxDischargeA()) {
             report.warn(String.format(Locale.US,
                     "El banco entrega máx. ~%s A continuos y el inversor puede pedir %s A; agrega baterías en paralelo o usa un inversor menor.",
-                    fmt(bank.maxDischargeA()), fmt(totalDischargeA)));
+                    fmt(bank.maxDischargeA()), fmt(dischargeA)));
         }
         return segment;
     }

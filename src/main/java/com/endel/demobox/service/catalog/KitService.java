@@ -1,5 +1,6 @@
 package com.endel.demobox.service.catalog;
 
+import com.endel.demobox.exception.InvalidKitCompositionException;
 import com.endel.demobox.exception.ResourceNotFoundException;
 import com.endel.demobox.model.catalog.AluminumStructure;
 import com.endel.demobox.model.catalog.Battery;
@@ -24,6 +25,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -59,10 +61,18 @@ public class KitService {
 
     @Transactional
     public KitCompatibilityReportDto validate(List<KitItemDto> items) {
-        List<KitLine> lines = items.stream()
-                .map(item -> new KitLine(findProduct(item.getProductId()), item.getQuantity()))
+        return compatibilityService.analyze(toLines(items), wiringSettingsService.getCurrent());
+    }
+
+    /** One line per product: the same product picked in several rows is merged by adding its quantities. */
+    private List<KitLine> toLines(List<KitItemDto> items) {
+        Map<Long, Integer> quantityByProductId = new LinkedHashMap<>();
+        for (KitItemDto item : items) {
+            quantityByProductId.merge(item.getProductId(), item.getQuantity(), Integer::sum);
+        }
+        return quantityByProductId.entrySet().stream()
+                .map(entry -> new KitLine(findProduct(entry.getKey()), entry.getValue()))
                 .toList();
-        return compatibilityService.analyze(lines, wiringSettingsService.getCurrent());
     }
 
     public List<KitDto> findAll() {
@@ -110,6 +120,12 @@ public class KitService {
     }
 
     private void applyDto(Kit kit, KitDto dto) {
+        List<KitLine> lines = toLines(dto.getItems());
+        List<String> compositionErrors = compatibilityService.compositionErrors(lines);
+        if (!compositionErrors.isEmpty()) {
+            throw new InvalidKitCompositionException(String.join(" ", compositionErrors));
+        }
+
         kit.setName(dto.getName());
         kit.setDescription(dto.getDescription());
         kit.setActive(dto.isActive());
@@ -117,12 +133,11 @@ public class KitService {
         kit.setImageUrl(dto.getImageUrl());
 
         kit.getItems().clear();
-        for (KitItemDto itemDto : dto.getItems()) {
-            Product product = findProduct(itemDto.getProductId());
+        for (KitLine line : lines) {
             KitItem item = new KitItem();
             item.setKit(kit);
-            item.setProduct(product);
-            item.setQuantity(itemDto.getQuantity());
+            item.setProduct(line.product());
+            item.setQuantity(line.quantity());
             kit.getItems().add(item);
         }
     }

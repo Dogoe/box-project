@@ -12,8 +12,6 @@ public class WiringSegmentDto {
     private double designCurrentA;
     /** One-way run length; positive + negative conductors need twice this. */
     private double lengthMeters;
-    /** Separate identical runs (e.g. one battery cable pair per inverter). */
-    private int runs = 1;
     /** Null when no single gauge in the table can carry the current within the voltage-drop limit. */
     private WireGauge gauge;
     private String gaugeLabel;
@@ -25,6 +23,6 @@ public class WiringSegmentDto {
     private String coveredBy;
 
     public double getRequiredCableMeters() {
-        return lengthMeters * 2 * runs;
+        return lengthMeters * 2;
     }
 }

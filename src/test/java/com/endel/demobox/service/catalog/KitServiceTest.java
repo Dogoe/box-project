@@ -1,6 +1,8 @@
 package com.endel.demobox.service.catalog;
 
+import com.endel.demobox.exception.InvalidKitCompositionException;
 import com.endel.demobox.model.catalog.AluminumStructure;
+import com.endel.demobox.model.catalog.Battery;
 import com.endel.demobox.model.catalog.ConnectionCable;
 import com.endel.demobox.model.catalog.Kit;
 import com.endel.demobox.model.catalog.KitItem;
@@ -18,9 +20,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -130,6 +135,53 @@ class KitServiceTest {
                 .findFirst().orElseThrow();
         assertEquals("CABLE", cableItem.getProductType());
         assertEquals("25 m", cableItem.getSpecLabel());
+    }
+
+    private static Battery battery(String sku, double ah) {
+        Battery battery = new Battery();
+        battery.setSku(sku);
+        battery.setName("Bateria " + sku);
+        battery.setPrice(BigDecimal.valueOf(1000));
+        battery.setVoltage(12.8);
+        battery.setCapacityAh(ah);
+        return battery;
+    }
+
+    private static KitItemDto itemDto(Long productId, int quantity) {
+        KitItemDto item = new KitItemDto();
+        item.setProductId(productId);
+        item.setQuantity(quantity);
+        return item;
+    }
+
+    private static KitDto kitDto(String name, KitItemDto... items) {
+        KitDto dto = new KitDto();
+        dto.setName(name);
+        dto.setActive(true);
+        dto.setItems(new ArrayList<>(List.of(items)));
+        return dto;
+    }
+
+    @Test
+    void create_rejectsAKitWithTwoBatteryModels() {
+        Battery small = productRepository.save(battery("COMP-BAT-100", 100));
+        Battery big = productRepository.save(battery("COMP-BAT-200", 200));
+
+        InvalidKitCompositionException ex = assertThrows(InvalidKitCompositionException.class, () ->
+                kitService.create(kitDto("Mixed Batteries Kit", itemDto(small.getId(), 2), itemDto(big.getId(), 2))));
+
+        assertTrue(ex.getMessage().contains("un modelo de batería"), ex.getMessage());
+        assertTrue(kitService.findAll().stream().noneMatch(k -> k.getName().equals("Mixed Batteries Kit")));
+    }
+
+    @Test
+    void create_mergesTheSameProductPickedInSeveralRows() {
+        Battery battery = productRepository.save(battery("COMP-BAT-MERGE", 100));
+
+        KitDto saved = kitService.create(kitDto("Merged Rows Kit", itemDto(battery.getId(), 2), itemDto(battery.getId(), 3)));
+
+        assertEquals(1, saved.getItems().size());
+        assertEquals(5, saved.getItems().get(0).getQuantity());
     }
 
     private static void addItem(Kit kit, Product product, int quantity) {
