@@ -45,6 +45,7 @@ public class JwtConfig {
                                 "/admin/**",
                                 "/css/**",
                                 "/js/**",
+                                "/images/**",
                                 "/api/quotes/calculate",
                                 "/api/quotes/calculate/pdf",
                                 "/api/quotes/appliance-presets").permitAll()
