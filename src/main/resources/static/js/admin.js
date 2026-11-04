@@ -529,8 +529,31 @@
         return '<div class="border rounded p-3 bg-light">' +
             '<h6 class="fw-semibold mb-2"><i class="bi bi-plug"></i> Revisión de compatibilidad</h6>' +
             (summary ? '<div class="small mb-2">' + summary + '</div>' : '') +
-            checks + wiring +
+            checks + expansionHtml(report.expansion) + wiring +
             '</div>';
+    }
+
+    const EXPANSION_BADGE_CLASSES = { EXPANDABLE: 'bg-success', LIMITED: 'bg-warning text-dark', MAXED: 'bg-secondary' };
+
+    function expansionBadgeHtml(expansion) {
+        return expansion
+            ? '<span class="badge ' + EXPANSION_BADGE_CLASSES[expansion.level] + '">' + escapeHtml(expansion.label) + '</span>'
+            : '<span class="text-muted small">—</span>';
+    }
+
+    function expansionHtml(expansion) {
+        if (!expansion) {
+            return '<p class="small text-muted mt-2 mb-0"><strong>Ampliación:</strong> no se puede calcular (revisa los avisos de arriba).</p>';
+        }
+        const line = (name, aspect) => aspect
+            ? '<li><strong>' + name + ':</strong> ' + escapeHtml(aspect.label) + ' — ' + escapeHtml(aspect.detail) + '</li>'
+            : '';
+        return '<div class="small mt-3"><strong>Ampliación</strong> ' + expansionBadgeHtml(expansion) +
+            '<ul class="list-unstyled mt-1 mb-0">' +
+            line('Paneles', expansion.panels) +
+            line('Baterías', expansion.batteries) +
+            '<li><strong>Potencia:</strong> fija en ' + expansion.inverterKw + ' kW (un solo inversor por kit).</li>' +
+            '</ul></div>';
     }
 
     async function loadKits() {
@@ -538,17 +561,21 @@
         showEntityTable();
         listAlert.classList.add('d-none');
         entityTitle.textContent = 'Kits';
-        tableHead.innerHTML = '<tr><th>Nombre</th><th>Costo / Venta / Ganancia</th><th># Ítems</th><th>Activo</th><th></th></tr>';
+        tableHead.innerHTML = '<tr><th>Nombre</th><th>Costo / Venta / Ganancia</th><th># Ítems</th><th>Ampliación</th><th>Activo</th><th></th></tr>';
 
         try {
             await loadAllProducts();
-            const response = await authFetch('/api/catalog/kits');
-            const kits = await response.json();
+            const [kits, compatibilityById] = await Promise.all([
+                authFetch('/api/catalog/kits').then((r) => r.json()),
+                authFetch('/api/catalog/kits/compatibility').then((r) => r.json())
+            ]);
 
             tableBody.innerHTML = kits.map((kit) => {
                 const margin = (kit.sellPrice - kit.computedPrice).toFixed(2);
                 const priceCell = 'Costo: $' + kit.computedPrice + ' · Venta: $' + kit.sellPrice + ' · Ganancia: $' + margin;
+                const report = compatibilityById[kit.id];
                 return '<tr><td>' + kit.name + '</td><td>' + priceCell + '</td><td>' + kit.items.length + '</td>' +
+                    '<td>' + expansionBadgeHtml(report && report.expansion) + '</td>' +
                     '<td>' + (kit.active ? 'Sí' : 'No') + '</td>' + actionButtonsHtml(kit.id) + '</tr>';
             }).join('');
 

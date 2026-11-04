@@ -35,10 +35,10 @@ import java.util.Map;
 @Service
 public class KitCapacityEstimator {
 
-    private static final double DEFAULT_PEAK_SUN_HOURS = 6.0;
+    static final double DEFAULT_PEAK_SUN_HOURS = 6.0;
     private static final double DEFAULT_AUTONOMY_DAYS = 1.0;
     private static final double DEFAULT_BATTERY_ROUND_TRIP_EFFICIENCY = 0.95;
-    private static final double DEFAULT_SYSTEM_DERATE_FACTOR = 0.80;
+    static final double DEFAULT_SYSTEM_DERATE_FACTOR = 0.80;
     private static final double DEFAULT_INVERTER_SAFETY_MARGIN = 1.10;
 
     // An appliance is only listed as "compatible" if running it (for its own

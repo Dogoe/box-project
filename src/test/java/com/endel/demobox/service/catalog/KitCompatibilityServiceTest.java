@@ -10,6 +10,7 @@ import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.catalog.WireGauge;
 import com.endel.demobox.model.dto.WiringSettingsDto;
 import com.endel.demobox.model.dto.catalog.compatibility.CompatibilitySeverity;
+import com.endel.demobox.model.dto.catalog.compatibility.ExpansionLevel;
 import com.endel.demobox.model.dto.catalog.compatibility.KitCompatibilityReportDto;
 import com.endel.demobox.model.dto.catalog.compatibility.WiringSegmentDto;
 import com.endel.demobox.repository.catalog.ConnectionCableRepository;
@@ -307,6 +308,95 @@ class KitCompatibilityServiceTest {
                 new KitLine(cable("C-2", WireGauge.AWG_10, 20), 1),
                 new KitLine(structure, 1),
                 new KitLine(structure, 1))).isEmpty());
+    }
+
+    // ---- Expansion ----
+
+    // 1000 W / 12 V with a 40 A MPPT: 480 W charge, ~624 W estimated PV limit,
+    // recharges min(624, 480) W x 6 h x 0.8 = 2.3 kWh/day.
+    private Inverter small1000W12V() {
+        Inverter inverter = inverter(1.0, 12.0, InverterType.OFF_GRID);
+        inverter.setMaxInputVoltage(100);
+        inverter.setMpptMinVoltage(null);
+        inverter.setMpptMaxChargeCurrentA(40.0);
+        return inverter;
+    }
+
+    private SolarPanel panel200W() {
+        SolarPanel panel = new SolarPanel();
+        panel.setId(nextId++);
+        panel.setName("Panel 200W");
+        panel.setWattage(200);
+        panel.setVoc(24);
+        panel.setIsc(10);
+        return panel;
+    }
+
+    @Test
+    void smallTwelveVoltKitCanOnlyTakeOneMoreBattery() {
+        // 12.8 V 100 Ah LiFePO4 = 1.15 kWh usable -> the 2.3 kWh/day recharge covers 2 -> +1 (limited, not doubling+).
+        // Panels: 624 W / 200 W = 3 max (cold Voc 30 V -> up to 3 in series under 100 V) -> 1 + 2 (expandable).
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(small1000W12V(), 1),
+                new KitLine(battery(12.8, 100), 1),
+                new KitLine(panel200W(), 1)), lengths);
+
+        assertEquals(ExpansionLevel.LIMITED, report.getExpansion().getBatteries().getLevel());
+        assertEquals(1, report.getExpansion().getBatteries().getAdditional());
+        assertEquals(ExpansionLevel.EXPANDABLE, report.getExpansion().getPanels().getLevel());
+        assertEquals(2, report.getExpansion().getPanels().getAdditional());
+        assertEquals(ExpansionLevel.LIMITED, report.getExpansion().getLevel());
+        assertEquals("Ampliación limitada", report.getExpansion().getLabel());
+        assertTrue(report.getExpansion().getBatteries().getDetail().contains("Hasta 1 batería más"));
+    }
+
+    @Test
+    void kitAlreadyAtBothLimitsHasNoRoomToGrow() {
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(small1000W12V(), 1),
+                new KitLine(battery(12.8, 100), 2),
+                new KitLine(panel200W(), 3)), lengths);
+
+        assertEquals(ExpansionLevel.MAXED, report.getExpansion().getBatteries().getLevel());
+        assertEquals(ExpansionLevel.MAXED, report.getExpansion().getPanels().getLevel());
+        assertEquals("Sin margen de ampliación", report.getExpansion().getLabel());
+    }
+
+    @Test
+    void largeHybridWithOneBatteryAndFewPanelsIsExpandable() {
+        // 5 kW / 48 V, 100 A MPPT: 4800 W charge, ~6240 W PV -> 23 kWh/day; 51.2 V 100 Ah = 4.6 kWh usable -> 5 strings.
+        Inverter inverter = inverter(5.0, 48.0, InverterType.HYBRID);
+        inverter.setMpptMaxChargeCurrentA(100.0);
+        inverter.setMpptMaxInputCurrentA(30.0);
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverter, 1),
+                new KitLine(battery(51.2, 100), 1),
+                new KitLine(panel(), 4)), lengths);
+
+        assertEquals(4, report.getExpansion().getBatteries().getAdditional());
+        // 6240 W / 550 W = 11 max; 11 and 9 don't split into valid strings, 10 = 2 x 5 does.
+        assertEquals(6, report.getExpansion().getPanels().getAdditional());
+        assertEquals("Ampliable", report.getExpansion().getLabel());
+    }
+
+    @Test
+    void expansionIsOmittedWhenChargeDataIsMissing() {
+        Inverter inverter = small1000W12V();
+        inverter.setMpptMaxChargeCurrentA(null);
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverter, 1),
+                new KitLine(battery(12.8, 100), 1)), lengths);
+
+        assertNull(report.getExpansion());
+    }
+
+    @Test
+    void expansionIsOmittedForAnInvalidKit() {
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverter(5.0, 48.0, InverterType.HYBRID), 1),
+                new KitLine(battery(12.8, 100), 3)), lengths);
+
+        assertNull(report.getExpansion());
     }
 
     @Test

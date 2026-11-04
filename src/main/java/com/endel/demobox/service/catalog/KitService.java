@@ -48,9 +48,18 @@ public class KitService {
 
     @Transactional
     public Map<Long, KitCompatibilityReportDto> compatibilityByKitId(List<Long> kitIds) {
+        return compatibilityOf(kitRepository.findAllById(kitIds));
+    }
+
+    @Transactional
+    public Map<Long, KitCompatibilityReportDto> compatibilityOfAllKits() {
+        return compatibilityOf(kitRepository.findAll());
+    }
+
+    private Map<Long, KitCompatibilityReportDto> compatibilityOf(List<Kit> kits) {
         WiringSettingsDto lengths = wiringSettingsService.getCurrent();
         Map<Long, KitCompatibilityReportDto> reports = new HashMap<>();
-        for (Kit kit : kitRepository.findAllById(kitIds)) {
+        for (Kit kit : kits) {
             List<KitLine> lines = kit.getItems().stream()
                     .map(item -> new KitLine(item.getProduct(), item.getQuantity()))
                     .toList();

@@ -8,7 +8,11 @@ import com.endel.demobox.model.catalog.Product;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.catalog.WireGauge;
 import com.endel.demobox.model.dto.WiringSettingsDto;
+import com.endel.demobox.model.dto.catalog.compatibility.CompatibilitySeverity;
+import com.endel.demobox.model.dto.catalog.compatibility.ExpansionAspectDto;
+import com.endel.demobox.model.dto.catalog.compatibility.ExpansionLevel;
 import com.endel.demobox.model.dto.catalog.compatibility.KitCompatibilityReportDto;
+import com.endel.demobox.model.dto.catalog.compatibility.KitExpansionDto;
 import com.endel.demobox.model.dto.catalog.compatibility.WiringSegmentDto;
 import com.endel.demobox.repository.catalog.ConnectionCableRepository;
 import org.springframework.stereotype.Service;
@@ -95,6 +99,9 @@ public class KitCompatibilityService {
         report.setWiring(segments);
         checkKitCables(report, cables, segments);
 
+        if (report.getStatus() != CompatibilitySeverity.ERROR) {
+            report.setExpansion(expansion(inverter, !panels.isEmpty(), !batteries.isEmpty(), pv, bank));
+        }
         return report;
     }
 
@@ -155,7 +162,7 @@ public class KitCompatibilityService {
 
     // ---- Battery bank ----
 
-    private record BatteryBank(int series, int parallel, double maxDischargeA) {
+    private record BatteryBank(Battery battery, int series, int parallel, double maxDischargeA) {
     }
 
     private BatteryBank analyzeBatteryBank(KitCompatibilityReportDto report, List<KitLine> batteries, Inverter inverter) {
@@ -206,12 +213,13 @@ public class KitCompatibilityService {
                 fmt(count * battery.getCapacityKwh())));
         report.ok(String.format(Locale.US, "Banco de baterías compatible con el inversor de %s V (%dS%dP).",
                 fmt(inverterVolts), series, parallel));
-        return new BatteryBank(series, parallel, parallel * battery.getMaxDischargeCurrentA());
+        return new BatteryBank(battery, series, parallel, parallel * battery.getMaxDischargeCurrentA());
     }
 
     // ---- Panel strings ----
 
-    private record PvArray(int series, int strings, int stringsPerChannel, double panelIscA, double stringVmp) {
+    private record PvArray(SolarPanel panel, int count, int minSeries, int maxSeries, int channels,
+                           int series, int strings, int stringsPerChannel, double panelIscA, double stringVmp) {
     }
 
     private PvArray analyzePanels(KitCompatibilityReportDto report, List<KitLine> panels, Inverter inverter) {
@@ -250,14 +258,7 @@ public class KitCompatibilityService {
             return null;
         }
 
-        // Longest string that splits the panels evenly: fewer strings in parallel means less current to wire.
-        int series = 0;
-        for (int s = Math.min(maxSeries, count); s >= minSeries; s--) {
-            if (count % s == 0) {
-                series = s;
-                break;
-            }
-        }
+        int series = longestEvenSeries(count, minSeries, maxSeries);
         boolean evenSplit = series > 0;
         if (!evenSplit) {
             series = Math.min(maxSeries, count);
@@ -293,13 +294,122 @@ public class KitCompatibilityService {
                     fmt(arrayWatts), fmt(maxPvWatts)));
         }
 
-        report.setPanelArray(String.format(Locale.US, "%d %s de %d paneles en serie · ~%s V de operación, %s V Voc en frío",
-                strings, strings == 1 ? "cadena" : "cadenas", series, fmt(series * vmp), fmt(series * coldVoc)));
+        report.setPanelArray(String.format(Locale.US, "%d %s de %d %s en serie · ~%s V de operación, %s V Voc en frío",
+                strings, strings == 1 ? "cadena" : "cadenas", series, series == 1 ? "panel" : "paneles", fmt(series * vmp), fmt(series * coldVoc)));
         if (evenSplit) {
             report.ok(String.format(Locale.US, "Acomodo de paneles dentro del rango del MPPT (máx. %s V).",
                     fmt(inverter.getMaxInputVoltage())));
         }
-        return new PvArray(series, strings, stringsPerChannel, panel.getIsc(), series * vmp);
+        return new PvArray(panel, count, minSeries, maxSeries, channels, series, strings, stringsPerChannel, panel.getIsc(), series * vmp);
+    }
+
+    /**
+     * Longest string length within [minSeries, maxSeries] that splits the panels into equal strings
+     * (fewer strings in parallel means less current to wire), or 0 when none does.
+     */
+    private static int longestEvenSeries(int count, int minSeries, int maxSeries) {
+        for (int s = Math.min(maxSeries, count); s >= minSeries; s--) {
+            if (count % s == 0) {
+                return s;
+            }
+        }
+        return 0;
+    }
+
+    // ---- Expansion ----
+
+    private KitExpansionDto expansion(Inverter inverter, boolean hasPanels, boolean hasBatteries, PvArray pv, BatteryBank bank) {
+        ExpansionAspectDto panels = hasPanels ? panelExpansion(inverter, pv) : null;
+        ExpansionAspectDto batteries = hasBatteries ? batteryExpansion(inverter, bank) : null;
+        // A half-known answer would mislead the customer, so only report when every part present can be worked out.
+        if ((hasPanels && panels == null) || (hasBatteries && batteries == null) || (panels == null && batteries == null)) {
+            return null;
+        }
+
+        List<ExpansionLevel> levels = new ArrayList<>();
+        if (panels != null) {
+            levels.add(panels.getLevel());
+        }
+        if (batteries != null) {
+            levels.add(batteries.getLevel());
+        }
+        ExpansionLevel overall = levels.stream().allMatch(l -> l == ExpansionLevel.EXPANDABLE) ? ExpansionLevel.EXPANDABLE
+                : levels.stream().allMatch(l -> l == ExpansionLevel.MAXED) ? ExpansionLevel.MAXED
+                : ExpansionLevel.LIMITED;
+
+        KitExpansionDto dto = new KitExpansionDto();
+        dto.setLevel(overall);
+        dto.setLabel(overall.getOverallLabel());
+        dto.setPanels(panels);
+        dto.setBatteries(batteries);
+        dto.setInverterKw(inverter.getRatedPowerKw());
+        return dto;
+    }
+
+    /** More panels of the same model, up to the inverter's PV limit, as long as they still form valid equal strings. */
+    private ExpansionAspectDto panelExpansion(Inverter inverter, PvArray pv) {
+        double maxPvWatts = inverter.getEffectiveMaxPvPowerW();
+        if (pv == null || maxPvWatts <= 0 || pv.panel().getWattage() <= 0) {
+            return null;
+        }
+        int ceiling = (int) Math.floor(maxPvWatts / pv.panel().getWattage());
+        int best = pv.count();
+        for (int n = pv.count() + 1; n <= ceiling; n++) {
+            int series = longestEvenSeries(n, pv.minSeries(), pv.maxSeries());
+            if (series == 0) {
+                continue;
+            }
+            int stringsPerChannel = (int) Math.ceil((double) (n / series) / pv.channels());
+            if (inverter.getMpptMaxInputCurrentA() != null && pv.panelIscA() * stringsPerChannel > inverter.getMpptMaxInputCurrentA()) {
+                continue;
+            }
+            best = n;
+        }
+
+        int additional = best - pv.count();
+        String limit = fmt(maxPvWatts) + " W" + (inverter.isMaxPvPowerEstimated() ? " estimado" : "");
+        return aspect(pv.count(), additional, additional > 0
+                ? String.format(Locale.US, "Hasta %d %s más (total %d; límite PV %s).", additional, additional == 1 ? "panel" : "paneles", best, limit)
+                : String.format(Locale.US, "Sin espacio para más paneles (límite PV %s).", limit));
+    }
+
+    /**
+     * More battery strings in parallel, up to what the inverter can recharge in a day with panels at
+     * its PV/charge limit (same sun hours and derate as the "qué puede alimentar" estimate). Beyond
+     * that, extra capacity would never be refilled.
+     */
+    private ExpansionAspectDto batteryExpansion(Inverter inverter, BatteryBank bank) {
+        double chargeWatts = inverter.getMaxChargePowerW();
+        if (bank == null || chargeWatts <= 0) {
+            return null;
+        }
+        double dailyRechargeKwh = Math.min(inverter.getEffectiveMaxPvPowerW(), chargeWatts)
+                * KitCapacityEstimator.DEFAULT_PEAK_SUN_HOURS * KitCapacityEstimator.DEFAULT_SYSTEM_DERATE_FACTOR / 1000;
+        Battery battery = bank.battery();
+        double usableKwhPerString = bank.series() * battery.getCapacityKwh() * battery.getDepthOfDischarge();
+        if (usableKwhPerString <= 0) {
+            return null;
+        }
+        int maxStrings = (int) Math.floor(dailyRechargeKwh / usableKwhPerString + 1e-9);
+        int additionalStrings = Math.max(0, maxStrings - bank.parallel());
+        int additionalBatteries = additionalStrings * bank.series();
+
+        return aspect(bank.parallel(), additionalStrings, additionalStrings > 0
+                ? String.format(Locale.US, "Hasta %d %s más en paralelo (se agregan de %d en %d; el inversor recarga hasta ~%s kWh/día con paneles al máximo).",
+                additionalBatteries, additionalBatteries == 1 ? "batería" : "baterías", bank.series(), bank.series(), fmt(dailyRechargeKwh))
+                : String.format(Locale.US, "Sin margen: el inversor recarga hasta ~%s kWh/día y el banco ya tiene ~%s kWh útiles.",
+                fmt(dailyRechargeKwh), fmt(bank.parallel() * usableKwhPerString)));
+    }
+
+    private static ExpansionAspectDto aspect(int current, int additional, String detail) {
+        ExpansionLevel level = ExpansionLevel.of(current, additional);
+        ExpansionAspectDto dto = new ExpansionAspectDto();
+        dto.setLevel(level);
+        dto.setLabel(level.getLabel());
+        dto.setCurrent(current);
+        dto.setAdditional(additional);
+        dto.setDetail(detail);
+        return dto;
     }
 
     // ---- Wiring ----
