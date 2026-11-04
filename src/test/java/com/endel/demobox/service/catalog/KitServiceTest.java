@@ -1,10 +1,14 @@
 package com.endel.demobox.service.catalog;
 
+import com.endel.demobox.model.catalog.AluminumStructure;
+import com.endel.demobox.model.catalog.ConnectionCable;
 import com.endel.demobox.model.catalog.Kit;
 import com.endel.demobox.model.catalog.KitItem;
 import com.endel.demobox.model.catalog.PanelTechnology;
+import com.endel.demobox.model.catalog.Product;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.dto.catalog.KitDto;
+import com.endel.demobox.model.dto.catalog.KitItemDto;
 import com.endel.demobox.repository.catalog.KitRepository;
 import com.endel.demobox.repository.catalog.ProductRepository;
 import org.junit.jupiter.api.Test;
@@ -79,5 +83,60 @@ class KitServiceTest {
                 .toList();
 
         assertEquals(List.of("M-Kit Override", "A-Kit Cheap", "Z-Kit Expensive"), orderedNames);
+    }
+
+    @Test
+    void toDto_includesStructureAndCableItemsInComputedPriceWithSpecLabels() {
+        SolarPanel panel = panel("EXTRAS-TEST-PANEL", BigDecimal.valueOf(300));
+
+        AluminumStructure structure = new AluminumStructure();
+        structure.setSku("EXTRAS-TEST-STRUCTURE");
+        structure.setName("Estructura techo inclinado");
+        structure.setPrice(BigDecimal.valueOf(150));
+
+        ConnectionCable cable = new ConnectionCable();
+        cable.setSku("EXTRAS-TEST-CABLE");
+        cable.setName("Cable solar 10 AWG");
+        cable.setPrice(BigDecimal.valueOf(50));
+        cable.setLengthMeters(25);
+
+        productRepository.save(panel);
+        productRepository.save(structure);
+        productRepository.save(cable);
+
+        Kit kit = new Kit();
+        kit.setName("Extras Test Kit");
+        kit.setActive(true);
+        addItem(kit, panel, 1);
+        addItem(kit, structure, 1);
+        addItem(kit, cable, 2);
+        kitRepository.save(kit);
+
+        KitDto dto = kitService.findAllActive().stream()
+                .filter(k -> k.getName().equals("Extras Test Kit"))
+                .findFirst()
+                .orElseThrow();
+
+        // 300 (panel) + 150 (structure) + 2 * 50 (cable) = 550
+        assertEquals(BigDecimal.valueOf(550).setScale(2), dto.getComputedPrice().setScale(2));
+
+        KitItemDto structureItem = dto.getItems().stream()
+                .filter(i -> i.getProductSku().equals("EXTRAS-TEST-STRUCTURE"))
+                .findFirst().orElseThrow();
+        assertEquals("STRUCTURE", structureItem.getProductType());
+
+        KitItemDto cableItem = dto.getItems().stream()
+                .filter(i -> i.getProductSku().equals("EXTRAS-TEST-CABLE"))
+                .findFirst().orElseThrow();
+        assertEquals("CABLE", cableItem.getProductType());
+        assertEquals("25 m", cableItem.getSpecLabel());
+    }
+
+    private static void addItem(Kit kit, Product product, int quantity) {
+        KitItem item = new KitItem();
+        item.setKit(kit);
+        item.setProduct(product);
+        item.setQuantity(quantity);
+        kit.getItems().add(item);
     }
 }

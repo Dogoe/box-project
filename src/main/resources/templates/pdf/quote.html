@@ -96,7 +96,7 @@
         <p class="kit-name" th:text="${result.recommendedKit.name}">Kit</p>
         <p th:text="${result.recommendedKit.description}">Descripcion</p>
         <p class="kit-price"
-           th:text="'$' + ${#numbers.formatDecimal(result.recommendedKit.priceOverride != null ? result.recommendedKit.priceOverride : result.recommendedKit.computedPrice, 1, 2)} + ' MXN'">
+           th:text="'$' + ${#numbers.formatDecimal(result.recommendedKit.sellPrice, 1, 2)} + ' MXN'">
             $0.00 MXN
         </p>
         <p class="kit-price-usd" th:text="'~ $' + ${#numbers.formatDecimal(kitPriceUsd, 1, 2)} + ' USD'">~ $0.00 USD</p>

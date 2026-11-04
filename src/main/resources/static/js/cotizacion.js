@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    const CATEGORY_LABELS = {
+    const CATEGORY_LABELS_ES = {
         REFRIGERATOR: 'Refrigerador',
         FREEZER: 'Congelador',
         TV: 'Televisor',
@@ -14,6 +14,24 @@
         ELECTRONICS: 'Electrónica',
         OTHER: 'Otro'
     };
+
+    const CATEGORY_LABELS_EN = {
+        REFRIGERATOR: 'Refrigerator',
+        FREEZER: 'Freezer',
+        TV: 'TV',
+        LIGHTING: 'Lighting',
+        FAN: 'Fan',
+        AIR_CONDITIONER: 'Air Conditioner',
+        WASHING_MACHINE: 'Washing Machine',
+        MICROWAVE: 'Microwave',
+        PUMP: 'Water Pump',
+        ELECTRONICS: 'Electronics',
+        OTHER: 'Other'
+    };
+
+    function categoryLabels() {
+        return window.BajaSolarRegion.getLang() === 'en' ? CATEGORY_LABELS_EN : CATEGORY_LABELS_ES;
+    }
 
     const DEFAULT_CUSTOM_SURGE_MULTIPLIER = 3.0;
 
@@ -60,12 +78,13 @@
     }
 
     function presetSelectOptionsHtml() {
+        const labels = categoryLabels();
         return Object.entries(presetsByCategory)
             .map(([category, templates]) => {
                 const options = templates
                     .map((template) => `<option value="${template.id}">${template.label}</option>`)
                     .join('');
-                return `<optgroup label="${CATEGORY_LABELS[category] || category}">${options}</optgroup>`;
+                return `<optgroup label="${labels[category] || category}">${options}</optgroup>`;
             })
             .join('');
     }
@@ -172,12 +191,11 @@
         const kitSuggestion = document.getElementById('kit-suggestion');
         if (result.recommendedKit) {
             const kit = result.recommendedKit;
-            const price = kit.priceOverride != null ? kit.priceOverride : kit.computedPrice;
             document.getElementById('kit-suggestion-name').textContent = kit.name;
             document.getElementById('kit-suggestion-description').textContent = kit.description || '';
             const priceEl = document.getElementById('kit-suggestion-price');
-            priceEl.dataset.priceMxn = price;
-            priceEl.textContent = window.BajaSolarCurrency.formatPrice(price);
+            priceEl.dataset.priceMxn = kit.sellPrice;
+            priceEl.textContent = window.BajaSolarRegion.formatPrice(kit.sellPrice);
 
             renderKitComparisonRow('panels', kit.totalPanelArrayKwp, result.recommendedPanelArrayKwp, 'kWp');
             renderKitComparisonRow('battery', kit.totalBatteryCapacityKwh, result.recommendedBatteryCapacityKwh, 'kWh');

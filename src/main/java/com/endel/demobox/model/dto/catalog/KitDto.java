@@ -22,7 +22,11 @@ public class KitDto {
 
     private BigDecimal priceOverride;
 
+    /** Sum of this kit's item costs (product price x quantity) - not the customer-facing price. */
     private BigDecimal computedPrice;
+
+    /** The customer-facing price: priceOverride if set, otherwise computedPrice with the configured profit margin applied. */
+    private BigDecimal sellPrice;
 
     private String imageUrl;
 

@@ -11,6 +11,7 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AppliancePresetResolverTest {
 
@@ -27,7 +28,7 @@ class AppliancePresetResolverTest {
         selection.setTemplateId("fridge_medium");
         selection.setQuantity(2);
 
-        ApplianceLoadDto resolved = resolver.resolve(selection);
+        ApplianceLoadDto resolved = resolver.resolve(selection, "es");
 
         assertEquals(150, resolved.getWatts());
         assertEquals(24, resolved.getHoursPerDay());
@@ -38,13 +39,35 @@ class AppliancePresetResolverTest {
     }
 
     @Test
+    void resolve_usesTheSpanishLabelByDefault() {
+        ApplianceLoadDto selection = new ApplianceLoadDto();
+        selection.setTemplateId("fridge_medium");
+        selection.setQuantity(1);
+
+        ApplianceLoadDto resolved = resolver.resolve(selection, "es");
+
+        assertTrue(resolved.getName().startsWith("Refrigerador"));
+    }
+
+    @Test
+    void resolve_usesTheEnglishLabelWhenRequested() {
+        ApplianceLoadDto selection = new ApplianceLoadDto();
+        selection.setTemplateId("fridge_medium");
+        selection.setQuantity(1);
+
+        ApplianceLoadDto resolved = resolver.resolve(selection, "en");
+
+        assertTrue(resolved.getName().startsWith("Refrigerator"));
+    }
+
+    @Test
     void resolve_hoursPerDayOverrideWinsOverTemplateDefault() {
         ApplianceLoadDto selection = new ApplianceLoadDto();
         selection.setTemplateId("tv_medium");
         selection.setQuantity(1);
         selection.setHoursPerDayOverride(8.0);
 
-        ApplianceLoadDto resolved = resolver.resolve(selection);
+        ApplianceLoadDto resolved = resolver.resolve(selection, "es");
 
         assertEquals(8.0, resolved.getHoursPerDay());
     }
@@ -54,7 +77,7 @@ class AppliancePresetResolverTest {
         ApplianceLoadDto selection = new ApplianceLoadDto();
         selection.setTemplateId("not_a_real_template");
 
-        assertThrows(InvalidApplianceTemplateException.class, () -> resolver.resolve(selection));
+        assertThrows(InvalidApplianceTemplateException.class, () -> resolver.resolve(selection, "es"));
     }
 
     @Test
@@ -64,7 +87,7 @@ class AppliancePresetResolverTest {
         custom.setWatts(300);
         custom.setHoursPerDay(24);
 
-        ApplianceLoadDto resolved = resolver.resolve(custom);
+        ApplianceLoadDto resolved = resolver.resolve(custom, "es");
 
         assertSame(custom, resolved);
     }

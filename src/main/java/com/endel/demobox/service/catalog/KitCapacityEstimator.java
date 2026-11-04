@@ -2,32 +2,50 @@ package com.endel.demobox.service.catalog;
 
 import com.endel.demobox.model.dto.catalog.KitCapacityDto;
 import com.endel.demobox.model.dto.catalog.KitDto;
+import com.endel.demobox.quote.ApplianceCategory;
 import com.endel.demobox.quote.ApplianceTemplate;
 import com.endel.demobox.quote.ApplianceTemplateCatalog;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Estimates what a kit can realistically power, for display on the public
  * catalog (not tied to any specific customer survey). Inverts the same
  * formulas and default assumptions SizingCalculatorService/LoadSurveyDto use
- * (5 peak sun hours, 1 day autonomy, etc.) so this stays an honest estimate
+ * (6 peak sun hours, 1 day autonomy, etc.) so this stays an honest estimate
  * consistent with the quote wizard's own math, not a separate guess.
+ * <p>
+ * Splits the estimate into a night budget (battery only - nothing runs off
+ * panels after dark) and a day budget (panel generation), with the day
+ * surplus being whatever the panels generate beyond what the battery needs
+ * to recharge for the next night. Each catalog appliance is checked against
+ * both budgets independently, always using its own default hours/day (never
+ * assumed to run for the whole night or the whole day) - a cheap appliance
+ * (fridge, Starlink Mini, LED bulbs, ...) can comfortably show up in both
+ * lists, exactly like running it at night off the battery or during the day
+ * off the panels would both genuinely work.
+ * <p>
+ * Within a budget, only one appliance per category is shown (the biggest one
+ * that still fits) - a kit that could power any of three pump sizes doesn't
+ * need all three listed, just "yes, a pump works, up to this size."
  */
 @Service
 public class KitCapacityEstimator {
 
-    private static final double DEFAULT_PEAK_SUN_HOURS = 5.0;
+    private static final double DEFAULT_PEAK_SUN_HOURS = 6.0;
     private static final double DEFAULT_AUTONOMY_DAYS = 1.0;
     private static final double DEFAULT_DEPTH_OF_DISCHARGE = 0.8;
     private static final double DEFAULT_BATTERY_ROUND_TRIP_EFFICIENCY = 0.95;
     private static final double DEFAULT_SYSTEM_DERATE_FACTOR = 0.80;
     private static final double DEFAULT_INVERTER_SAFETY_MARGIN = 1.10;
 
-    // An appliance is only listed as "compatible" if running it alone would use at
-    // most this fraction of the kit's estimated daily budget, leaving headroom to
-    // combine it with other devices rather than consuming the whole kit by itself.
+    // An appliance is only listed as "compatible" if running it (for its own
+    // default hours/day) would use at most this fraction of the relevant
+    // budget, leaving headroom to combine it with other devices rather than
+    // consuming the whole budget by itself.
     private static final double COMPATIBLE_APPLIANCE_BUDGET_FRACTION = 0.40;
 
     private final ApplianceTemplateCatalog applianceTemplateCatalog;
@@ -36,31 +54,59 @@ public class KitCapacityEstimator {
         this.applianceTemplateCatalog = applianceTemplateCatalog;
     }
 
-    public KitCapacityDto estimate(KitDto kit) {
-        // No battery means this dimension doesn't constrain daily energy (there's
-        // nothing to size for autonomy); the panel array becomes the only limit.
-        double maxDailyFromBattery = kit.getTotalBatteryCapacityKwh() > 0
+    public KitCapacityDto estimate(KitDto kit, String lang) {
+        // No battery means nothing sustains the kit after dark.
+        double nightBudgetKwh = kit.getTotalBatteryCapacityKwh() > 0
                 ? kit.getTotalBatteryCapacityKwh() * DEFAULT_DEPTH_OF_DISCHARGE * DEFAULT_BATTERY_ROUND_TRIP_EFFICIENCY / DEFAULT_AUTONOMY_DAYS
-                : Double.MAX_VALUE;
-        double maxDailyFromPanels = kit.getTotalPanelArrayKwp() * DEFAULT_PEAK_SUN_HOURS * DEFAULT_SYSTEM_DERATE_FACTOR;
-        double estimatedMaxDailyKwh = round(Math.min(maxDailyFromBattery, maxDailyFromPanels));
+                : 0.0;
+        double dayBudgetKwh = kit.getTotalPanelArrayKwp() * DEFAULT_PEAK_SUN_HOURS * DEFAULT_SYSTEM_DERATE_FACTOR;
+        double daySurplusKwh = Math.max(0.0, dayBudgetKwh - nightBudgetKwh);
 
         double estimatedMaxContinuousKw = round(kit.getTotalInverterPowerKw() / DEFAULT_INVERTER_SAFETY_MARGIN);
 
-        double compatibleBudgetKwh = estimatedMaxDailyKwh * COMPATIBLE_APPLIANCE_BUDGET_FRACTION;
-        List<String> compatibleAppliances = applianceTemplateCatalog.groupedByCategory().values().stream()
+        List<ApplianceTemplate> allTemplates = applianceTemplateCatalog.groupedByCategory(lang).values().stream()
                 .flatMap(List::stream)
-                .filter(template -> dailyEnergyKwh(template) <= compatibleBudgetKwh)
-                .map(ApplianceTemplate::getLabel)
-                .distinct()
-                .sorted()
                 .toList();
 
+        List<String> nightAppliances = compatibleAppliances(allTemplates, nightBudgetKwh);
+        List<String> dayAppliances = compatibleAppliances(allTemplates, daySurplusKwh);
+
         KitCapacityDto dto = new KitCapacityDto();
-        dto.setEstimatedMaxDailyKwh(estimatedMaxDailyKwh);
+        dto.setNightBudgetKwh(round(nightBudgetKwh));
+        dto.setDayBudgetKwh(round(dayBudgetKwh));
+        dto.setDaySurplusKwh(round(daySurplusKwh));
         dto.setEstimatedMaxContinuousKw(estimatedMaxContinuousKw);
-        dto.setCompatibleAppliances(compatibleAppliances);
+        dto.setNightAppliances(nightAppliances);
+        dto.setDayAppliances(dayAppliances);
         return dto;
+    }
+
+    private List<String> compatibleAppliances(List<ApplianceTemplate> templates, double budgetKwh) {
+        double allowance = budgetKwh * COMPATIBLE_APPLIANCE_BUDGET_FRACTION;
+
+        Map<ApplianceCategory, ApplianceTemplate> biggestFitPerCategory = new LinkedHashMap<>();
+        for (ApplianceTemplate template : templates) {
+            if (dailyEnergyKwh(template) > allowance) {
+                continue;
+            }
+            ApplianceTemplate current = biggestFitPerCategory.get(template.getCategory());
+            if (current == null || dailyEnergyKwh(template) > dailyEnergyKwh(current)) {
+                biggestFitPerCategory.put(template.getCategory(), template);
+            }
+        }
+
+        return biggestFitPerCategory.values().stream()
+                .map(this::labelWithHours)
+                .sorted()
+                .toList();
+    }
+
+    private String labelWithHours(ApplianceTemplate template) {
+        return template.getLabel() + " (" + formatHours(template.getDefaultHoursPerDay()) + "h)";
+    }
+
+    private String formatHours(double hours) {
+        return hours == Math.rint(hours) ? String.format("%.0f", hours) : String.format("%.2f", hours);
     }
 
     private double dailyEnergyKwh(ApplianceTemplate template) {

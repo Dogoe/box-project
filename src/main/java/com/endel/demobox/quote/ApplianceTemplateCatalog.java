@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,34 +15,53 @@ import java.util.stream.Collectors;
 
 /**
  * Loads the curated appliance presets (common fridge/TV/AC sizes, etc.) from
- * appliance-templates.json at startup, so the quick-quote wizard can offer a
- * pick-list instead of asking for raw wattage.
+ * appliance-templates-{lang}.json at startup, so the quick-quote wizard can
+ * offer a pick-list instead of asking for raw wattage. Each supported
+ * language is its own file with the same ids/specs, just a translated label -
+ * the id is what the wizard and the sizing math key off, never the label.
  */
 @Component
 public class ApplianceTemplateCatalog {
 
-    private final Map<String, ApplianceTemplate> templatesById;
-    private final Map<ApplianceCategory, List<ApplianceTemplate>> templatesByCategory;
+    private static final String DEFAULT_LANG = "es";
+    private static final List<String> SUPPORTED_LANGS = List.of("es", "en");
+
+    private final Map<String, Map<String, ApplianceTemplate>> templatesByIdByLang;
+    private final Map<String, Map<ApplianceCategory, List<ApplianceTemplate>>> templatesByCategoryByLang;
 
     public ApplianceTemplateCatalog(ObjectMapper objectMapper) throws IOException {
-        try (InputStream in = getClass().getResourceAsStream("/appliance-templates.json")) {
+        Map<String, List<ApplianceTemplate>> templatesByLang = new LinkedHashMap<>();
+        for (String lang : SUPPORTED_LANGS) {
+            templatesByLang.put(lang, load(objectMapper, "/appliance-templates-" + lang + ".json"));
+        }
+
+        this.templatesByIdByLang = templatesByLang.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, entry -> entry.getValue().stream()
+                        .collect(Collectors.toUnmodifiableMap(ApplianceTemplate::getId, Function.identity()))));
+        this.templatesByCategoryByLang = templatesByLang.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, entry -> entry.getValue().stream()
+                        .collect(Collectors.groupingBy(ApplianceTemplate::getCategory))));
+    }
+
+    private static List<ApplianceTemplate> load(ObjectMapper objectMapper, String resourcePath) throws IOException {
+        try (InputStream in = ApplianceTemplateCatalog.class.getResourceAsStream(resourcePath)) {
             if (in == null) {
-                throw new IllegalStateException("appliance-templates.json not found on classpath");
+                throw new IllegalStateException(resourcePath + " not found on classpath");
             }
-            List<ApplianceTemplate> templates = objectMapper.readValue(in, new TypeReference<List<ApplianceTemplate>>() {
+            return objectMapper.readValue(in, new TypeReference<List<ApplianceTemplate>>() {
             });
-            this.templatesById = templates.stream()
-                    .collect(Collectors.toUnmodifiableMap(ApplianceTemplate::getId, Function.identity()));
-            this.templatesByCategory = templates.stream()
-                    .collect(Collectors.groupingBy(ApplianceTemplate::getCategory));
         }
     }
 
-    public Optional<ApplianceTemplate> findById(String id) {
-        return Optional.ofNullable(templatesById.get(id));
+    private static String normalize(String lang) {
+        return SUPPORTED_LANGS.contains(lang) ? lang : DEFAULT_LANG;
     }
 
-    public Map<ApplianceCategory, List<ApplianceTemplate>> groupedByCategory() {
-        return templatesByCategory;
+    public Optional<ApplianceTemplate> findById(String id, String lang) {
+        return Optional.ofNullable(templatesByIdByLang.get(normalize(lang)).get(id));
+    }
+
+    public Map<ApplianceCategory, List<ApplianceTemplate>> groupedByCategory(String lang) {
+        return templatesByCategoryByLang.get(normalize(lang));
     }
 }

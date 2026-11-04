@@ -1,0 +1,252 @@
+[
+  {
+    "id": "fridge_small",
+    "category": "REFRIGERATOR",
+    "label": "Refrigerador — Chico (150–250L, una puerta)",
+    "wattage": 100,
+    "defaultHoursPerDay": 24,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "fridge_medium",
+    "category": "REFRIGERATOR",
+    "label": "Refrigerador — Mediano (250–450L, congelador superior)",
+    "wattage": 150,
+    "defaultHoursPerDay": 24,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "fridge_large",
+    "category": "REFRIGERATOR",
+    "label": "Refrigerador — Grande (450L+, puertas francesas/side-by-side)",
+    "wattage": 200,
+    "defaultHoursPerDay": 24,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "freezer_chest",
+    "category": "FREEZER",
+    "label": "Congelador horizontal",
+    "wattage": 150,
+    "defaultHoursPerDay": 24,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "freezer_upright",
+    "category": "FREEZER",
+    "label": "Congelador vertical",
+    "wattage": 200,
+    "defaultHoursPerDay": 24,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "tv_small",
+    "category": "TV",
+    "label": "Televisor — 32–43\"",
+    "wattage": 60,
+    "defaultHoursPerDay": 4,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "tv_medium",
+    "category": "TV",
+    "label": "Televisor — 50–65\"",
+    "wattage": 120,
+    "defaultHoursPerDay": 4,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "tv_large",
+    "category": "TV",
+    "label": "Televisor — 65\"+",
+    "wattage": 200,
+    "defaultHoursPerDay": 4,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "led_bulb_9w",
+    "category": "LIGHTING",
+    "label": "Foco LED — 9W",
+    "wattage": 9,
+    "defaultHoursPerDay": 5,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "led_bulb_12w",
+    "category": "LIGHTING",
+    "label": "Foco LED — 12W",
+    "wattage": 12,
+    "defaultHoursPerDay": 5,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "led_bulb_15w",
+    "category": "LIGHTING",
+    "label": "Foco LED — 15W",
+    "wattage": 15,
+    "defaultHoursPerDay": 5,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "fan_pedestal",
+    "category": "FAN",
+    "label": "Ventilador de pedestal",
+    "wattage": 60,
+    "defaultHoursPerDay": 6,
+    "motorLoad": true,
+    "surgeMultiplier": 2.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "fan_ceiling",
+    "category": "FAN",
+    "label": "Ventilador de techo",
+    "wattage": 75,
+    "defaultHoursPerDay": 6,
+    "motorLoad": true,
+    "surgeMultiplier": 2.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "ac_1_ton",
+    "category": "AIR_CONDITIONER",
+    "label": "Aire acondicionado — 1 Tonelada (~9,000 BTU)",
+    "wattage": 1000,
+    "defaultHoursPerDay": 6,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "ac_1_5_ton",
+    "category": "AIR_CONDITIONER",
+    "label": "Aire acondicionado — 1.5 Toneladas (~12,000 BTU)",
+    "wattage": 1500,
+    "defaultHoursPerDay": 6,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "ac_2_ton",
+    "category": "AIR_CONDITIONER",
+    "label": "Aire acondicionado — 2 Toneladas (~18,000 BTU)",
+    "wattage": 2000,
+    "defaultHoursPerDay": 6,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "washer_standard",
+    "category": "WASHING_MACHINE",
+    "label": "Lavadora — Estándar",
+    "wattage": 500,
+    "defaultHoursPerDay": 1,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": false
+  },
+  {
+    "id": "microwave_standard",
+    "category": "MICROWAVE",
+    "label": "Microondas — Estándar",
+    "wattage": 1000,
+    "defaultHoursPerDay": 0.25,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": false
+  },
+  {
+    "id": "pump_small",
+    "category": "PUMP",
+    "label": "Bomba de agua — 0.5 HP",
+    "wattage": 400,
+    "defaultHoursPerDay": 1,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "pump_medium",
+    "category": "PUMP",
+    "label": "Bomba de agua — 1 HP",
+    "wattage": 750,
+    "defaultHoursPerDay": 1,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "pump_large",
+    "category": "PUMP",
+    "label": "Bomba de agua — 1.5 HP",
+    "wattage": 1100,
+    "defaultHoursPerDay": 1,
+    "motorLoad": true,
+    "surgeMultiplier": 3.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "starlink_standard",
+    "category": "ELECTRONICS",
+    "label": "Starlink — Kit Estándar (Router + Antena)",
+    "wattage": 75,
+    "defaultHoursPerDay": 24,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "starlink_mini",
+    "category": "ELECTRONICS",
+    "label": "Starlink Mini",
+    "wattage": 30,
+    "defaultHoursPerDay": 24,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "laptop_standard",
+    "category": "ELECTRONICS",
+    "label": "Laptop / Computadora portátil",
+    "wattage": 65,
+    "defaultHoursPerDay": 6,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  },
+  {
+    "id": "cellphone_charger",
+    "category": "ELECTRONICS",
+    "label": "Cargador de celular",
+    "wattage": 10,
+    "defaultHoursPerDay": 2,
+    "motorLoad": false,
+    "surgeMultiplier": 1.0,
+    "defaultRunsSimultaneously": true
+  }
+]

@@ -16,6 +16,8 @@
     const settingsPanel = document.getElementById('settings-panel');
     const settingsError = document.getElementById('settings-error');
     const settingsSuccess = document.getElementById('settings-success');
+    const marginError = document.getElementById('margin-error');
+    const marginSuccess = document.getElementById('margin-success');
     const modalEl = document.getElementById('entity-modal');
     const modal = new bootstrap.Modal(modalEl);
     const modalFormEl = document.getElementById('entity-form');
@@ -135,6 +137,50 @@
                     options: ['STRING', 'HYBRID', 'MICRO', 'OFF_GRID'] },
                 { key: 'mpptChannels', label: 'Canales MPPT', type: 'number' },
                 { key: 'maxInputVoltage', label: 'Voltaje máx. de entrada (V)', type: 'number', step: '0.1' },
+                { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
+            ]
+        },
+        structures: {
+            label: 'Estructura de Aluminio',
+            endpoint: '/api/catalog/structures',
+            columns: [
+                { key: 'sku', label: 'SKU' },
+                { key: 'name', label: 'Nombre' },
+                { key: 'price', label: 'Precio', prefix: '$' },
+                { key: 'stockQuantity', label: 'Stock' },
+                { key: 'active', label: 'Activo', type: 'boolean' }
+            ],
+            fields: [
+                { key: 'sku', label: 'SKU', type: 'text', required: true },
+                { key: 'name', label: 'Nombre', type: 'text', required: true },
+                { key: 'brand', label: 'Marca', type: 'text' },
+                { key: 'description', label: 'Descripción', type: 'textarea' },
+                { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
+                { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
+                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
+            ]
+        },
+        cables: {
+            label: 'Cables de Conexión',
+            endpoint: '/api/catalog/cables',
+            columns: [
+                { key: 'sku', label: 'SKU' },
+                { key: 'name', label: 'Nombre' },
+                { key: 'lengthMeters', label: 'Longitud', suffix: ' m' },
+                { key: 'price', label: 'Precio', prefix: '$' },
+                { key: 'stockQuantity', label: 'Stock' },
+                { key: 'active', label: 'Activo', type: 'boolean' }
+            ],
+            fields: [
+                { key: 'sku', label: 'SKU', type: 'text', required: true },
+                { key: 'name', label: 'Nombre', type: 'text', required: true },
+                { key: 'brand', label: 'Marca', type: 'text' },
+                { key: 'description', label: 'Descripción', type: 'textarea' },
+                { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
+                { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
+                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'lengthMeters', label: 'Longitud (m)', type: 'number', step: '0.1', required: true },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
         }
@@ -281,12 +327,14 @@
     // ---- Kits (own logic: nested items referencing existing products) ----
 
     async function loadAllProducts() {
-        const [panels, batteries, inverters] = await Promise.all([
+        const [panels, batteries, inverters, structures, cables] = await Promise.all([
             authFetch('/api/catalog/panels').then((r) => r.json()),
             authFetch('/api/catalog/batteries').then((r) => r.json()),
-            authFetch('/api/catalog/inverters').then((r) => r.json())
+            authFetch('/api/catalog/inverters').then((r) => r.json()),
+            authFetch('/api/catalog/structures').then((r) => r.json()),
+            authFetch('/api/catalog/cables').then((r) => r.json())
         ]);
-        allProducts = panels.concat(batteries, inverters).map((p) => ({
+        allProducts = panels.concat(batteries, inverters, structures, cables).map((p) => ({
             id: p.id,
             label: p.sku + ' — ' + p.name + ' ($' + p.price + ')'
         }));
@@ -319,7 +367,7 @@
         showEntityTable();
         listAlert.classList.add('d-none');
         entityTitle.textContent = 'Kits';
-        tableHead.innerHTML = '<tr><th>Nombre</th><th>Precio</th><th># Ítems</th><th>Activo</th><th></th></tr>';
+        tableHead.innerHTML = '<tr><th>Nombre</th><th>Costo / Venta / Ganancia</th><th># Ítems</th><th>Activo</th><th></th></tr>';
 
         try {
             await loadAllProducts();
@@ -327,8 +375,9 @@
             const kits = await response.json();
 
             tableBody.innerHTML = kits.map((kit) => {
-                const price = kit.priceOverride != null ? kit.priceOverride : kit.computedPrice;
-                return '<tr><td>' + kit.name + '</td><td>$' + price + '</td><td>' + kit.items.length + '</td>' +
+                const margin = (kit.sellPrice - kit.computedPrice).toFixed(2);
+                const priceCell = 'Costo: $' + kit.computedPrice + ' · Venta: $' + kit.sellPrice + ' · Ganancia: $' + margin;
+                return '<tr><td>' + kit.name + '</td><td>' + priceCell + '</td><td>' + kit.items.length + '</td>' +
                     '<td>' + (kit.active ? 'Sí' : 'No') + '</td>' + actionButtonsHtml(kit.id) + '</tr>';
             }).join('');
 
@@ -408,6 +457,8 @@
         showSettingsPanel();
         settingsError.classList.add('d-none');
         settingsSuccess.classList.add('d-none');
+        marginError.classList.add('d-none');
+        marginSuccess.classList.add('d-none');
 
         try {
             const response = await authFetch('/api/settings/exchange-rate');
@@ -416,6 +467,15 @@
         } catch (err) {
             settingsError.textContent = 'No se pudo cargar el tipo de cambio.';
             settingsError.classList.remove('d-none');
+        }
+
+        try {
+            const response = await authFetch('/api/settings/profit-margin');
+            const data = await response.json();
+            document.getElementById('margin-input').value = data.marginPercent;
+        } catch (err) {
+            marginError.textContent = 'No se pudo cargar el margen de ganancia.';
+            marginError.classList.remove('d-none');
         }
     }
 
@@ -437,6 +497,27 @@
         } else {
             settingsError.textContent = await errorMessage(response, 'No se pudo guardar el tipo de cambio.');
             settingsError.classList.remove('d-none');
+        }
+    });
+
+    document.getElementById('margin-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        marginError.classList.add('d-none');
+        marginSuccess.classList.add('d-none');
+
+        const marginPercent = Number(document.getElementById('margin-input').value);
+        const response = await authFetch('/api/settings/profit-margin', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ marginPercent: marginPercent })
+        });
+
+        if (response.ok) {
+            marginSuccess.textContent = 'Margen de ganancia actualizado.';
+            marginSuccess.classList.remove('d-none');
+        } else {
+            marginError.textContent = await errorMessage(response, 'No se pudo guardar el margen de ganancia.');
+            marginError.classList.remove('d-none');
         }
     });
 

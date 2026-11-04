@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.thymeleaf.context.Context;
@@ -40,15 +41,11 @@ public class KitsPageController {
         this.exchangeRateService = exchangeRateService;
     }
 
-    private static BigDecimal effectivePrice(KitDto kit) {
-        return kit.getPriceOverride() != null ? kit.getPriceOverride() : kit.getComputedPrice();
-    }
-
     @GetMapping("/kits")
-    public String kits(Model model) {
+    public String kits(Model model, @CookieValue(name = "lang", defaultValue = "es") String lang) {
         List<KitDto> kits = kitService.findAllActive();
         Map<Long, KitCapacityDto> capacityByKitId = kits.stream()
-                .collect(Collectors.toMap(KitDto::getId, kitCapacityEstimator::estimate));
+                .collect(Collectors.toMap(KitDto::getId, kit -> kitCapacityEstimator.estimate(kit, lang)));
 
         model.addAttribute("kits", kits);
         model.addAttribute("capacityByKitId", capacityByKitId);
@@ -56,15 +53,16 @@ public class KitsPageController {
     }
 
     @GetMapping("/kits/{id}/pdf")
-    public ResponseEntity<byte[]> kitPdf(@PathVariable Long id) {
+    public ResponseEntity<byte[]> kitPdf(@PathVariable Long id,
+                                          @CookieValue(name = "lang", defaultValue = "es") String lang) {
         KitDto kit = kitService.getById(id);
-        KitCapacityDto capacity = kitCapacityEstimator.estimate(kit);
+        KitCapacityDto capacity = kitCapacityEstimator.estimate(kit, lang);
         ExchangeRateDto rate = exchangeRateService.getCurrentRate();
 
         Context context = new Context();
         context.setVariable("kit", kit);
         context.setVariable("capacity", capacity);
-        context.setVariable("priceUsd", exchangeRateService.toUsd(effectivePrice(kit), rate.getUsdToMxnRate()));
+        context.setVariable("priceUsd", exchangeRateService.toUsd(kit.getSellPrice(), rate.getUsdToMxnRate()));
         context.setVariable("generatedAt", LocalDateTime.now());
 
         byte[] pdf = pdfRenderingService.render("pdf/kit", context);
@@ -77,14 +75,14 @@ public class KitsPageController {
     }
 
     @GetMapping("/kits/pdf")
-    public ResponseEntity<byte[]> kitsCatalogPdf() {
+    public ResponseEntity<byte[]> kitsCatalogPdf(@CookieValue(name = "lang", defaultValue = "es") String lang) {
         List<KitDto> kits = kitService.findAllActive();
         Map<Long, KitCapacityDto> capacityByKitId = kits.stream()
-                .collect(Collectors.toMap(KitDto::getId, kitCapacityEstimator::estimate));
+                .collect(Collectors.toMap(KitDto::getId, kit -> kitCapacityEstimator.estimate(kit, lang)));
         ExchangeRateDto rate = exchangeRateService.getCurrentRate();
         Map<Long, BigDecimal> usdPriceByKitId = kits.stream()
                 .collect(Collectors.toMap(KitDto::getId,
-                        kit -> exchangeRateService.toUsd(effectivePrice(kit), rate.getUsdToMxnRate())));
+                        kit -> exchangeRateService.toUsd(kit.getSellPrice(), rate.getUsdToMxnRate())));
 
         Context context = new Context();
         context.setVariable("kits", kits);

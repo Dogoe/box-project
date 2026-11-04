@@ -60,9 +60,9 @@
 
             </ul>
 
-            <div class="btn-group btn-group-sm" role="group" aria-label="Moneda">
-                <button type="button" class="btn btn-outline-dark currency-toggle-btn" data-currency="MXN">MXN</button>
-                <button type="button" class="btn btn-outline-dark currency-toggle-btn" data-currency="USD">USD</button>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Región">
+                <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="es">MX</button>
+                <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="en">US</button>
             </div>
 
         </div>
@@ -111,7 +111,7 @@
                         <p class="text-secondary mb-0" th:text="${kit.description}">Descripción</p>
                     </div>
                     <strong class="fs-3 text-success"
-                            th:data-price-mxn="${kit.priceOverride != null ? kit.priceOverride : kit.computedPrice}">
+                            th:data-price-mxn="${kit.sellPrice}">
                         $0.00
                     </strong>
                 </div>
@@ -146,28 +146,73 @@
 
                 <!-- WHAT IT CAN POWER -->
                 <div class="bg-light rounded p-3" th:with="capacity=${capacityByKitId.get(kit.id)}">
-                    <h6 class="fw-semibold mb-2">
+                    <h6 class="fw-semibold mb-3">
                         <i class="bi bi-lightning-charge-fill text-success"></i>
                         Qué puede alimentar
                     </h6>
 
-                    <p class="small text-secondary mb-2">
-                        Estimado hasta
-                        <strong th:text="${capacity.estimatedMaxDailyKwh} + ' kWh/día'">-</strong>
-                        de consumo, con una carga simultánea de hasta
-                        <strong th:text="${capacity.estimatedMaxContinuousKw} + ' kW'">-</strong>
-                        (asumiendo 5 horas de sol pico y 1 día de autonomía).
-                    </p>
+                    <div class="row g-4">
 
-                    <div th:if="${not #lists.isEmpty(capacity.compatibleAppliances)}">
-                        <span class="badge bg-white text-dark border me-1 mb-1"
-                              th:each="appliance : ${capacity.compatibleAppliances}"
-                              th:text="${appliance}">
-                            Aparato
-                        </span>
+                        <!-- NIGHT (battery) -->
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="bi bi-moon-stars-fill text-primary"></i>
+                                <strong class="small">Durante la noche</strong>
+                            </div>
+                            <p class="small text-secondary mb-2">
+                                La batería sostiene hasta
+                                <strong th:text="${capacity.nightBudgetKwh} + ' kWh'">-</strong>
+                                sin sol.
+                            </p>
+                            <div th:if="${not #lists.isEmpty(capacity.nightAppliances)}">
+                                <span class="badge bg-white text-dark border me-1 mb-1"
+                                      th:each="appliance : ${capacity.nightAppliances}"
+                                      th:text="${appliance}">
+                                    Aparato
+                                </span>
+                            </div>
+                            <p class="small text-muted mb-0" th:if="${#lists.isEmpty(capacity.nightAppliances)}">
+                                Ningún aparato de nuestro catálogo cabe cómodamente por sí solo.
+                            </p>
+                        </div>
+
+                        <!-- DAY (panels) -->
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="bi bi-sun-fill text-warning"></i>
+                                <strong class="small">Durante el día</strong>
+                            </div>
+                            <p class="small text-secondary mb-2" th:if="${capacity.daySurplusKwh > 0}">
+                                Los paneles generan
+                                <strong th:text="${capacity.dayBudgetKwh} + ' kWh'">-</strong>
+                                al día; después de recargar la batería, sobran
+                                <strong th:text="${capacity.daySurplusKwh} + ' kWh'">-</strong>
+                                para aparatos extra de uso diurno.
+                            </p>
+                            <p class="small text-secondary mb-2" th:if="${capacity.daySurplusKwh <= 0}">
+                                Los paneles generan
+                                <strong th:text="${capacity.dayBudgetKwh} + ' kWh'">-</strong>
+                                al día — justo lo necesario para recargar la batería, sin excedente para aparatos extra.
+                            </p>
+                            <div th:if="${not #lists.isEmpty(capacity.dayAppliances)}">
+                                <span class="badge bg-white text-dark border me-1 mb-1"
+                                      th:each="appliance : ${capacity.dayAppliances}"
+                                      th:text="${appliance}">
+                                    Aparato
+                                </span>
+                            </div>
+                            <p class="small text-muted mb-0" th:if="${#lists.isEmpty(capacity.dayAppliances)}">
+                                Ningún aparato extra de nuestro catálogo cabe en el excedente diurno.
+                            </p>
+                        </div>
+
                     </div>
-                    <p class="small text-muted mb-0" th:if="${#lists.isEmpty(capacity.compatibleAppliances)}">
-                        Ningún aparato de nuestro catálogo cabe cómodamente en este kit por sí solo.
+
+                    <p class="small text-muted mt-3 mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Carga simultánea máxima:
+                        <strong th:text="${capacity.estimatedMaxContinuousKw} + ' kW'">-</strong>
+                        (asumiendo 6 horas de sol pico y 1 día de autonomía).
                     </p>
                 </div>
 
@@ -203,7 +248,7 @@
         src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
 </script>
 
-<script th:src="@{/js/currency.js}"></script>
+<script th:src="@{/js/region.js}"></script>
 
 </body>
 </html>

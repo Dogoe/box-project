@@ -54,9 +54,9 @@
 
             </ul>
 
-            <div class="btn-group btn-group-sm" role="group" aria-label="Moneda">
-                <button type="button" class="btn btn-outline-dark currency-toggle-btn" data-currency="MXN">MXN</button>
-                <button type="button" class="btn btn-outline-dark currency-toggle-btn" data-currency="USD">USD</button>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Región">
+                <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="es">MX</button>
+                <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="en">US</button>
             </div>
 
         </div>
@@ -123,9 +123,9 @@
                     <div class="row g-3 mt-1">
                         <div class="col-md-6">
                             <label for="peakSunHours" class="form-label">Horas de sol pico al día</label>
-                            <input type="number" class="form-control" id="peakSunHours" min="1" max="12" step="0.5" value="5">
+                            <input type="number" class="form-control" id="peakSunHours" min="1" max="12" step="0.5" value="6">
                             <div class="form-text">
-                                Promedio de horas de sol útil en tu zona. 5 es un valor típico si no lo sabes.
+                                Promedio de horas de sol útil en tu zona. 6 es un valor típico si no lo sabes.
                             </div>
                         </div>
 
@@ -315,7 +315,7 @@
         src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
 </script>
 
-<script th:src="@{/js/currency.js}"></script>
+<script th:src="@{/js/region.js}"></script>
 <script th:src="@{/js/cotizacion.js}"></script>
 
 </body>

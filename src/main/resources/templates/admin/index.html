@@ -40,6 +40,12 @@
             <a href="#" class="nav-link entity-tab" data-entity="inverters">Inversores</a>
         </li>
         <li class="nav-item">
+            <a href="#" class="nav-link entity-tab" data-entity="structures">Estructura de Aluminio</a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link entity-tab" data-entity="cables">Cables de Conexión</a>
+        </li>
+        <li class="nav-item">
             <a href="#" class="nav-link entity-tab" data-entity="kits">Kits</a>
         </li>
         <li class="nav-item">
@@ -77,6 +83,25 @@
                     <div class="mb-3">
                         <label class="form-label" for="exchange-rate-input">1 USD equivale a (MXN)</label>
                         <input type="number" step="0.01" min="0.01" class="form-control" id="exchange-rate-input" required>
+                    </div>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6 class="card-title">Margen de ganancia</h6>
+                <p class="text-secondary small">
+                    Porcentaje que se agrega sobre el costo de producción de cada kit para obtener su
+                    precio de venta. No aplica a kits con precio manual (precio override).
+                </p>
+                <div id="margin-error" class="alert alert-danger d-none"></div>
+                <div id="margin-success" class="alert alert-success d-none"></div>
+                <form id="margin-form">
+                    <div class="mb-3">
+                        <label class="form-label" for="margin-input">Margen de ganancia (%)</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="margin-input" required>
                     </div>
                     <button type="submit" class="btn btn-success">Guardar</button>
                 </form>
