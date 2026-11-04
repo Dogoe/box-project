@@ -139,6 +139,50 @@
                 { key: 'maxInputVoltage', label: 'Voltaje máx. de entrada (V)', type: 'number', step: '0.1' },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
+        },
+        structures: {
+            label: 'Estructura de Aluminio',
+            endpoint: '/api/catalog/structures',
+            columns: [
+                { key: 'sku', label: 'SKU' },
+                { key: 'name', label: 'Nombre' },
+                { key: 'price', label: 'Precio', prefix: '$' },
+                { key: 'stockQuantity', label: 'Stock' },
+                { key: 'active', label: 'Activo', type: 'boolean' }
+            ],
+            fields: [
+                { key: 'sku', label: 'SKU', type: 'text', required: true },
+                { key: 'name', label: 'Nombre', type: 'text', required: true },
+                { key: 'brand', label: 'Marca', type: 'text' },
+                { key: 'description', label: 'Descripción', type: 'textarea' },
+                { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
+                { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
+                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
+            ]
+        },
+        cables: {
+            label: 'Cables de Conexión',
+            endpoint: '/api/catalog/cables',
+            columns: [
+                { key: 'sku', label: 'SKU' },
+                { key: 'name', label: 'Nombre' },
+                { key: 'lengthMeters', label: 'Longitud', suffix: ' m' },
+                { key: 'price', label: 'Precio', prefix: '$' },
+                { key: 'stockQuantity', label: 'Stock' },
+                { key: 'active', label: 'Activo', type: 'boolean' }
+            ],
+            fields: [
+                { key: 'sku', label: 'SKU', type: 'text', required: true },
+                { key: 'name', label: 'Nombre', type: 'text', required: true },
+                { key: 'brand', label: 'Marca', type: 'text' },
+                { key: 'description', label: 'Descripción', type: 'textarea' },
+                { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
+                { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
+                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'lengthMeters', label: 'Longitud (m)', type: 'number', step: '0.1', required: true },
+                { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
+            ]
         }
     };
 
@@ -283,12 +327,14 @@
     // ---- Kits (own logic: nested items referencing existing products) ----
 
     async function loadAllProducts() {
-        const [panels, batteries, inverters] = await Promise.all([
+        const [panels, batteries, inverters, structures, cables] = await Promise.all([
             authFetch('/api/catalog/panels').then((r) => r.json()),
             authFetch('/api/catalog/batteries').then((r) => r.json()),
-            authFetch('/api/catalog/inverters').then((r) => r.json())
+            authFetch('/api/catalog/inverters').then((r) => r.json()),
+            authFetch('/api/catalog/structures').then((r) => r.json()),
+            authFetch('/api/catalog/cables').then((r) => r.json())
         ]);
-        allProducts = panels.concat(batteries, inverters).map((p) => ({
+        allProducts = panels.concat(batteries, inverters, structures, cables).map((p) => ({
             id: p.id,
             label: p.sku + ' — ' + p.name + ' ($' + p.price + ')'
         }));

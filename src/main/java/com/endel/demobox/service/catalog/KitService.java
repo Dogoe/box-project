@@ -1,7 +1,9 @@
 package com.endel.demobox.service.catalog;
 
 import com.endel.demobox.exception.ResourceNotFoundException;
+import com.endel.demobox.model.catalog.AluminumStructure;
 import com.endel.demobox.model.catalog.Battery;
+import com.endel.demobox.model.catalog.ConnectionCable;
 import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.catalog.Kit;
 import com.endel.demobox.model.catalog.KitItem;
@@ -129,6 +131,11 @@ public class KitService {
                 totalInverterPowerKw += inverter.getRatedPowerKw() * quantity;
                 itemDto.setProductType("INVERTER");
                 itemDto.setSpecLabel(formatNumber(inverter.getRatedPowerKw()) + " kW");
+            } else if (product instanceof ConnectionCable cable) {
+                itemDto.setProductType("CABLE");
+                itemDto.setSpecLabel(formatNumber(cable.getLengthMeters()) + " m");
+            } else if (product instanceof AluminumStructure) {
+                itemDto.setProductType("STRUCTURE");
             } else {
                 itemDto.setProductType("OTHER");
             }
