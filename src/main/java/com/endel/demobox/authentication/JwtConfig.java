@@ -48,7 +48,9 @@ public class JwtConfig {
                                 "/images/**",
                                 "/api/quotes/calculate",
                                 "/api/quotes/calculate/pdf",
-                                "/api/quotes/appliance-presets").permitAll()
+                                "/api/quotes/appliance-presets",
+                                // Spring forwards error responses here; securing it turns every error into a 403.
+                                "/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/settings/exchange-rate").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/settings/exchange-rate").hasRole("ADMIN")
                         .requestMatchers("/api/settings/profit-margin").hasRole("ADMIN")

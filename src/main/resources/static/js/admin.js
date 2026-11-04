@@ -82,6 +82,7 @@
                 { key: 'wattage', label: 'Potencia', suffix: ' W' },
                 { key: 'price', label: 'Precio', prefix: '$' },
                 { key: 'stockQuantity', label: 'Stock' },
+                { key: 'referenceUrl', label: 'Ref.', type: 'link' },
                 { key: 'active', label: 'Activo', type: 'boolean' }
             ],
             fields: [
@@ -92,6 +93,7 @@
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
                 { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'wattage', label: 'Potencia (W)', type: 'number', required: true },
                 { key: 'technology', label: 'Tecnología', type: 'select', required: true,
                     options: ['MONOCRYSTALLINE', 'POLYCRYSTALLINE', 'THIN_FILM'] },
@@ -114,6 +116,7 @@
                 { key: 'depthOfDischargePercent', label: 'Descarga útil', suffix: ' %' },
                 { key: 'price', label: 'Precio', prefix: '$' },
                 { key: 'stockQuantity', label: 'Stock' },
+                { key: 'referenceUrl', label: 'Ref.', type: 'link' },
                 { key: 'active', label: 'Activo', type: 'boolean' }
             ],
             fields: [
@@ -124,6 +127,7 @@
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
                 { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'capacityAh', label: 'Capacidad (Ah)', type: 'number', step: '0.1', required: true },
                 { key: 'voltage', label: 'Voltaje nominal (V)', type: 'number', step: '0.1', required: true },
                 { key: 'chemistry', label: 'Química (define la profundidad de descarga)', type: 'select', required: true,
@@ -143,6 +147,7 @@
                 { key: 'mpptMaxChargeCurrentA', label: 'Carga MPPT', suffix: ' A' },
                 { key: 'price', label: 'Precio', prefix: '$' },
                 { key: 'stockQuantity', label: 'Stock' },
+                { key: 'referenceUrl', label: 'Ref.', type: 'link' },
                 { key: 'active', label: 'Activo', type: 'boolean' }
             ],
             fields: [
@@ -153,6 +158,7 @@
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
                 { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'ratedPowerKw', label: 'Potencia nominal (kW)', type: 'number', step: '0.1', required: true },
                 { key: 'surgePowerKw', label: 'Potencia pico (kW)', type: 'number', step: '0.1', required: true },
                 { key: 'inverterType', label: 'Tipo', type: 'select', required: true,
@@ -175,6 +181,7 @@
                 { key: 'name', label: 'Nombre' },
                 { key: 'price', label: 'Precio', prefix: '$' },
                 { key: 'stockQuantity', label: 'Stock' },
+                { key: 'referenceUrl', label: 'Ref.', type: 'link' },
                 { key: 'active', label: 'Activo', type: 'boolean' }
             ],
             fields: [
@@ -185,6 +192,7 @@
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
                 { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
         },
@@ -198,6 +206,7 @@
                 { key: 'lengthMeters', label: 'Longitud', suffix: ' m' },
                 { key: 'price', label: 'Precio', prefix: '$' },
                 { key: 'stockQuantity', label: 'Stock' },
+                { key: 'referenceUrl', label: 'Ref.', type: 'link' },
                 { key: 'active', label: 'Activo', type: 'boolean' }
             ],
             fields: [
@@ -208,6 +217,7 @@
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
                 { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'gauge', label: 'Calibre', type: 'select', required: true, options: WIRE_GAUGES },
                 { key: 'lengthMeters', label: 'Longitud (m)', type: 'number', step: '0.1', required: true },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
@@ -240,6 +250,13 @@
         }
         if (value === null || value === undefined) {
             return '';
+        }
+        if (column.type === 'link') {
+            // Only http(s) links; the API enforces the same, this just guards old/odd data.
+            return /^https?:\/\//i.test(value)
+                ? '<a href="' + escapeAttr(value) + '" target="_blank" rel="noopener noreferrer" title="' + escapeAttr(value) + '">' +
+                  '<i class="bi bi-box-arrow-up-right"></i></a>'
+                : '';
         }
         const display = column.labels ? (column.labels[value] || value) : value;
         return (column.prefix || '') + display + (column.suffix || '');
@@ -312,7 +329,13 @@
                 (val ? ' checked' : '') + '></div>';
         }
         const step = field.step ? ' step="' + field.step + '"' : '';
-        return '<input type="' + field.type + '" class="form-control" id="' + id + '" value="' + val + '"' + step + ' ' + requiredAttr + '>';
+        const placeholder = field.placeholder ? ' placeholder="' + field.placeholder + '"' : '';
+        return '<input type="' + field.type + '" class="form-control" id="' + id + '" value="' + escapeAttr(val) + '"' + step + placeholder + ' ' + requiredAttr + '>';
+    }
+
+    function escapeAttr(text) {
+        return String(text == null ? '' : text)
+            .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
     function renderGenericForm(config, item) {
@@ -332,6 +355,8 @@
                 data[field.key] = input.checked;
             } else if (field.type === 'number' || field.numeric) {
                 data[field.key] = input.value === '' ? null : Number(input.value);
+            } else if (field.type === 'url') {
+                data[field.key] = input.value.trim() === '' ? null : input.value.trim();
             } else {
                 data[field.key] = input.value;
             }

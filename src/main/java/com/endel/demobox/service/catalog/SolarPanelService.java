@@ -60,6 +60,7 @@ public class SolarPanelService {
         panel.setPrice(dto.getPrice());
         panel.setStockQuantity(dto.getStockQuantity());
         panel.setImageUrl(dto.getImageUrl());
+        panel.setReferenceUrl(dto.getReferenceUrl());
         panel.setActive(dto.isActive());
         panel.setWattage(dto.getWattage());
         panel.setTechnology(dto.getTechnology());
@@ -78,6 +79,7 @@ public class SolarPanelService {
         dto.setPrice(panel.getPrice());
         dto.setStockQuantity(panel.getStockQuantity());
         dto.setImageUrl(panel.getImageUrl());
+        dto.setReferenceUrl(panel.getReferenceUrl());
         dto.setActive(panel.isActive());
         dto.setWattage(panel.getWattage());
         dto.setTechnology(panel.getTechnology());

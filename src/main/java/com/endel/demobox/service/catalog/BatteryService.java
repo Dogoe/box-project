@@ -61,6 +61,7 @@ public class BatteryService {
         battery.setPrice(dto.getPrice());
         battery.setStockQuantity(dto.getStockQuantity());
         battery.setImageUrl(dto.getImageUrl());
+        battery.setReferenceUrl(dto.getReferenceUrl());
         battery.setActive(dto.isActive());
         battery.setCapacityAh(dto.getCapacityAh());
         battery.setVoltage(dto.getVoltage());
@@ -78,6 +79,7 @@ public class BatteryService {
         dto.setPrice(battery.getPrice());
         dto.setStockQuantity(battery.getStockQuantity());
         dto.setImageUrl(battery.getImageUrl());
+        dto.setReferenceUrl(battery.getReferenceUrl());
         dto.setActive(battery.isActive());
         dto.setCapacityAh(battery.getCapacityAh());
         dto.setVoltage(battery.getVoltage());

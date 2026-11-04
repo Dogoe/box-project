@@ -60,6 +60,7 @@ public class InverterService {
         inverter.setPrice(dto.getPrice());
         inverter.setStockQuantity(dto.getStockQuantity());
         inverter.setImageUrl(dto.getImageUrl());
+        inverter.setReferenceUrl(dto.getReferenceUrl());
         inverter.setActive(dto.isActive());
         inverter.setRatedPowerKw(dto.getRatedPowerKw());
         inverter.setSurgePowerKw(dto.getSurgePowerKw());
@@ -82,6 +83,7 @@ public class InverterService {
         dto.setPrice(inverter.getPrice());
         dto.setStockQuantity(inverter.getStockQuantity());
         dto.setImageUrl(inverter.getImageUrl());
+        dto.setReferenceUrl(inverter.getReferenceUrl());
         dto.setActive(inverter.isActive());
         dto.setRatedPowerKw(inverter.getRatedPowerKw());
         dto.setSurgePowerKw(inverter.getSurgePowerKw());
