@@ -2,7 +2,7 @@ package com.endel.demobox.model.catalog;
 
 public enum BatteryChemistry {
     LIFEPO4(0.90, 1.0),
-    LITHIUM_ION(0.80, 1.0),
+    LITHIUM_ION(0.90, 1.0),
     LEAD_ACID(0.50, 0.2),
     GEL(0.50, 0.2),
     AGM(0.50, 0.2);
