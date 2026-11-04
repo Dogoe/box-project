@@ -321,7 +321,7 @@
         showEntityTable();
         listAlert.classList.add('d-none');
         entityTitle.textContent = 'Kits';
-        tableHead.innerHTML = '<tr><th>Nombre</th><th>Costo / Venta</th><th># Ítems</th><th>Activo</th><th></th></tr>';
+        tableHead.innerHTML = '<tr><th>Nombre</th><th>Costo / Venta / Ganancia</th><th># Ítems</th><th>Activo</th><th></th></tr>';
 
         try {
             await loadAllProducts();
@@ -329,7 +329,8 @@
             const kits = await response.json();
 
             tableBody.innerHTML = kits.map((kit) => {
-                const priceCell = 'Costo: $' + kit.computedPrice + ' · Venta: $' + kit.sellPrice;
+                const margin = (kit.sellPrice - kit.computedPrice).toFixed(2);
+                const priceCell = 'Costo: $' + kit.computedPrice + ' · Venta: $' + kit.sellPrice + ' · Ganancia: $' + margin;
                 return '<tr><td>' + kit.name + '</td><td>' + priceCell + '</td><td>' + kit.items.length + '</td>' +
                     '<td>' + (kit.active ? 'Sí' : 'No') + '</td>' + actionButtonsHtml(kit.id) + '</tr>';
             }).join('');
