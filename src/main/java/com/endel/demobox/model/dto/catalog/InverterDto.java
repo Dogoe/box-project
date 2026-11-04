@@ -46,4 +46,19 @@ public class InverterDto {
     private Integer mpptChannels;
 
     private double maxInputVoltage;
+
+    @Positive
+    private Double batteryVoltage;
+
+    @Positive
+    private Double mpptMinVoltage;
+
+    @Positive
+    private Double mpptMaxChargeCurrentA;
+
+    @Positive
+    private Double mpptMaxInputCurrentA;
+
+    // Read-only, derived: mpptMaxChargeCurrentA x batteryVoltage.
+    private double maxChargePowerW;
 }

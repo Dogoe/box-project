@@ -52,6 +52,7 @@ public class JwtConfig {
                         .requestMatchers(HttpMethod.GET, "/api/settings/exchange-rate").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/settings/exchange-rate").hasRole("ADMIN")
                         .requestMatchers("/api/settings/profit-margin").hasRole("ADMIN")
+                        .requestMatchers("/api/settings/wiring").hasRole("ADMIN")
                         .requestMatchers("/api/catalog/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

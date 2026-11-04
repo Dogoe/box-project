@@ -1,5 +1,6 @@
 package com.endel.demobox.model.dto.catalog;
 
+import com.endel.demobox.model.catalog.WireGauge;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -35,4 +36,7 @@ public class ConnectionCableDto {
 
     @Positive
     private double lengthMeters;
+
+    @NotNull
+    private WireGauge gauge;
 }

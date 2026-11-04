@@ -62,6 +62,7 @@ public class ConnectionCableService {
         cable.setImageUrl(dto.getImageUrl());
         cable.setActive(dto.isActive());
         cable.setLengthMeters(dto.getLengthMeters());
+        cable.setGauge(dto.getGauge());
     }
 
     private ConnectionCableDto toDto(ConnectionCable cable) {
@@ -76,6 +77,7 @@ public class ConnectionCableService {
         dto.setImageUrl(cable.getImageUrl());
         dto.setActive(cable.isActive());
         dto.setLengthMeters(cable.getLengthMeters());
+        dto.setGauge(cable.getGauge());
         return dto;
     }
 }

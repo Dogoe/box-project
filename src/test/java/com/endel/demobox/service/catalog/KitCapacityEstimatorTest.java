@@ -34,6 +34,7 @@ class KitCapacityEstimatorTest {
         dto.setId(1L);
         dto.setTotalPanelArrayKwp(panelKwp);
         dto.setTotalBatteryCapacityKwh(batteryKwh);
+        dto.setUsableBatteryCapacityKwh(batteryKwh * 0.8);
         dto.setTotalInverterPowerKw(inverterKw);
         return dto;
     }

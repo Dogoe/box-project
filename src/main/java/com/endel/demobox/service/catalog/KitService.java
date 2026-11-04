@@ -13,24 +13,56 @@ import com.endel.demobox.model.dto.catalog.KitDto;
 import com.endel.demobox.model.dto.catalog.KitItemDto;
 import com.endel.demobox.repository.catalog.KitRepository;
 import com.endel.demobox.repository.catalog.ProductRepository;
+import com.endel.demobox.model.dto.WiringSettingsDto;
+import com.endel.demobox.model.dto.catalog.compatibility.KitCompatibilityReportDto;
 import com.endel.demobox.service.ProfitMarginService;
+import com.endel.demobox.service.WiringSettingsService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class KitService {
     private final KitRepository kitRepository;
     private final ProductRepository productRepository;
     private final ProfitMarginService profitMarginService;
+    private final KitCompatibilityService compatibilityService;
+    private final WiringSettingsService wiringSettingsService;
 
-    public KitService(KitRepository kitRepository, ProductRepository productRepository, ProfitMarginService profitMarginService) {
+    public KitService(KitRepository kitRepository, ProductRepository productRepository, ProfitMarginService profitMarginService,
+                      KitCompatibilityService compatibilityService, WiringSettingsService wiringSettingsService) {
         this.kitRepository = kitRepository;
         this.productRepository = productRepository;
         this.profitMarginService = profitMarginService;
+        this.compatibilityService = compatibilityService;
+        this.wiringSettingsService = wiringSettingsService;
+    }
+
+    @Transactional
+    public Map<Long, KitCompatibilityReportDto> compatibilityByKitId(List<Long> kitIds) {
+        WiringSettingsDto lengths = wiringSettingsService.getCurrent();
+        Map<Long, KitCompatibilityReportDto> reports = new HashMap<>();
+        for (Kit kit : kitRepository.findAllById(kitIds)) {
+            List<KitLine> lines = kit.getItems().stream()
+                    .map(item -> new KitLine(item.getProduct(), item.getQuantity()))
+                    .toList();
+            reports.put(kit.getId(), compatibilityService.analyze(lines, lengths));
+        }
+        return reports;
+    }
+
+    @Transactional
+    public KitCompatibilityReportDto validate(List<KitItemDto> items) {
+        List<KitLine> lines = items.stream()
+                .map(item -> new KitLine(findProduct(item.getProductId()), item.getQuantity()))
+                .toList();
+        return compatibilityService.analyze(lines, wiringSettingsService.getCurrent());
     }
 
     public List<KitDto> findAll() {
@@ -72,6 +104,11 @@ public class KitService {
                 .orElseThrow(() -> new ResourceNotFoundException("Kit not found: " + id));
     }
 
+    private Product findProduct(Long productId) {
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + productId));
+    }
+
     private void applyDto(Kit kit, KitDto dto) {
         kit.setName(dto.getName());
         kit.setDescription(dto.getDescription());
@@ -81,8 +118,7 @@ public class KitService {
 
         kit.getItems().clear();
         for (KitItemDto itemDto : dto.getItems()) {
-            Product product = productRepository.findById(itemDto.getProductId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + itemDto.getProductId()));
+            Product product = findProduct(itemDto.getProductId());
             KitItem item = new KitItem();
             item.setKit(kit);
             item.setProduct(product);
@@ -103,6 +139,7 @@ public class KitService {
         BigDecimal computedPrice = BigDecimal.ZERO;
         double totalPanelArrayKwp = 0;
         double totalBatteryCapacityKwh = 0;
+        double usableBatteryCapacityKwh = 0;
         double totalInverterPowerKw = 0;
         List<KitItemDto> itemDtos = new ArrayList<>();
 
@@ -125,6 +162,7 @@ public class KitService {
                 itemDto.setSpecLabel(formatNumber(panel.getWattage()) + " W");
             } else if (product instanceof Battery battery) {
                 totalBatteryCapacityKwh += battery.getCapacityKwh() * quantity;
+                usableBatteryCapacityKwh += battery.getCapacityKwh() * battery.getDepthOfDischarge() * quantity;
                 itemDto.setProductType("BATTERY");
                 itemDto.setSpecLabel(formatNumber(battery.getCapacityKwh()) + " kWh");
             } else if (product instanceof Inverter inverter) {
@@ -133,7 +171,8 @@ public class KitService {
                 itemDto.setSpecLabel(formatNumber(inverter.getRatedPowerKw()) + " kW");
             } else if (product instanceof ConnectionCable cable) {
                 itemDto.setProductType("CABLE");
-                itemDto.setSpecLabel(formatNumber(cable.getLengthMeters()) + " m");
+                itemDto.setSpecLabel(formatNumber(cable.getLengthMeters()) + " m"
+                        + (cable.getGauge() != null ? " · " + cable.getGauge().getLabel() : ""));
             } else if (product instanceof AluminumStructure) {
                 itemDto.setProductType("STRUCTURE");
             } else {
@@ -149,6 +188,7 @@ public class KitService {
                 : profitMarginService.applyMargin(computedPrice, marginPercent));
         dto.setTotalPanelArrayKwp(round(totalPanelArrayKwp));
         dto.setTotalBatteryCapacityKwh(round(totalBatteryCapacityKwh));
+        dto.setUsableBatteryCapacityKwh(round(usableBatteryCapacityKwh));
         dto.setTotalInverterPowerKw(round(totalInverterPowerKw));
         dto.setItems(itemDtos);
 

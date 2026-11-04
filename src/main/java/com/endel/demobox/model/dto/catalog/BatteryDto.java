@@ -34,16 +34,19 @@ public class BatteryDto {
 
     private boolean active = true;
 
+    @NotNull
     @Positive
-    private double capacityKwh;
+    private Double capacityAh;
 
     @Positive
     private double voltage;
 
-    @NotNull
     private BatteryChemistry chemistry;
 
-    private double depthOfDischargePercent;
-
     private Integer cycleLife;
+
+    // Read-only, derived from capacityAh/voltage/chemistry.
+    private double capacityKwh;
+    private double depthOfDischargePercent;
+    private double maxDischargeCurrentA;
 }

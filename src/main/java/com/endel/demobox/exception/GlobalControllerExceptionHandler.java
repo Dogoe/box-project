@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 @ControllerAdvice
 @Log4j2
@@ -32,6 +33,15 @@ public class GlobalControllerExceptionHandler {
         return new ResponseEntity<>(
                 new CustomErrorDTO("not_found", ex.getMessage()),
                 HttpStatus.NOT_FOUND);
+    }
+
+    // Raised for constraint violations on list elements (e.g. List<@Valid KitItemDto>); it's a
+    // RuntimeException, so without this it would fall through to the 500 handler above.
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<CustomErrorDTO> handleHandlerMethodValidationException(HandlerMethodValidationException ex){
+        return new ResponseEntity<>(
+                new CustomErrorDTO("invalid_request", "Datos inválidos"),
+                HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(InvalidApplianceTemplateException.class)

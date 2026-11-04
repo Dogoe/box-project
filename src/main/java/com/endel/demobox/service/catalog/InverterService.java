@@ -66,6 +66,10 @@ public class InverterService {
         inverter.setInverterType(dto.getInverterType());
         inverter.setMpptChannels(dto.getMpptChannels());
         inverter.setMaxInputVoltage(dto.getMaxInputVoltage());
+        inverter.setBatteryVoltage(dto.getBatteryVoltage());
+        inverter.setMpptMinVoltage(dto.getMpptMinVoltage());
+        inverter.setMpptMaxChargeCurrentA(dto.getMpptMaxChargeCurrentA());
+        inverter.setMpptMaxInputCurrentA(dto.getMpptMaxInputCurrentA());
     }
 
     private InverterDto toDto(Inverter inverter) {
@@ -84,6 +88,11 @@ public class InverterService {
         dto.setInverterType(inverter.getInverterType());
         dto.setMpptChannels(inverter.getMpptChannels());
         dto.setMaxInputVoltage(inverter.getMaxInputVoltage());
+        dto.setBatteryVoltage(inverter.getBatteryVoltage());
+        dto.setMpptMinVoltage(inverter.getMpptMinVoltage());
+        dto.setMpptMaxChargeCurrentA(inverter.getMpptMaxChargeCurrentA());
+        dto.setMpptMaxInputCurrentA(inverter.getMpptMaxInputCurrentA());
+        dto.setMaxChargePowerW(inverter.getMaxChargePowerW());
         return dto;
     }
 }
