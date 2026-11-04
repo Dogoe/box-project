@@ -24,6 +24,9 @@
     const modalFieldsEl = document.getElementById('entity-form-fields');
     const modalTitleEl = document.getElementById('entity-modal-title');
     const modalErrorEl = document.getElementById('entity-modal-error');
+    const modalDialogEl = modalEl.querySelector('.modal-dialog');
+    const wiringError = document.getElementById('wiring-error');
+    const wiringSuccess = document.getElementById('wiring-success');
 
     let currentEntity = null;
     let editingId = null;
@@ -55,6 +58,20 @@
         return (body && body.message) || fallback;
     }
 
+    const WIRE_GAUGES = [
+        { value: 'AWG_14', label: '14 AWG' },
+        { value: 'AWG_12', label: '12 AWG' },
+        { value: 'AWG_10', label: '10 AWG' },
+        { value: 'AWG_8', label: '8 AWG' },
+        { value: 'AWG_6', label: '6 AWG' },
+        { value: 'AWG_4', label: '4 AWG' },
+        { value: 'AWG_2', label: '2 AWG' },
+        { value: 'AWG_1_0', label: '1/0 AWG' },
+        { value: 'AWG_2_0', label: '2/0 AWG' },
+        { value: 'AWG_4_0', label: '4/0 AWG' }
+    ];
+    const WIRE_GAUGE_LABELS = Object.fromEntries(WIRE_GAUGES.map((g) => [g.value, g.label]));
+
     const ENTITY_CONFIGS = {
         panels: {
             label: 'Paneles Solares',
@@ -65,6 +82,7 @@
                 { key: 'wattage', label: 'Potencia', suffix: ' W' },
                 { key: 'price', label: 'Precio', prefix: '$' },
                 { key: 'stockQuantity', label: 'Stock' },
+                { key: 'referenceUrl', label: 'Ref.', type: 'link' },
                 { key: 'active', label: 'Activo', type: 'boolean' }
             ],
             fields: [
@@ -75,6 +93,7 @@
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
                 { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'wattage', label: 'Potencia (W)', type: 'number', required: true },
                 { key: 'technology', label: 'Tecnología', type: 'select', required: true,
                     options: ['MONOCRYSTALLINE', 'POLYCRYSTALLINE', 'THIN_FILM'] },
@@ -90,9 +109,14 @@
             columns: [
                 { key: 'sku', label: 'SKU' },
                 { key: 'name', label: 'Nombre' },
-                { key: 'capacityKwh', label: 'Capacidad', suffix: ' kWh' },
+                { key: 'voltage', label: 'Voltaje', suffix: ' V' },
+                { key: 'capacityAh', label: 'Capacidad', suffix: ' Ah' },
+                { key: 'capacityKwh', label: 'Energía', suffix: ' kWh' },
+                { key: 'chemistry', label: 'Química' },
+                { key: 'depthOfDischargePercent', label: 'Descarga útil', suffix: ' %' },
                 { key: 'price', label: 'Precio', prefix: '$' },
                 { key: 'stockQuantity', label: 'Stock' },
+                { key: 'referenceUrl', label: 'Ref.', type: 'link' },
                 { key: 'active', label: 'Activo', type: 'boolean' }
             ],
             fields: [
@@ -103,11 +127,11 @@
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
                 { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
-                { key: 'capacityKwh', label: 'Capacidad (kWh)', type: 'number', step: '0.01', required: true },
-                { key: 'voltage', label: 'Voltaje (V)', type: 'number', step: '0.1', required: true },
-                { key: 'chemistry', label: 'Química', type: 'select', required: true,
-                    options: ['LITHIUM_ION', 'LEAD_ACID', 'GEL', 'AGM'] },
-                { key: 'depthOfDischargePercent', label: 'Profundidad de descarga (%)', type: 'number', step: '0.1' },
+                { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
+                { key: 'capacityAh', label: 'Capacidad (Ah)', type: 'number', step: '0.1', required: true },
+                { key: 'voltage', label: 'Voltaje nominal (V)', type: 'number', step: '0.1', required: true },
+                { key: 'chemistry', label: 'Química (define la profundidad de descarga)', type: 'select', required: true,
+                    options: ['LIFEPO4', 'LITHIUM_ION', 'LEAD_ACID', 'GEL', 'AGM'], defaultValue: 'LIFEPO4' },
                 { key: 'cycleLife', label: 'Ciclos de vida', type: 'number' },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
@@ -119,8 +143,13 @@
                 { key: 'sku', label: 'SKU' },
                 { key: 'name', label: 'Nombre' },
                 { key: 'ratedPowerKw', label: 'Potencia', suffix: ' kW' },
+                { key: 'batteryVoltage', label: 'Batería', suffix: ' V' },
+                { key: 'mpptMaxChargeCurrentA', label: 'Carga MPPT', suffix: ' A' },
+                { key: 'effectiveMaxPvPowerW', label: 'PV máx.', format: (item) => item.effectiveMaxPvPowerW > 0
+                    ? Math.round(item.effectiveMaxPvPowerW) + ' W' + (item.maxPvPowerEstimated ? ' (est.)' : '') : '' },
                 { key: 'price', label: 'Precio', prefix: '$' },
                 { key: 'stockQuantity', label: 'Stock' },
+                { key: 'referenceUrl', label: 'Ref.', type: 'link' },
                 { key: 'active', label: 'Activo', type: 'boolean' }
             ],
             fields: [
@@ -131,12 +160,19 @@
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
                 { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'ratedPowerKw', label: 'Potencia nominal (kW)', type: 'number', step: '0.1', required: true },
                 { key: 'surgePowerKw', label: 'Potencia pico (kW)', type: 'number', step: '0.1', required: true },
                 { key: 'inverterType', label: 'Tipo', type: 'select', required: true,
-                    options: ['STRING', 'HYBRID', 'MICRO', 'OFF_GRID'] },
-                { key: 'mpptChannels', label: 'Canales MPPT', type: 'number' },
-                { key: 'maxInputVoltage', label: 'Voltaje máx. de entrada (V)', type: 'number', step: '0.1' },
+                    options: ['HYBRID', 'OFF_GRID', 'STRING', 'MICRO'], defaultValue: 'HYBRID' },
+                { key: 'batteryVoltage', label: 'Voltaje de baterías (V)', type: 'select', required: true,
+                    options: [12, 24, 48], defaultValue: 48, numeric: true },
+                { key: 'mpptChannels', label: 'Canales MPPT', type: 'number', defaultValue: 1 },
+                { key: 'maxInputVoltage', label: 'MPPT: voltaje PV máx. (Voc, V)', type: 'number', step: '0.1', required: true },
+                { key: 'mpptMinVoltage', label: 'MPPT: voltaje PV mínimo de operación (V)', type: 'number', step: '0.1' },
+                { key: 'mpptMaxInputCurrentA', label: 'MPPT: corriente PV máx. por canal (A)', type: 'number', step: '0.1' },
+                { key: 'mpptMaxChargeCurrentA', label: 'MPPT: corriente máx. de carga a batería (A)', type: 'number', step: '0.1', required: true },
+                { key: 'maxPvInputPowerW', label: 'MPPT: potencia PV máx. (W) — opcional, dato de la ficha', type: 'number', step: '1' },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
         },
@@ -148,6 +184,7 @@
                 { key: 'name', label: 'Nombre' },
                 { key: 'price', label: 'Precio', prefix: '$' },
                 { key: 'stockQuantity', label: 'Stock' },
+                { key: 'referenceUrl', label: 'Ref.', type: 'link' },
                 { key: 'active', label: 'Activo', type: 'boolean' }
             ],
             fields: [
@@ -158,6 +195,7 @@
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
                 { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
         },
@@ -167,9 +205,11 @@
             columns: [
                 { key: 'sku', label: 'SKU' },
                 { key: 'name', label: 'Nombre' },
+                { key: 'gauge', label: 'Calibre', labels: WIRE_GAUGE_LABELS },
                 { key: 'lengthMeters', label: 'Longitud', suffix: ' m' },
                 { key: 'price', label: 'Precio', prefix: '$' },
                 { key: 'stockQuantity', label: 'Stock' },
+                { key: 'referenceUrl', label: 'Ref.', type: 'link' },
                 { key: 'active', label: 'Activo', type: 'boolean' }
             ],
             fields: [
@@ -180,6 +220,8 @@
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
                 { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
+                { key: 'gauge', label: 'Calibre', type: 'select', required: true, options: WIRE_GAUGES },
                 { key: 'lengthMeters', label: 'Longitud (m)', type: 'number', step: '0.1', required: true },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
@@ -205,6 +247,9 @@
     // ---- Generic (panels/batteries/inverters) rendering ----
 
     function formatValue(item, column) {
+        if (column.format) {
+            return column.format(item);
+        }
         const value = item[column.key];
         if (column.type === 'boolean') {
             return value ? 'Sí' : 'No';
@@ -212,7 +257,15 @@
         if (value === null || value === undefined) {
             return '';
         }
-        return (column.prefix || '') + value + (column.suffix || '');
+        if (column.type === 'link') {
+            // Only http(s) links; the API enforces the same, this just guards old/odd data.
+            return /^https?:\/\//i.test(value)
+                ? '<a href="' + escapeAttr(value) + '" target="_blank" rel="noopener noreferrer" title="' + escapeAttr(value) + '">' +
+                  '<i class="bi bi-box-arrow-up-right"></i></a>'
+                : '';
+        }
+        const display = column.labels ? (column.labels[value] || value) : value;
+        return (column.prefix || '') + display + (column.suffix || '');
     }
 
     function renderTableHead(columns) {
@@ -267,9 +320,11 @@
         const requiredAttr = field.required ? 'required' : '';
 
         if (field.type === 'select') {
-            const options = field.options.map((opt) =>
-                '<option value="' + opt + '"' + (opt === val ? ' selected' : '') + '>' + opt + '</option>'
-            ).join('');
+            const options = field.options.map((opt) => {
+                const optValue = typeof opt === 'object' ? opt.value : opt;
+                const optLabel = typeof opt === 'object' ? opt.label : opt;
+                return '<option value="' + optValue + '"' + (String(optValue) === String(val) ? ' selected' : '') + '>' + optLabel + '</option>';
+            }).join('');
             return '<select class="form-select" id="' + id + '" ' + requiredAttr + '>' + options + '</select>';
         }
         if (field.type === 'textarea') {
@@ -280,7 +335,13 @@
                 (val ? ' checked' : '') + '></div>';
         }
         const step = field.step ? ' step="' + field.step + '"' : '';
-        return '<input type="' + field.type + '" class="form-control" id="' + id + '" value="' + val + '"' + step + ' ' + requiredAttr + '>';
+        const placeholder = field.placeholder ? ' placeholder="' + field.placeholder + '"' : '';
+        return '<input type="' + field.type + '" class="form-control" id="' + id + '" value="' + escapeAttr(val) + '"' + step + placeholder + ' ' + requiredAttr + '>';
+    }
+
+    function escapeAttr(text) {
+        return String(text == null ? '' : text)
+            .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
     function renderGenericForm(config, item) {
@@ -298,8 +359,10 @@
             const input = document.getElementById('field-' + field.key);
             if (field.type === 'checkbox') {
                 data[field.key] = input.checked;
-            } else if (field.type === 'number') {
+            } else if (field.type === 'number' || field.numeric) {
                 data[field.key] = input.value === '' ? null : Number(input.value);
+            } else if (field.type === 'url') {
+                data[field.key] = input.value.trim() === '' ? null : input.value.trim();
             } else {
                 data[field.key] = input.value;
             }
@@ -311,6 +374,7 @@
         const config = ENTITY_CONFIGS[currentEntity];
         editingId = id || null;
         modalErrorEl.classList.add('d-none');
+        modalDialogEl.classList.remove('modal-lg');
 
         if (id) {
             modalTitleEl.textContent = 'Editar producto';
@@ -320,8 +384,29 @@
             modalTitleEl.textContent = 'Nuevo producto';
             renderGenericForm(config, null);
         }
+        if (currentEntity === 'inverters') {
+            wireInverterPvEstimate();
+        }
 
         modal.show();
+    }
+
+    // Mirrors Inverter.ESTIMATED_PV_TO_CHARGE_POWER_RATIO on the server.
+    const PV_ESTIMATE_RATIO = 1.3;
+
+    function wireInverterPvEstimate() {
+        const pvInput = document.getElementById('field-maxPvInputPowerW');
+        const voltageInput = document.getElementById('field-batteryVoltage');
+        const chargeInput = document.getElementById('field-mpptMaxChargeCurrentA');
+        const update = () => {
+            const estimate = Number(voltageInput.value) * Number(chargeInput.value) * PV_ESTIMATE_RATIO;
+            pvInput.placeholder = estimate > 0
+                ? 'Vacío = se usa el estimado ~' + Math.round(estimate) + ' W (carga × voltaje × 1.3)'
+                : 'Vacío = se estima con la corriente de carga × voltaje × 1.3';
+        };
+        voltageInput.addEventListener('change', update);
+        chargeInput.addEventListener('input', update);
+        update();
     }
 
     // ---- Kits (own logic: nested items referencing existing products) ----
@@ -358,8 +443,94 @@
 
     function wireKitItemRemoveButtons() {
         document.querySelectorAll('.remove-kit-item').forEach((btn) => {
-            btn.onclick = () => btn.closest('.kit-item-row').remove();
+            btn.onclick = () => {
+                btn.closest('.kit-item-row').remove();
+                scheduleCompatibilityCheck();
+            };
         });
+    }
+
+    function collectKitItems() {
+        return Array.from(document.querySelectorAll('.kit-item-row')).map((row) => ({
+            productId: Number(row.querySelector('.kit-item-product').value),
+            quantity: Number(row.querySelector('.kit-item-qty').value)
+        }));
+    }
+
+    // ---- Kit compatibility (live, while editing) ----
+
+    const SEVERITY_ICONS = {
+        OK: 'bi-check-circle-fill text-success',
+        WARNING: 'bi-exclamation-triangle-fill text-warning',
+        ERROR: 'bi-x-circle-fill text-danger'
+    };
+    let compatibilityTimer = null;
+    let compatibilityRequestId = 0;
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text == null ? '' : String(text);
+        return div.innerHTML;
+    }
+
+    function scheduleCompatibilityCheck() {
+        clearTimeout(compatibilityTimer);
+        compatibilityTimer = setTimeout(runCompatibilityCheck, 300);
+    }
+
+    async function runCompatibilityCheck() {
+        const panel = document.getElementById('kit-compat-panel');
+        if (!panel) {
+            return;
+        }
+        const items = collectKitItems();
+        if (items.length === 0 || items.some((i) => !i.productId || !(i.quantity > 0))) {
+            panel.innerHTML = '';
+            return;
+        }
+
+        const requestId = ++compatibilityRequestId;
+        const response = await authFetch('/api/catalog/kits/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(items)
+        });
+        if (requestId !== compatibilityRequestId) {
+            return;
+        }
+        panel.innerHTML = response.ok
+            ? compatibilityHtml(await response.json())
+            : '<p class="small text-muted mb-0">No se pudo revisar la compatibilidad.</p>';
+    }
+
+    function compatibilityHtml(report) {
+        const summary = [
+            report.batteryBank ? '<div><strong>Banco de baterías:</strong> ' + escapeHtml(report.batteryBank) + '</div>' : '',
+            report.panelArray ? '<div><strong>Paneles:</strong> ' + escapeHtml(report.panelArray) + '</div>' : ''
+        ].join('');
+
+        const checks = report.checks.length
+            ? '<ul class="list-unstyled small mb-0">' + report.checks.map((c) =>
+                '<li class="mb-1"><i class="bi ' + SEVERITY_ICONS[c.severity] + ' me-1"></i>' + escapeHtml(c.message) + '</li>'
+            ).join('') + '</ul>'
+            : '<p class="small text-muted mb-0">Agrega inversor, baterías y paneles para revisar compatibilidad.</p>';
+
+        const wiring = report.wiring.length
+            ? '<table class="table table-sm small mt-3 mb-0"><thead><tr><th>Tramo</th><th>Corriente</th><th>Calibre</th><th>Caída</th><th>Fusible</th></tr></thead><tbody>' +
+              report.wiring.map((w) =>
+                  '<tr><td>' + escapeHtml(w.segment) + (w.runs > 1 ? ' (×' + w.runs + ')' : '') + '</td>' +
+                  '<td>' + w.operatingCurrentA + ' A</td>' +
+                  '<td>' + (w.gaugeLabel ? escapeHtml(w.gaugeLabel) : '—') + ' · ' + w.lengthMeters + ' m</td>' +
+                  '<td>' + (w.gaugeLabel ? w.voltageDropPercent + ' %' : '—') + '</td>' +
+                  '<td>' + (w.fuseA ? w.fuseA + ' A' : '—') + '</td></tr>'
+              ).join('') + '</tbody></table>'
+            : '';
+
+        return '<div class="border rounded p-3 bg-light">' +
+            '<h6 class="fw-semibold mb-2"><i class="bi bi-plug"></i> Revisión de compatibilidad</h6>' +
+            (summary ? '<div class="small mb-2">' + summary + '</div>' : '') +
+            checks + wiring +
+            '</div>';
     }
 
     async function loadKits() {
@@ -419,22 +590,26 @@
             '<label class="form-label">Productos incluidos</label>' +
             '<div id="kit-items-container">' + itemsHtml + '</div>' +
             '<button type="button" class="btn btn-sm btn-outline-success mt-2" id="add-kit-item-btn">' +
-            '<i class="bi bi-plus-lg"></i> Agregar producto</button>';
+            '<i class="bi bi-plus-lg"></i> Agregar producto</button>' +
+            '<div id="kit-compat-panel" class="mt-3"></div>';
 
+        const itemsContainer = document.getElementById('kit-items-container');
+        itemsContainer.addEventListener('change', scheduleCompatibilityCheck);
+        itemsContainer.addEventListener('input', scheduleCompatibilityCheck);
         document.getElementById('add-kit-item-btn').addEventListener('click', () => {
-            document.getElementById('kit-items-container').insertAdjacentHTML('beforeend', kitItemRowHtml(null));
+            itemsContainer.insertAdjacentHTML('beforeend', kitItemRowHtml(null));
             wireKitItemRemoveButtons();
+            scheduleCompatibilityCheck();
         });
         wireKitItemRemoveButtons();
 
+        modalDialogEl.classList.add('modal-lg');
         modal.show();
+        runCompatibilityCheck();
     }
 
     function collectKitFormData() {
-        const items = Array.from(document.querySelectorAll('.kit-item-row')).map((row) => ({
-            productId: Number(row.querySelector('.kit-item-product').value),
-            quantity: Number(row.querySelector('.kit-item-qty').value)
-        }));
+        const items = collectKitItems();
         const priceOverrideInput = document.getElementById('kit-price-override').value;
         const imageUrlInput = document.getElementById('kit-image-url').value;
 
@@ -477,7 +652,42 @@
             marginError.textContent = 'No se pudo cargar el margen de ganancia.';
             marginError.classList.remove('d-none');
         }
+
+        wiringError.classList.add('d-none');
+        wiringSuccess.classList.add('d-none');
+        try {
+            const response = await authFetch('/api/settings/wiring');
+            const data = await response.json();
+            document.getElementById('wiring-battery-input').value = data.batteryToInverterMeters;
+            document.getElementById('wiring-pv-input').value = data.pvToInverterMeters;
+        } catch (err) {
+            wiringError.textContent = 'No se pudieron cargar las longitudes de cableado.';
+            wiringError.classList.remove('d-none');
+        }
     }
+
+    document.getElementById('wiring-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        wiringError.classList.add('d-none');
+        wiringSuccess.classList.add('d-none');
+
+        const response = await authFetch('/api/settings/wiring', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                batteryToInverterMeters: Number(document.getElementById('wiring-battery-input').value),
+                pvToInverterMeters: Number(document.getElementById('wiring-pv-input').value)
+            })
+        });
+
+        if (response.ok) {
+            wiringSuccess.textContent = 'Longitudes de cableado actualizadas.';
+            wiringSuccess.classList.remove('d-none');
+        } else {
+            wiringError.textContent = await errorMessage(response, 'No se pudieron guardar las longitudes.');
+            wiringError.classList.remove('d-none');
+        }
+    });
 
     document.getElementById('settings-form').addEventListener('submit', async (event) => {
         event.preventDefault();

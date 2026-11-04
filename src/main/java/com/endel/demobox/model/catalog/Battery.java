@@ -20,9 +20,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Battery extends Product {
 
+    // Nullable at the DB level only so ddl-auto can add it to tables that already have rows;
+    // LegacySchemaMigration backfills it and the DTO requires it.
     @Positive
-    @Column(nullable = false)
-    private double capacityKwh;
+    private Double capacityAh;
 
     @Positive
     @Column(nullable = false)
@@ -31,9 +32,19 @@ public class Battery extends Product {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private BatteryChemistry chemistry;
-
-    private double depthOfDischargePercent;
+    private BatteryChemistry chemistry = BatteryChemistry.LIFEPO4;
 
     private Integer cycleLife;
+
+    public double getCapacityKwh() {
+        return capacityAh == null ? 0 : capacityAh * voltage / 1000.0;
+    }
+
+    public double getDepthOfDischarge() {
+        return chemistry.getDepthOfDischarge();
+    }
+
+    public double getMaxDischargeCurrentA() {
+        return capacityAh == null ? 0 : capacityAh * chemistry.getMaxDischargeCRate();
+    }
 }

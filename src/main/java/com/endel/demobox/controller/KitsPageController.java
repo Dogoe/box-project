@@ -49,6 +49,7 @@ public class KitsPageController {
 
         model.addAttribute("kits", kits);
         model.addAttribute("capacityByKitId", capacityByKitId);
+        model.addAttribute("compatibilityByKitId", kitService.compatibilityByKitId(kits.stream().map(KitDto::getId).toList()));
         return "kits";
     }
 
@@ -62,6 +63,7 @@ public class KitsPageController {
         Context context = new Context();
         context.setVariable("kit", kit);
         context.setVariable("capacity", capacity);
+        context.setVariable("compatibility", kitService.compatibilityByKitId(List.of(id)).get(id));
         context.setVariable("priceUsd", exchangeRateService.toUsd(kit.getSellPrice(), rate.getUsdToMxnRate()));
         context.setVariable("generatedAt", LocalDateTime.now());
 

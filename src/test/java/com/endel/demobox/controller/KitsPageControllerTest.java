@@ -59,9 +59,9 @@ class KitsPageControllerTest {
         battery.setSku("PDF-BATTERY-1");
         battery.setName("Bateria PDF Test 5kWh");
         battery.setPrice(BigDecimal.valueOf(900));
-        battery.setCapacityKwh(5);
-        battery.setVoltage(48);
-        battery.setChemistry(BatteryChemistry.LITHIUM_ION);
+        battery.setCapacityAh(100.0);
+        battery.setVoltage(51.2);
+        battery.setChemistry(BatteryChemistry.LIFEPO4);
         productRepository.save(battery);
 
         Inverter inverter = new Inverter();

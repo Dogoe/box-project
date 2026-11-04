@@ -35,6 +35,9 @@ public class KitDto {
     private double totalBatteryCapacityKwh;
     private double totalInverterPowerKw;
 
+    /** Battery energy actually usable: each battery's kWh times its chemistry's depth of discharge. */
+    private double usableBatteryCapacityKwh;
+
     @NotEmpty
     @Valid
     private List<KitItemDto> items = new ArrayList<>();

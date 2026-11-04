@@ -2,6 +2,7 @@ package com.endel.demobox.service.catalog;
 
 import com.endel.demobox.exception.ResourceNotFoundException;
 import com.endel.demobox.model.catalog.Battery;
+import com.endel.demobox.model.catalog.BatteryChemistry;
 import com.endel.demobox.model.dto.catalog.BatteryDto;
 import com.endel.demobox.repository.catalog.BatteryRepository;
 import org.springframework.stereotype.Service;
@@ -60,11 +61,11 @@ public class BatteryService {
         battery.setPrice(dto.getPrice());
         battery.setStockQuantity(dto.getStockQuantity());
         battery.setImageUrl(dto.getImageUrl());
+        battery.setReferenceUrl(dto.getReferenceUrl());
         battery.setActive(dto.isActive());
-        battery.setCapacityKwh(dto.getCapacityKwh());
+        battery.setCapacityAh(dto.getCapacityAh());
         battery.setVoltage(dto.getVoltage());
-        battery.setChemistry(dto.getChemistry());
-        battery.setDepthOfDischargePercent(dto.getDepthOfDischargePercent());
+        battery.setChemistry(dto.getChemistry() != null ? dto.getChemistry() : BatteryChemistry.LIFEPO4);
         battery.setCycleLife(dto.getCycleLife());
     }
 
@@ -78,12 +79,15 @@ public class BatteryService {
         dto.setPrice(battery.getPrice());
         dto.setStockQuantity(battery.getStockQuantity());
         dto.setImageUrl(battery.getImageUrl());
+        dto.setReferenceUrl(battery.getReferenceUrl());
         dto.setActive(battery.isActive());
-        dto.setCapacityKwh(battery.getCapacityKwh());
+        dto.setCapacityAh(battery.getCapacityAh());
         dto.setVoltage(battery.getVoltage());
         dto.setChemistry(battery.getChemistry());
-        dto.setDepthOfDischargePercent(battery.getDepthOfDischargePercent());
         dto.setCycleLife(battery.getCycleLife());
+        dto.setCapacityKwh(battery.getCapacityKwh());
+        dto.setDepthOfDischargePercent(battery.getDepthOfDischarge() * 100);
+        dto.setMaxDischargeCurrentA(battery.getMaxDischargeCurrentA());
         return dto;
     }
 }

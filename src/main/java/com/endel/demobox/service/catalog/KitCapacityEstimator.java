@@ -37,7 +37,6 @@ public class KitCapacityEstimator {
 
     private static final double DEFAULT_PEAK_SUN_HOURS = 6.0;
     private static final double DEFAULT_AUTONOMY_DAYS = 1.0;
-    private static final double DEFAULT_DEPTH_OF_DISCHARGE = 0.8;
     private static final double DEFAULT_BATTERY_ROUND_TRIP_EFFICIENCY = 0.95;
     private static final double DEFAULT_SYSTEM_DERATE_FACTOR = 0.80;
     private static final double DEFAULT_INVERTER_SAFETY_MARGIN = 1.10;
@@ -56,9 +55,7 @@ public class KitCapacityEstimator {
 
     public KitCapacityDto estimate(KitDto kit, String lang) {
         // No battery means nothing sustains the kit after dark.
-        double nightBudgetKwh = kit.getTotalBatteryCapacityKwh() > 0
-                ? kit.getTotalBatteryCapacityKwh() * DEFAULT_DEPTH_OF_DISCHARGE * DEFAULT_BATTERY_ROUND_TRIP_EFFICIENCY / DEFAULT_AUTONOMY_DAYS
-                : 0.0;
+        double nightBudgetKwh = kit.getUsableBatteryCapacityKwh() * DEFAULT_BATTERY_ROUND_TRIP_EFFICIENCY / DEFAULT_AUTONOMY_DAYS;
         double dayBudgetKwh = kit.getTotalPanelArrayKwp() * DEFAULT_PEAK_SUN_HOURS * DEFAULT_SYSTEM_DERATE_FACTOR;
         double daySurplusKwh = Math.max(0.0, dayBudgetKwh - nightBudgetKwh);
 

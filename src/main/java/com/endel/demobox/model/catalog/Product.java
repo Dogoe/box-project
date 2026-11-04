@@ -56,6 +56,10 @@ public abstract class Product {
 
     private String imageUrl;
 
+    /** Optional link to a reference listing (Amazon, Mercado Libre...); admin-only. */
+    @Column(length = 2000)
+    private String referenceUrl;
+
     @Column(nullable = false)
     private boolean active = true;
 

@@ -3,6 +3,7 @@ package com.endel.demobox.model.dto.catalog;
 import com.endel.demobox.model.catalog.BatteryChemistry;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
@@ -32,18 +33,24 @@ public class BatteryDto {
 
     private String imageUrl;
 
+    @Pattern(regexp = "^(https?://\\S+)?$", message = "La URL de referencia debe empezar con http:// o https://")
+    private String referenceUrl;
+
     private boolean active = true;
 
+    @NotNull
     @Positive
-    private double capacityKwh;
+    private Double capacityAh;
 
     @Positive
     private double voltage;
 
-    @NotNull
     private BatteryChemistry chemistry;
 
-    private double depthOfDischargePercent;
-
     private Integer cycleLife;
+
+    // Read-only, derived from capacityAh/voltage/chemistry.
+    private double capacityKwh;
+    private double depthOfDischargePercent;
+    private double maxDischargeCurrentA;
 }

@@ -60,8 +60,10 @@ public class ConnectionCableService {
         cable.setPrice(dto.getPrice());
         cable.setStockQuantity(dto.getStockQuantity());
         cable.setImageUrl(dto.getImageUrl());
+        cable.setReferenceUrl(dto.getReferenceUrl());
         cable.setActive(dto.isActive());
         cable.setLengthMeters(dto.getLengthMeters());
+        cable.setGauge(dto.getGauge());
     }
 
     private ConnectionCableDto toDto(ConnectionCable cable) {
@@ -74,8 +76,10 @@ public class ConnectionCableService {
         dto.setPrice(cable.getPrice());
         dto.setStockQuantity(cable.getStockQuantity());
         dto.setImageUrl(cable.getImageUrl());
+        dto.setReferenceUrl(cable.getReferenceUrl());
         dto.setActive(cable.isActive());
         dto.setLengthMeters(cable.getLengthMeters());
+        dto.setGauge(cable.getGauge());
         return dto;
     }
 }

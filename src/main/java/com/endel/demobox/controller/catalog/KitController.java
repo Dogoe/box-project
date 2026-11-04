@@ -1,6 +1,8 @@
 package com.endel.demobox.controller.catalog;
 
 import com.endel.demobox.model.dto.catalog.KitDto;
+import com.endel.demobox.model.dto.catalog.KitItemDto;
+import com.endel.demobox.model.dto.catalog.compatibility.KitCompatibilityReportDto;
 import com.endel.demobox.service.catalog.KitService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -25,6 +27,11 @@ public class KitController {
     @GetMapping("/{id}")
     public KitDto getById(@PathVariable Long id) {
         return service.getById(id);
+    }
+
+    @PostMapping("/validate")
+    public KitCompatibilityReportDto validate(@Valid @RequestBody List<@Valid KitItemDto> items) {
+        return service.validate(items);
     }
 
     @PostMapping

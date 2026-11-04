@@ -60,12 +60,18 @@ public class InverterService {
         inverter.setPrice(dto.getPrice());
         inverter.setStockQuantity(dto.getStockQuantity());
         inverter.setImageUrl(dto.getImageUrl());
+        inverter.setReferenceUrl(dto.getReferenceUrl());
         inverter.setActive(dto.isActive());
         inverter.setRatedPowerKw(dto.getRatedPowerKw());
         inverter.setSurgePowerKw(dto.getSurgePowerKw());
         inverter.setInverterType(dto.getInverterType());
         inverter.setMpptChannels(dto.getMpptChannels());
         inverter.setMaxInputVoltage(dto.getMaxInputVoltage());
+        inverter.setBatteryVoltage(dto.getBatteryVoltage());
+        inverter.setMpptMinVoltage(dto.getMpptMinVoltage());
+        inverter.setMpptMaxChargeCurrentA(dto.getMpptMaxChargeCurrentA());
+        inverter.setMpptMaxInputCurrentA(dto.getMpptMaxInputCurrentA());
+        inverter.setMaxPvInputPowerW(dto.getMaxPvInputPowerW());
     }
 
     private InverterDto toDto(Inverter inverter) {
@@ -78,12 +84,21 @@ public class InverterService {
         dto.setPrice(inverter.getPrice());
         dto.setStockQuantity(inverter.getStockQuantity());
         dto.setImageUrl(inverter.getImageUrl());
+        dto.setReferenceUrl(inverter.getReferenceUrl());
         dto.setActive(inverter.isActive());
         dto.setRatedPowerKw(inverter.getRatedPowerKw());
         dto.setSurgePowerKw(inverter.getSurgePowerKw());
         dto.setInverterType(inverter.getInverterType());
         dto.setMpptChannels(inverter.getMpptChannels());
         dto.setMaxInputVoltage(inverter.getMaxInputVoltage());
+        dto.setBatteryVoltage(inverter.getBatteryVoltage());
+        dto.setMpptMinVoltage(inverter.getMpptMinVoltage());
+        dto.setMpptMaxChargeCurrentA(inverter.getMpptMaxChargeCurrentA());
+        dto.setMpptMaxInputCurrentA(inverter.getMpptMaxInputCurrentA());
+        dto.setMaxPvInputPowerW(inverter.getMaxPvInputPowerW());
+        dto.setMaxChargePowerW(inverter.getMaxChargePowerW());
+        dto.setEffectiveMaxPvPowerW(inverter.getEffectiveMaxPvPowerW());
+        dto.setMaxPvPowerEstimated(inverter.isMaxPvPowerEstimated());
         return dto;
     }
 }

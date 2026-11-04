@@ -216,6 +216,47 @@
                     </p>
                 </div>
 
+                <!-- RECOMMENDED WIRING -->
+                <th:block th:with="compat=${compatibilityByKitId.get(kit.id)}">
+                <div class="border rounded p-3 mt-3"
+                     th:if="${compat != null and (compat.batteryBank != null or compat.panelArray != null or not #lists.isEmpty(compat.wiring))}">
+                    <h6 class="fw-semibold mb-3">
+                        <i class="bi bi-plug-fill text-success"></i>
+                        Configuración y cableado recomendado
+                    </h6>
+                    <p class="small mb-1" th:if="${compat.batteryBank != null}">
+                        <strong>Banco de baterías:</strong> <span th:text="${compat.batteryBank}">-</span>
+                    </p>
+                    <p class="small mb-1" th:if="${compat.panelArray != null}">
+                        <strong>Paneles:</strong> <span th:text="${compat.panelArray}">-</span>
+                    </p>
+                    <div class="table-responsive" th:if="${not #lists.isEmpty(compat.wiring)}">
+                        <table class="table table-sm small mt-2 mb-0">
+                            <thead>
+                            <tr>
+                                <th>Tramo</th>
+                                <th>Corriente</th>
+                                <th>Calibre mínimo</th>
+                                <th>Protección</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="w : ${compat.wiring}">
+                                <td th:text="${w.segment}">-</td>
+                                <td th:text="${w.operatingCurrentA} + ' A'">-</td>
+                                <td th:text="${w.gaugeLabel != null} ? ${w.gaugeLabel} + ' (' + ${w.lengthMeters} + ' m)' : 'Requiere revisión'">-</td>
+                                <td th:text="${w.fuseA != null} ? ${w.fuseA} + ' A' : '—'">-</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="small text-muted mt-2 mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Cable de cobre, caída de voltaje máx. 3 %. Orientativo, sujeto a validación en sitio.
+                    </p>
+                </div>
+                </th:block>
+
                 <div class="text-center mt-4">
                     <a href="/cotizacion" class="btn btn-outline-dark btn-sm">
                         Cotizar mi sistema

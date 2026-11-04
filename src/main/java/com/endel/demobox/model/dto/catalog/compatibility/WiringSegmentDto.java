@@ -1,0 +1,30 @@
+package com.endel.demobox.model.dto.catalog.compatibility;
+
+import com.endel.demobox.model.catalog.WireGauge;
+import lombok.Data;
+
+@Data
+public class WiringSegmentDto {
+    private String segment;
+    /** Max current the run actually carries. */
+    private double operatingCurrentA;
+    /** operatingCurrentA with the 1.25 continuous-load safety factor - what the wire and fuse are sized for. */
+    private double designCurrentA;
+    /** One-way run length; positive + negative conductors need twice this. */
+    private double lengthMeters;
+    /** Separate identical runs (e.g. one battery cable pair per inverter). */
+    private int runs = 1;
+    /** Null when no single gauge in the table can carry the current within the voltage-drop limit. */
+    private WireGauge gauge;
+    private String gaugeLabel;
+    private double voltageDropPercent;
+    /** Recommended protection; null when the run doesn't need one. */
+    private Integer fuseA;
+    private String fuseNote;
+    /** Which of the kit's own cables cover this run, if any. */
+    private String coveredBy;
+
+    public double getRequiredCableMeters() {
+        return lengthMeters * 2 * runs;
+    }
+}

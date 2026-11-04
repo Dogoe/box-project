@@ -1,7 +1,9 @@
 package com.endel.demobox.model.dto.catalog;
 
+import com.endel.demobox.model.catalog.WireGauge;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
@@ -31,8 +33,14 @@ public class ConnectionCableDto {
 
     private String imageUrl;
 
+    @Pattern(regexp = "^(https?://\\S+)?$", message = "La URL de referencia debe empezar con http:// o https://")
+    private String referenceUrl;
+
     private boolean active = true;
 
     @Positive
     private double lengthMeters;
+
+    @NotNull
+    private WireGauge gauge;
 }

@@ -60,6 +60,7 @@ public class AluminumStructureService {
         structure.setPrice(dto.getPrice());
         structure.setStockQuantity(dto.getStockQuantity());
         structure.setImageUrl(dto.getImageUrl());
+        structure.setReferenceUrl(dto.getReferenceUrl());
         structure.setActive(dto.isActive());
     }
 
@@ -73,6 +74,7 @@ public class AluminumStructureService {
         dto.setPrice(structure.getPrice());
         dto.setStockQuantity(structure.getStockQuantity());
         dto.setImageUrl(structure.getImageUrl());
+        dto.setReferenceUrl(structure.getReferenceUrl());
         dto.setActive(structure.isActive());
         return dto;
     }
