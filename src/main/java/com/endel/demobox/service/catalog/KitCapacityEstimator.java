@@ -14,6 +14,13 @@ import java.util.List;
  * formulas and default assumptions SizingCalculatorService/LoadSurveyDto use
  * (5 peak sun hours, 1 day autonomy, etc.) so this stays an honest estimate
  * consistent with the quote wizard's own math, not a separate guess.
+ * <p>
+ * Splits the estimate into a night budget (battery only - nothing runs off
+ * panels after dark) and a day budget (panel generation). Appliances that run
+ * close to 24h/day (fridges, freezers, ...) depend on the battery lasting the
+ * night, so they're checked against the night budget. Whatever the panels
+ * generate beyond what the battery needs to recharge for the next night is
+ * the day surplus, and daytime-only appliances are checked against that.
  */
 @Service
 public class KitCapacityEstimator {
@@ -26,9 +33,13 @@ public class KitCapacityEstimator {
     private static final double DEFAULT_INVERTER_SAFETY_MARGIN = 1.10;
 
     // An appliance is only listed as "compatible" if running it alone would use at
-    // most this fraction of the kit's estimated daily budget, leaving headroom to
-    // combine it with other devices rather than consuming the whole kit by itself.
+    // most this fraction of the relevant budget, leaving headroom to combine it
+    // with other devices rather than consuming the whole budget by itself.
     private static final double COMPATIBLE_APPLIANCE_BUDGET_FRACTION = 0.40;
+
+    // Appliances that run at or above this many hours/day are treated as "always
+    // on" (fridges, freezers, always-on routers) rather than daytime-only.
+    private static final double ALWAYS_ON_HOURS_THRESHOLD = 20.0;
 
     private final ApplianceTemplateCatalog applianceTemplateCatalog;
 
@@ -37,29 +48,44 @@ public class KitCapacityEstimator {
     }
 
     public KitCapacityDto estimate(KitDto kit) {
-        // No battery means this dimension doesn't constrain daily energy (there's
-        // nothing to size for autonomy); the panel array becomes the only limit.
-        double maxDailyFromBattery = kit.getTotalBatteryCapacityKwh() > 0
+        // No battery means nothing sustains the kit after dark.
+        double nightBudgetKwh = kit.getTotalBatteryCapacityKwh() > 0
                 ? kit.getTotalBatteryCapacityKwh() * DEFAULT_DEPTH_OF_DISCHARGE * DEFAULT_BATTERY_ROUND_TRIP_EFFICIENCY / DEFAULT_AUTONOMY_DAYS
-                : Double.MAX_VALUE;
-        double maxDailyFromPanels = kit.getTotalPanelArrayKwp() * DEFAULT_PEAK_SUN_HOURS * DEFAULT_SYSTEM_DERATE_FACTOR;
-        double estimatedMaxDailyKwh = round(Math.min(maxDailyFromBattery, maxDailyFromPanels));
+                : 0.0;
+        double dayBudgetKwh = kit.getTotalPanelArrayKwp() * DEFAULT_PEAK_SUN_HOURS * DEFAULT_SYSTEM_DERATE_FACTOR;
+        double daySurplusKwh = Math.max(0.0, dayBudgetKwh - nightBudgetKwh);
 
         double estimatedMaxContinuousKw = round(kit.getTotalInverterPowerKw() / DEFAULT_INVERTER_SAFETY_MARGIN);
 
-        double compatibleBudgetKwh = estimatedMaxDailyKwh * COMPATIBLE_APPLIANCE_BUDGET_FRACTION;
-        List<String> compatibleAppliances = applianceTemplateCatalog.groupedByCategory().values().stream()
+        List<ApplianceTemplate> allTemplates = applianceTemplateCatalog.groupedByCategory().values().stream()
                 .flatMap(List::stream)
-                .filter(template -> dailyEnergyKwh(template) <= compatibleBudgetKwh)
+                .toList();
+
+        double alwaysOnBudgetKwh = Math.min(nightBudgetKwh, dayBudgetKwh) * COMPATIBLE_APPLIANCE_BUDGET_FRACTION;
+        List<String> alwaysOnAppliances = allTemplates.stream()
+                .filter(template -> template.getDefaultHoursPerDay() >= ALWAYS_ON_HOURS_THRESHOLD)
+                .filter(template -> dailyEnergyKwh(template) <= alwaysOnBudgetKwh)
+                .map(ApplianceTemplate::getLabel)
+                .distinct()
+                .sorted()
+                .toList();
+
+        double daytimeBudgetKwh = daySurplusKwh * COMPATIBLE_APPLIANCE_BUDGET_FRACTION;
+        List<String> extraDaytimeAppliances = allTemplates.stream()
+                .filter(template -> template.getDefaultHoursPerDay() < ALWAYS_ON_HOURS_THRESHOLD)
+                .filter(template -> dailyEnergyKwh(template) <= daytimeBudgetKwh)
                 .map(ApplianceTemplate::getLabel)
                 .distinct()
                 .sorted()
                 .toList();
 
         KitCapacityDto dto = new KitCapacityDto();
-        dto.setEstimatedMaxDailyKwh(estimatedMaxDailyKwh);
+        dto.setNightBudgetKwh(round(nightBudgetKwh));
+        dto.setDayBudgetKwh(round(dayBudgetKwh));
+        dto.setDaySurplusKwh(round(daySurplusKwh));
         dto.setEstimatedMaxContinuousKw(estimatedMaxContinuousKw);
-        dto.setCompatibleAppliances(compatibleAppliances);
+        dto.setAlwaysOnAppliances(alwaysOnAppliances);
+        dto.setExtraDaytimeAppliances(extraDaytimeAppliances);
         return dto;
     }
 

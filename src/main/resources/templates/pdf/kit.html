@@ -19,6 +19,10 @@
         .stat-label { color: #6c757d; font-size: 9pt; display: block; }
         .stat-value { font-size: 13pt; font-weight: bold; display: block; }
         .power-box { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 14px; margin-top: 10px; }
+        .power-columns { width: 100%; border-collapse: collapse; }
+        .power-columns td { vertical-align: top; width: 50%; padding: 0 10px 0 0; border: none; }
+        .power-columns td + td { padding: 0 0 0 10px; }
+        .power-heading { font-weight: bold; font-size: 10pt; margin-bottom: 4px; }
         .badge { display: inline-block; border: 1px solid #ced4da; border-radius: 4px; padding: 2px 8px; margin: 2px; font-size: 9pt; }
         .footer { margin-top: 30px; color: #adb5bd; font-size: 8pt; text-align: center; }
     </style>
@@ -74,18 +78,49 @@
 
 <h2>Que puede alimentar</h2>
 <div class="power-box">
+    <table class="power-columns">
+        <tr>
+            <td>
+                <div class="power-heading">Durante la noche</div>
+                <p>
+                    La bateria sostiene hasta
+                    <strong th:text="${#numbers.formatDecimal(capacity.nightBudgetKwh, 1, 2)} + ' kWh'">-</strong>
+                    sin sol.
+                </p>
+                <div th:if="${not #lists.isEmpty(capacity.alwaysOnAppliances)}">
+                    <span class="badge" th:each="appliance : ${capacity.alwaysOnAppliances}" th:text="${appliance}">Aparato</span>
+                </div>
+                <p th:if="${#lists.isEmpty(capacity.alwaysOnAppliances)}">
+                    Ningun aparato de uso continuo cabe comodamente por si solo.
+                </p>
+            </td>
+            <td>
+                <div class="power-heading">Durante el dia</div>
+                <p th:if="${capacity.daySurplusKwh > 0}">
+                    Los paneles generan
+                    <strong th:text="${#numbers.formatDecimal(capacity.dayBudgetKwh, 1, 2)} + ' kWh'">-</strong>
+                    al dia; tras recargar la bateria sobran
+                    <strong th:text="${#numbers.formatDecimal(capacity.daySurplusKwh, 1, 2)} + ' kWh'">-</strong>
+                    para aparatos extra.
+                </p>
+                <p th:if="${capacity.daySurplusKwh <= 0}">
+                    Los paneles generan
+                    <strong th:text="${#numbers.formatDecimal(capacity.dayBudgetKwh, 1, 2)} + ' kWh'">-</strong>
+                    al dia - sin excedente para aparatos extra.
+                </p>
+                <div th:if="${not #lists.isEmpty(capacity.extraDaytimeAppliances)}">
+                    <span class="badge" th:each="appliance : ${capacity.extraDaytimeAppliances}" th:text="${appliance}">Aparato</span>
+                </div>
+                <p th:if="${#lists.isEmpty(capacity.extraDaytimeAppliances)}">
+                    Ningun aparato extra cabe en el excedente diurno.
+                </p>
+            </td>
+        </tr>
+    </table>
     <p>
-        Estimado hasta
-        <strong th:text="${#numbers.formatDecimal(capacity.estimatedMaxDailyKwh, 1, 2)} + ' kWh/dia'">-</strong>
-        de consumo, con una carga simultanea de hasta
+        Carga simultanea maxima:
         <strong th:text="${#numbers.formatDecimal(capacity.estimatedMaxContinuousKw, 1, 2)} + ' kW'">-</strong>
         (asumiendo 5 horas de sol pico y 1 dia de autonomia).
-    </p>
-    <div th:if="${not #lists.isEmpty(capacity.compatibleAppliances)}">
-        <span class="badge" th:each="appliance : ${capacity.compatibleAppliances}" th:text="${appliance}">Aparato</span>
-    </div>
-    <p th:if="${#lists.isEmpty(capacity.compatibleAppliances)}">
-        Ningun aparato de nuestro catalogo cabe comodamente en este kit por si solo.
     </p>
 </div>
 

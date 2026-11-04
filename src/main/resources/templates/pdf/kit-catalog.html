@@ -20,6 +20,10 @@
         .stat-label { color: #6c757d; font-size: 8.5pt; display: block; }
         .stat-value { font-size: 11pt; font-weight: bold; display: block; }
         .power-line { color: #495057; font-size: 9.5pt; margin-top: 6px; }
+        .power-columns { width: 100%; border-collapse: collapse; margin-top: 6px; }
+        .power-columns td { vertical-align: top; width: 50%; padding: 0 8px 0 0; border: none; font-size: 9.5pt; }
+        .power-columns td + td { padding: 0 0 0 8px; }
+        .power-heading { font-weight: bold; }
         .badge { display: inline-block; border: 1px solid #ced4da; border-radius: 4px; padding: 1px 6px; margin: 1px; font-size: 8.5pt; }
         .footer { margin-top: 30px; color: #adb5bd; font-size: 8pt; text-align: center; }
     </style>
@@ -74,15 +78,30 @@
         </tbody>
     </table>
 
+    <table class="power-columns">
+        <tr>
+            <td>
+                <span class="power-heading">Noche:</span>
+                <span th:text="${#numbers.formatDecimal(capacity.nightBudgetKwh, 1, 2)} + ' kWh en bateria'">-</span>
+                <div th:if="${not #lists.isEmpty(capacity.alwaysOnAppliances)}">
+                    <span class="badge" th:each="appliance : ${capacity.alwaysOnAppliances}" th:text="${appliance}">Aparato</span>
+                </div>
+            </td>
+            <td>
+                <span class="power-heading">Dia:</span>
+                <span th:text="${#numbers.formatDecimal(capacity.dayBudgetKwh, 1, 2)} + ' kWh de paneles'">-</span>
+                <span th:if="${capacity.daySurplusKwh > 0}"
+                      th:text="'(' + ${#numbers.formatDecimal(capacity.daySurplusKwh, 1, 2)} + ' kWh de excedente)'"></span>
+                <div th:if="${not #lists.isEmpty(capacity.extraDaytimeAppliances)}">
+                    <span class="badge" th:each="appliance : ${capacity.extraDaytimeAppliances}" th:text="${appliance}">Aparato</span>
+                </div>
+            </td>
+        </tr>
+    </table>
     <p class="power-line">
-        Puede alimentar hasta
-        <strong th:text="${#numbers.formatDecimal(capacity.estimatedMaxDailyKwh, 1, 2)} + ' kWh/dia'">-</strong>
-        de consumo (carga simultanea hasta
-        <strong th:text="${#numbers.formatDecimal(capacity.estimatedMaxContinuousKw, 1, 2)} + ' kW'">-</strong>).
+        Carga simultanea maxima:
+        <strong th:text="${#numbers.formatDecimal(capacity.estimatedMaxContinuousKw, 1, 2)} + ' kW'">-</strong>
     </p>
-    <div th:if="${not #lists.isEmpty(capacity.compatibleAppliances)}">
-        <span class="badge" th:each="appliance : ${capacity.compatibleAppliances}" th:text="${appliance}">Aparato</span>
-    </div>
 </div>
 
 <p class="footer">Baja Solar Supply - Catalogo generado automaticamente, sujeto a disponibilidad de inventario.</p>
