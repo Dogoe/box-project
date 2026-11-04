@@ -97,6 +97,8 @@ public class InverterService {
         dto.setMpptMaxInputCurrentA(inverter.getMpptMaxInputCurrentA());
         dto.setMaxPvInputPowerW(inverter.getMaxPvInputPowerW());
         dto.setMaxChargePowerW(inverter.getMaxChargePowerW());
+        dto.setEffectiveMaxPvPowerW(inverter.getEffectiveMaxPvPowerW());
+        dto.setMaxPvPowerEstimated(inverter.isMaxPvPowerEstimated());
         return dto;
     }
 }

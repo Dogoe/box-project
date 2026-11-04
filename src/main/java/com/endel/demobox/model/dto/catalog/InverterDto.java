@@ -68,4 +68,8 @@ public class InverterDto {
 
     // Read-only, derived: mpptMaxChargeCurrentA x batteryVoltage.
     private double maxChargePowerW;
+
+    // Read-only: maxPvInputPowerW when captured, otherwise estimated from charge power.
+    private double effectiveMaxPvPowerW;
+    private boolean maxPvPowerEstimated;
 }

@@ -41,8 +41,9 @@ public class KitCompatibilityService {
     static final double MAX_VOLTAGE_DROP_PERCENT = 3.0;
     // Battery nominal voltages don't match bus voltages exactly (e.g. 51.2 V LiFePO4 on a 48 V inverter).
     static final double NOMINAL_VOLTAGE_TOLERANCE = 0.10;
-    // Beyond this ratio of array watts to MPPT charge power, a meaningful share of production is clipped.
-    static final double OVERPANELING_LIMIT = 1.30;
+    // No kit sold so far comes close; anything above this is most likely a unit typo (W entered as kW).
+    // Raise it when real systems outgrow it.
+    static final double SANITY_LIMIT = 30;
     static final double HIGH_CURRENT_WARNING_A = 150;
     // PV strings need their own fuse once 3+ are paralleled on one input (Isc x 1.56).
     static final int MIN_PARALLEL_STRINGS_NEEDING_FUSE = 3;
@@ -61,6 +62,8 @@ public class KitCompatibilityService {
         List<KitLine> batteries = ofType(lines, Battery.class);
         List<KitLine> inverters = ofType(lines, Inverter.class);
         List<KitLine> cables = ofType(lines, ConnectionCable.class);
+
+        checkSanityLimits(report, panels, batteries, inverters);
 
         if (inverters.isEmpty()) {
             if (!panels.isEmpty() || !batteries.isEmpty()) {
@@ -89,6 +92,30 @@ public class KitCompatibilityService {
         checkKitCables(report, cables, segments);
 
         return report;
+    }
+
+    // ---- Capture sanity ----
+
+    private void checkSanityLimits(KitCompatibilityReportDto report, List<KitLine> panels, List<KitLine> batteries, List<KitLine> inverters) {
+        double batteryKwh = batteries.stream().mapToDouble(l -> ((Battery) l.product()).getCapacityKwh() * l.quantity()).sum();
+        double inverterKw = inverters.stream().mapToDouble(l -> ((Inverter) l.product()).getRatedPowerKw() * l.quantity()).sum();
+        double panelKwp = panels.stream().mapToDouble(l -> ((SolarPanel) l.product()).getWattage() * l.quantity() / 1000.0).sum();
+
+        if (batteryKwh > SANITY_LIMIT) {
+            report.warn(String.format(Locale.US,
+                    "El banco de baterías suma %s kWh, demasiado para un kit (máx. habitual %s kWh); revisa que la capacidad (Ah) y el voltaje estén bien capturados.",
+                    fmt(batteryKwh), fmt(SANITY_LIMIT)));
+        }
+        if (inverterKw > SANITY_LIMIT) {
+            report.warn(String.format(Locale.US,
+                    "Los inversores suman %s kW, demasiado para un kit (máx. habitual %s kW); revisa que la potencia esté en kW y no en W.",
+                    fmt(inverterKw), fmt(SANITY_LIMIT)));
+        }
+        if (panelKwp > SANITY_LIMIT) {
+            report.warn(String.format(Locale.US,
+                    "Los paneles suman %s kWp, demasiado para un kit (máx. habitual %s kWp); revisa que la potencia de cada panel esté en W.",
+                    fmt(panelKwp), fmt(SANITY_LIMIT)));
+        }
     }
 
     // ---- Battery bank ----
@@ -230,18 +257,16 @@ public class KitCompatibilityService {
         }
 
         double arrayWatts = count * panel.getWattage();
-        double maxChargeWatts = inverter.getMaxChargePowerW() * inverterCount;
-        if (inverter.getMaxPvInputPowerW() != null) {
-            double maxPvWatts = inverter.getMaxPvInputPowerW() * inverterCount;
-            if (arrayWatts > maxPvWatts) {
-                report.warn(String.format(Locale.US,
-                        "El arreglo de %s W supera la potencia PV máxima del inversor (%s W según ficha).",
-                        fmt(arrayWatts), fmt(maxPvWatts)));
-            }
-        } else if (maxChargeWatts > 0 && arrayWatts > maxChargeWatts * OVERPANELING_LIMIT) {
-            report.warn(String.format(Locale.US,
-                    "El arreglo de %s W supera por mucho la potencia de carga del MPPT (%s W); parte de la producción se desperdiciará.",
-                    fmt(arrayWatts), fmt(maxChargeWatts)));
+        double maxPvWatts = inverter.getEffectiveMaxPvPowerW() * inverterCount;
+        if (maxPvWatts > 0 && arrayWatts > maxPvWatts) {
+            report.warn(inverter.isMaxPvPowerEstimated()
+                    ? String.format(Locale.US,
+                    "El arreglo de %s W supera la potencia PV máxima estimada del inversor (~%s W: carga de %s W + 30 %%); "
+                            + "parte de la producción se desperdiciará. Captura la potencia PV máx. de la ficha para usar el dato exacto.",
+                    fmt(arrayWatts), fmt(maxPvWatts), fmt(inverter.getMaxChargePowerW() * inverterCount))
+                    : String.format(Locale.US,
+                    "El arreglo de %s W supera la potencia PV máxima del inversor (%s W según ficha).",
+                    fmt(arrayWatts), fmt(maxPvWatts)));
         }
 
         report.setPanelArray(String.format(Locale.US, "%d %s de %d paneles en serie · ~%s V de operación, %s V Voc en frío",

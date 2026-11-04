@@ -64,7 +64,19 @@ public class Inverter extends Product {
     @Positive
     private Double mpptMaxInputCurrentA;
 
+    // Datasheet PV limits typically run 1.25-1.5x charge power, since surplus feeds loads directly.
+    public static final double ESTIMATED_PV_TO_CHARGE_POWER_RATIO = 1.30;
+
     public double getMaxChargePowerW() {
         return batteryVoltage == null || mpptMaxChargeCurrentA == null ? 0 : batteryVoltage * mpptMaxChargeCurrentA;
+    }
+
+    public boolean isMaxPvPowerEstimated() {
+        return maxPvInputPowerW == null;
+    }
+
+    /** Datasheet max PV power when captured, otherwise estimated from charge power; 0 when neither is known. */
+    public double getEffectiveMaxPvPowerW() {
+        return maxPvInputPowerW != null ? maxPvInputPowerW : getMaxChargePowerW() * ESTIMATED_PV_TO_CHARGE_POWER_RATIO;
     }
 }

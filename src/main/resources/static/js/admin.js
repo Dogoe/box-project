@@ -145,6 +145,8 @@
                 { key: 'ratedPowerKw', label: 'Potencia', suffix: ' kW' },
                 { key: 'batteryVoltage', label: 'Batería', suffix: ' V' },
                 { key: 'mpptMaxChargeCurrentA', label: 'Carga MPPT', suffix: ' A' },
+                { key: 'effectiveMaxPvPowerW', label: 'PV máx.', format: (item) => item.effectiveMaxPvPowerW > 0
+                    ? Math.round(item.effectiveMaxPvPowerW) + ' W' + (item.maxPvPowerEstimated ? ' (est.)' : '') : '' },
                 { key: 'price', label: 'Precio', prefix: '$' },
                 { key: 'stockQuantity', label: 'Stock' },
                 { key: 'referenceUrl', label: 'Ref.', type: 'link' },
@@ -170,7 +172,7 @@
                 { key: 'mpptMinVoltage', label: 'MPPT: voltaje PV mínimo de operación (V)', type: 'number', step: '0.1' },
                 { key: 'mpptMaxInputCurrentA', label: 'MPPT: corriente PV máx. por canal (A)', type: 'number', step: '0.1' },
                 { key: 'mpptMaxChargeCurrentA', label: 'MPPT: corriente máx. de carga a batería (A)', type: 'number', step: '0.1', required: true },
-                { key: 'maxPvInputPowerW', label: 'MPPT: potencia PV máx. (W) — opcional; si se deja vacío se estima con la corriente de carga', type: 'number', step: '1' },
+                { key: 'maxPvInputPowerW', label: 'MPPT: potencia PV máx. (W) — opcional, dato de la ficha', type: 'number', step: '1' },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
         },
@@ -245,6 +247,9 @@
     // ---- Generic (panels/batteries/inverters) rendering ----
 
     function formatValue(item, column) {
+        if (column.format) {
+            return column.format(item);
+        }
         const value = item[column.key];
         if (column.type === 'boolean') {
             return value ? 'Sí' : 'No';
@@ -379,8 +384,29 @@
             modalTitleEl.textContent = 'Nuevo producto';
             renderGenericForm(config, null);
         }
+        if (currentEntity === 'inverters') {
+            wireInverterPvEstimate();
+        }
 
         modal.show();
+    }
+
+    // Mirrors Inverter.ESTIMATED_PV_TO_CHARGE_POWER_RATIO on the server.
+    const PV_ESTIMATE_RATIO = 1.3;
+
+    function wireInverterPvEstimate() {
+        const pvInput = document.getElementById('field-maxPvInputPowerW');
+        const voltageInput = document.getElementById('field-batteryVoltage');
+        const chargeInput = document.getElementById('field-mpptMaxChargeCurrentA');
+        const update = () => {
+            const estimate = Number(voltageInput.value) * Number(chargeInput.value) * PV_ESTIMATE_RATIO;
+            pvInput.placeholder = estimate > 0
+                ? 'Vacío = se usa el estimado ~' + Math.round(estimate) + ' W (carga × voltaje × 1.3)'
+                : 'Vacío = se estima con la corriente de carga × voltaje × 1.3';
+        };
+        voltageInput.addEventListener('change', update);
+        chargeInput.addEventListener('input', update);
+        update();
     }
 
     // ---- Kits (own logic: nested items referencing existing products) ----

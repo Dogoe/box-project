@@ -210,7 +210,7 @@ class KitCompatibilityServiceTest {
                 new KitLine(allInOne3600(null), 1),
                 new KitLine(panel(), 7)), lengths);
 
-        assertTrue(hasCheck(report, CompatibilitySeverity.WARNING, "potencia de carga del MPPT"));
+        assertTrue(hasCheck(report, CompatibilitySeverity.WARNING, "potencia PV máxima estimada del inversor (~3744 W"));
     }
 
     @Test
@@ -231,6 +231,38 @@ class KitCompatibilityServiceTest {
                 new KitLine(panel(), 8)), lengths);
 
         assertTrue(hasCheck(report, CompatibilitySeverity.WARNING, "potencia PV máxima del inversor (4200 W según ficha)"));
+    }
+
+    @Test
+    void inverterPowerTypedInWattsIsFlaggedAsImplausible() {
+        // 1000 entered in the kW field instead of 1.
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverter(1000, 12.0, InverterType.OFF_GRID), 1),
+                new KitLine(battery(12.8, 50), 1)), lengths);
+
+        assertTrue(hasCheck(report, CompatibilitySeverity.WARNING, "Los inversores suman 1000 kW"));
+    }
+
+    @Test
+    void batteryBankAboveThirtyKwhIsFlaggedButThirtyOrLessIsNot() {
+        // 6 x 51.2 V x 100 Ah = 30.72 kWh; 5 x = 25.6 kWh
+        KitCompatibilityReportDto tooBig = service.analyze(List.of(
+                new KitLine(inverter(5.0, 48.0, InverterType.HYBRID), 1),
+                new KitLine(battery(51.2, 100), 6)), lengths);
+        KitCompatibilityReportDto fine = service.analyze(List.of(
+                new KitLine(inverter(5.0, 48.0, InverterType.HYBRID), 1),
+                new KitLine(battery(51.2, 100), 5)), lengths);
+
+        assertTrue(hasCheck(tooBig, CompatibilitySeverity.WARNING, "El banco de baterías suma 30.7 kWh"));
+        assertTrue(fine.getChecks().stream().noneMatch(c -> c.getMessage().contains("demasiado")));
+    }
+
+    @Test
+    void panelArrayAboveThirtyKwpIsFlaggedEvenWithoutAnInverter() {
+        // 56 x 550 W = 30.8 kWp
+        KitCompatibilityReportDto report = service.analyze(List.of(new KitLine(panel(), 56)), lengths);
+
+        assertTrue(hasCheck(report, CompatibilitySeverity.WARNING, "Los paneles suman 30.8 kWp"));
     }
 
     @Test
