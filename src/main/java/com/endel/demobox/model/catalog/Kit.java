@@ -40,6 +40,9 @@ public class Kit {
     /** Optional manual override; when null the kit price is the sum of item (product price * quantity). */
     private BigDecimal priceOverride;
 
+    /** Optional photo URL shown on the public catalog pages; hosted externally. */
+    private String imageUrl;
+
     @OneToMany(mappedBy = "kit", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<KitItem> items = new ArrayList<>();
 }

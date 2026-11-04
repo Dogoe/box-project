@@ -363,6 +363,8 @@
             '<textarea class="form-control" id="kit-description">' + (kit && kit.description ? kit.description : '') + '</textarea></div>' +
             '<div class="mb-3"><label class="form-label">Precio manual (opcional; si se deja vacío se calcula sumando sus productos)</label>' +
             '<input type="number" step="0.01" class="form-control" id="kit-price-override" value="' + (kit && kit.priceOverride != null ? kit.priceOverride : '') + '"></div>' +
+            '<div class="mb-3"><label class="form-label">URL de imagen (opcional)</label>' +
+            '<input type="text" class="form-control" id="kit-image-url" value="' + (kit && kit.imageUrl ? kit.imageUrl : '') + '"></div>' +
             '<div class="form-check mb-3"><input type="checkbox" class="form-check-input" id="kit-active"' + (!kit || kit.active ? ' checked' : '') + '>' +
             '<label class="form-check-label" for="kit-active">Activo</label></div>' +
             '<label class="form-label">Productos incluidos</label>' +
@@ -385,12 +387,14 @@
             quantity: Number(row.querySelector('.kit-item-qty').value)
         }));
         const priceOverrideInput = document.getElementById('kit-price-override').value;
+        const imageUrlInput = document.getElementById('kit-image-url').value;
 
         return {
             name: document.getElementById('kit-name').value,
             description: document.getElementById('kit-description').value,
             active: document.getElementById('kit-active').checked,
             priceOverride: priceOverrideInput === '' ? null : Number(priceOverrideInput),
+            imageUrl: imageUrlInput === '' ? null : imageUrlInput,
             items: items
         };
     }

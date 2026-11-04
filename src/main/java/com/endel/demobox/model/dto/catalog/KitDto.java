@@ -24,6 +24,8 @@ public class KitDto {
 
     private BigDecimal computedPrice;
 
+    private String imageUrl;
+
     /** Sum of this kit's panel wattages (kWp), battery capacities (kWh), and inverter ratings (kW). */
     private double totalPanelArrayKwp;
     private double totalBatteryCapacityKwh;
