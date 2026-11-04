@@ -18,9 +18,9 @@ public class KitCapacityDto {
 
     private double estimatedMaxContinuousKw;
 
-    /** ~24h/day appliances (fridges, etc.) that the battery alone can sustain through the night. */
-    private List<String> alwaysOnAppliances = new ArrayList<>();
+    /** Appliances that fit the night (battery) budget, each using its own default hours/day. */
+    private List<String> nightAppliances = new ArrayList<>();
 
-    /** Daytime-only appliances that fit within the panels' surplus over the battery's nightly needs. */
-    private List<String> extraDaytimeAppliances = new ArrayList<>();
+    /** Appliances that fit the day surplus (panels beyond the battery's nightly needs), each using its own default hours/day. */
+    private List<String> dayAppliances = new ArrayList<>();
 }

@@ -83,8 +83,8 @@
             <td>
                 <span class="power-heading">Noche:</span>
                 <span th:text="${#numbers.formatDecimal(capacity.nightBudgetKwh, 1, 2)} + ' kWh en bateria'">-</span>
-                <div th:if="${not #lists.isEmpty(capacity.alwaysOnAppliances)}">
-                    <span class="badge" th:each="appliance : ${capacity.alwaysOnAppliances}" th:text="${appliance}">Aparato</span>
+                <div th:if="${not #lists.isEmpty(capacity.nightAppliances)}">
+                    <span class="badge" th:each="appliance : ${capacity.nightAppliances}" th:text="${appliance}">Aparato</span>
                 </div>
             </td>
             <td>
@@ -92,8 +92,8 @@
                 <span th:text="${#numbers.formatDecimal(capacity.dayBudgetKwh, 1, 2)} + ' kWh de paneles'">-</span>
                 <span th:if="${capacity.daySurplusKwh > 0}"
                       th:text="'(' + ${#numbers.formatDecimal(capacity.daySurplusKwh, 1, 2)} + ' kWh de excedente)'"></span>
-                <div th:if="${not #lists.isEmpty(capacity.extraDaytimeAppliances)}">
-                    <span class="badge" th:each="appliance : ${capacity.extraDaytimeAppliances}" th:text="${appliance}">Aparato</span>
+                <div th:if="${not #lists.isEmpty(capacity.dayAppliances)}">
+                    <span class="badge" th:each="appliance : ${capacity.dayAppliances}" th:text="${appliance}">Aparato</span>
                 </div>
             </td>
         </tr>

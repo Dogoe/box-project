@@ -162,17 +162,17 @@
                             <p class="small text-secondary mb-2">
                                 La batería sostiene hasta
                                 <strong th:text="${capacity.nightBudgetKwh} + ' kWh'">-</strong>
-                                sin sol — lo que mantiene encendidos los aparatos de uso continuo.
+                                sin sol.
                             </p>
-                            <div th:if="${not #lists.isEmpty(capacity.alwaysOnAppliances)}">
+                            <div th:if="${not #lists.isEmpty(capacity.nightAppliances)}">
                                 <span class="badge bg-white text-dark border me-1 mb-1"
-                                      th:each="appliance : ${capacity.alwaysOnAppliances}"
+                                      th:each="appliance : ${capacity.nightAppliances}"
                                       th:text="${appliance}">
                                     Aparato
                                 </span>
                             </div>
-                            <p class="small text-muted mb-0" th:if="${#lists.isEmpty(capacity.alwaysOnAppliances)}">
-                                Ningún aparato de uso continuo de nuestro catálogo cabe cómodamente por sí solo.
+                            <p class="small text-muted mb-0" th:if="${#lists.isEmpty(capacity.nightAppliances)}">
+                                Ningún aparato de nuestro catálogo cabe cómodamente por sí solo.
                             </p>
                         </div>
 
@@ -194,14 +194,14 @@
                                 <strong th:text="${capacity.dayBudgetKwh} + ' kWh'">-</strong>
                                 al día — justo lo necesario para recargar la batería, sin excedente para aparatos extra.
                             </p>
-                            <div th:if="${not #lists.isEmpty(capacity.extraDaytimeAppliances)}">
+                            <div th:if="${not #lists.isEmpty(capacity.dayAppliances)}">
                                 <span class="badge bg-white text-dark border me-1 mb-1"
-                                      th:each="appliance : ${capacity.extraDaytimeAppliances}"
+                                      th:each="appliance : ${capacity.dayAppliances}"
                                       th:text="${appliance}">
                                     Aparato
                                 </span>
                             </div>
-                            <p class="small text-muted mb-0" th:if="${#lists.isEmpty(capacity.extraDaytimeAppliances)}">
+                            <p class="small text-muted mb-0" th:if="${#lists.isEmpty(capacity.dayAppliances)}">
                                 Ningún aparato extra de nuestro catálogo cabe en el excedente diurno.
                             </p>
                         </div>
@@ -212,7 +212,7 @@
                         <i class="bi bi-info-circle"></i>
                         Carga simultánea máxima:
                         <strong th:text="${capacity.estimatedMaxContinuousKw} + ' kW'">-</strong>
-                        (asumiendo 5 horas de sol pico y 1 día de autonomía).
+                        (asumiendo 6 horas de sol pico y 1 día de autonomía).
                     </p>
                 </div>
 

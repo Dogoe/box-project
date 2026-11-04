@@ -49,13 +49,13 @@ class KitCapacityEstimatorTest {
         KitCapacityEstimator estimator = new KitCapacityEstimator(catalog);
 
         // night (battery): 10 kWh * 0.8 * 0.95 = 7.6 kWh
-        // day (panels): 2.0 kWp * 5.0 peak sun hours * 0.80 = 8.0 kWh
-        // surplus: 8.0 - 7.6 = 0.4 kWh
+        // day (panels): 2.0 kWp * 6.0 peak sun hours * 0.80 = 9.6 kWh
+        // surplus: 9.6 - 7.6 = 2.0 kWh
         KitCapacityDto result = estimator.estimate(kit(2.0, 10.0, 3.0));
 
         assertEquals(7.6, result.getNightBudgetKwh(), 0.001);
-        assertEquals(8.0, result.getDayBudgetKwh(), 0.001);
-        assertEquals(0.4, result.getDaySurplusKwh(), 0.001);
+        assertEquals(9.6, result.getDayBudgetKwh(), 0.001);
+        assertEquals(2.0, result.getDaySurplusKwh(), 0.001);
         assertEquals(2.73, result.getEstimatedMaxContinuousKw(), 0.01); // 3.0 / 1.10
     }
 
@@ -69,13 +69,13 @@ class KitCapacityEstimatorTest {
         KitCapacityDto result = estimator.estimate(kit(1.5, 0.0, 1.0));
 
         assertEquals(0.0, result.getNightBudgetKwh(), 0.001);
-        assertEquals(6.0, result.getDayBudgetKwh(), 0.001); // 1.5 * 5.0 * 0.80
-        assertEquals(6.0, result.getDaySurplusKwh(), 0.001);
+        assertEquals(7.2, result.getDayBudgetKwh(), 0.001); // 1.5 * 6.0 * 0.80
+        assertEquals(7.2, result.getDaySurplusKwh(), 0.001);
     }
 
     @Test
-    void alwaysOnAppliancesAreCheckedAgainstTheNightBudget() {
-        // night budget = 7.6 kWh -> always-on budget = 7.6 * 0.40 = 3.04 kWh/day
+    void nightAppliancesAreCheckedAgainstTheNightBudgetUsingTheirOwnDefaultHours() {
+        // night budget = 7.6 kWh -> allowance = 7.6 * 0.40 = 3.04 kWh/day
         KitCapacityEstimator estimator = estimatorWith(
                 template("SmallFridge", 100, 24), // 2.4 kWh/day -> fits
                 template("BigFridge", 200, 24)     // 4.8 kWh/day -> too big
@@ -83,42 +83,45 @@ class KitCapacityEstimatorTest {
 
         KitCapacityDto result = estimator.estimate(kit(2.0, 10.0, 3.0));
 
-        assertEquals(List.of("SmallFridge"), result.getAlwaysOnAppliances());
+        assertEquals(List.of("SmallFridge"), result.getNightAppliances());
     }
 
     @Test
-    void extraDaytimeAppliancesAreCheckedAgainstTheDaySurplusNotTheFullDayBudget() {
-        // day surplus = 0.4 kWh -> daytime budget = 0.4 * 0.40 = 0.16 kWh/day
+    void dayAppliancesAreCheckedAgainstTheDaySurplusUsingTheirOwnDefaultHours() {
+        // day surplus = 2.0 kWh -> allowance = 2.0 * 0.40 = 0.8 kWh/day
         KitCapacityEstimator estimator = estimatorWith(
                 template("SmallLamp", 10, 5),  // 0.05 kWh/day -> fits
-                template("TV", 100, 4)          // 0.4 kWh/day -> too big for the surplus
+                template("BigOven", 1000, 1)    // 1.0 kWh/day -> too big for the surplus
         );
 
         KitCapacityDto result = estimator.estimate(kit(2.0, 10.0, 3.0));
 
-        assertEquals(List.of("SmallLamp"), result.getExtraDaytimeAppliances());
+        assertEquals(List.of("SmallLamp"), result.getDayAppliances());
     }
 
     @Test
-    void anAlwaysOnApplianceNeverAppearsInTheExtraDaytimeListEvenIfCheapEnoughToFitThere() {
-        // 5W * 24h = 0.12 kWh/day would fit the 0.16 kWh daytime budget, but it runs
-        // around the clock, so it must only be evaluated against the night budget.
+    void anApplianceCanAppearInBothListsWhenItsCheapEnoughForBothBudgets() {
+        // 5W * 24h = 0.12 kWh/day easily fits both the night allowance (3.04 kWh)
+        // and the day surplus allowance (0.8 kWh) - no exclusive day/night bucketing
+        // by how many hours it runs, matching how a cheap always-on device (a small
+        // router, for instance) genuinely works fine off either the battery at night
+        // or the panels during the day.
         KitCapacityEstimator estimator = estimatorWith(template("TinyAlwaysOn", 5, 24));
 
         KitCapacityDto result = estimator.estimate(kit(2.0, 10.0, 3.0));
 
-        assertTrue(result.getAlwaysOnAppliances().contains("TinyAlwaysOn"));
-        assertTrue(result.getExtraDaytimeAppliances().isEmpty());
+        assertTrue(result.getNightAppliances().contains("TinyAlwaysOn"));
+        assertTrue(result.getDayAppliances().contains("TinyAlwaysOn"));
     }
 
     @Test
-    void whenPanelsDoNotOutgrowTheBatteryNeedTheExtraDaytimeListIsEmpty() {
-        // night budget = 7.6 kWh, day budget = 1.0 * 5.0 * 0.80 = 4.0 kWh -> surplus = 0
+    void whenPanelsDoNotOutgrowTheBatteryNeedTheDayListIsEmpty() {
+        // night budget = 7.6 kWh, day budget = 1.0 * 6.0 * 0.80 = 4.8 kWh -> surplus = 0
         KitCapacityEstimator estimator = estimatorWith(template("CheapLamp", 1, 1)); // 0.001 kWh/day
 
         KitCapacityDto result = estimator.estimate(kit(1.0, 10.0, 3.0));
 
         assertEquals(0.0, result.getDaySurplusKwh(), 0.001);
-        assertTrue(result.getExtraDaytimeAppliances().isEmpty());
+        assertTrue(result.getDayAppliances().isEmpty());
     }
 }
