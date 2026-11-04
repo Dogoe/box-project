@@ -11,6 +11,7 @@ import com.endel.demobox.model.dto.catalog.KitDto;
 import com.endel.demobox.model.dto.catalog.KitItemDto;
 import com.endel.demobox.repository.catalog.KitRepository;
 import com.endel.demobox.repository.catalog.ProductRepository;
+import com.endel.demobox.service.ProfitMarginService;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -22,42 +23,42 @@ import java.util.List;
 public class KitService {
     private final KitRepository kitRepository;
     private final ProductRepository productRepository;
+    private final ProfitMarginService profitMarginService;
 
-    public KitService(KitRepository kitRepository, ProductRepository productRepository) {
+    public KitService(KitRepository kitRepository, ProductRepository productRepository, ProfitMarginService profitMarginService) {
         this.kitRepository = kitRepository;
         this.productRepository = productRepository;
+        this.profitMarginService = profitMarginService;
     }
 
     public List<KitDto> findAll() {
-        return kitRepository.findAll().stream().map(this::toDto).toList();
+        BigDecimal marginPercent = profitMarginService.getCurrentMargin().getMarginPercent();
+        return kitRepository.findAll().stream().map(kit -> toDto(kit, marginPercent)).toList();
     }
 
     public List<KitDto> findAllActive() {
+        BigDecimal marginPercent = profitMarginService.getCurrentMargin().getMarginPercent();
         return kitRepository.findAll().stream()
                 .filter(Kit::isActive)
-                .map(this::toDto)
-                .sorted(Comparator.comparing(KitService::effectivePrice))
+                .map(kit -> toDto(kit, marginPercent))
+                .sorted(Comparator.comparing(KitDto::getSellPrice))
                 .toList();
     }
 
-    private static BigDecimal effectivePrice(KitDto kit) {
-        return kit.getPriceOverride() != null ? kit.getPriceOverride() : kit.getComputedPrice();
-    }
-
     public KitDto getById(Long id) {
-        return toDto(findEntity(id));
+        return toDto(findEntity(id), profitMarginService.getCurrentMargin().getMarginPercent());
     }
 
     public KitDto create(KitDto dto) {
         Kit kit = new Kit();
         applyDto(kit, dto);
-        return toDto(kitRepository.save(kit));
+        return toDto(kitRepository.save(kit), profitMarginService.getCurrentMargin().getMarginPercent());
     }
 
     public KitDto update(Long id, KitDto dto) {
         Kit kit = findEntity(id);
         applyDto(kit, dto);
-        return toDto(kitRepository.save(kit));
+        return toDto(kitRepository.save(kit), profitMarginService.getCurrentMargin().getMarginPercent());
     }
 
     public void delete(Long id) {
@@ -88,7 +89,7 @@ public class KitService {
         }
     }
 
-    private KitDto toDto(Kit kit) {
+    private KitDto toDto(Kit kit, BigDecimal marginPercent) {
         KitDto dto = new KitDto();
         dto.setId(kit.getId());
         dto.setName(kit.getName());
@@ -136,6 +137,9 @@ public class KitService {
         }
 
         dto.setComputedPrice(computedPrice);
+        dto.setSellPrice(dto.getPriceOverride() != null
+                ? dto.getPriceOverride()
+                : profitMarginService.applyMargin(computedPrice, marginPercent));
         dto.setTotalPanelArrayKwp(round(totalPanelArrayKwp));
         dto.setTotalBatteryCapacityKwh(round(totalBatteryCapacityKwh));
         dto.setTotalInverterPowerKw(round(totalInverterPowerKw));

@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.thymeleaf.context.Context;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -82,10 +81,8 @@ public class QuoteCalculatorController {
 
         if (result.getRecommendedKit() != null) {
             ExchangeRateDto rate = exchangeRateService.getCurrentRate();
-            BigDecimal kitPriceMxn = result.getRecommendedKit().getPriceOverride() != null
-                    ? result.getRecommendedKit().getPriceOverride()
-                    : result.getRecommendedKit().getComputedPrice();
-            context.setVariable("kitPriceUsd", exchangeRateService.toUsd(kitPriceMxn, rate.getUsdToMxnRate()));
+            context.setVariable("kitPriceUsd",
+                    exchangeRateService.toUsd(result.getRecommendedKit().getSellPrice(), rate.getUsdToMxnRate()));
         }
 
         byte[] pdf = pdfRenderingService.render("pdf/quote", context);

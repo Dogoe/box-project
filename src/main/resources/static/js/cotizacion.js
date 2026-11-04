@@ -191,12 +191,11 @@
         const kitSuggestion = document.getElementById('kit-suggestion');
         if (result.recommendedKit) {
             const kit = result.recommendedKit;
-            const price = kit.priceOverride != null ? kit.priceOverride : kit.computedPrice;
             document.getElementById('kit-suggestion-name').textContent = kit.name;
             document.getElementById('kit-suggestion-description').textContent = kit.description || '';
             const priceEl = document.getElementById('kit-suggestion-price');
-            priceEl.dataset.priceMxn = price;
-            priceEl.textContent = window.BajaSolarRegion.formatPrice(price);
+            priceEl.dataset.priceMxn = kit.sellPrice;
+            priceEl.textContent = window.BajaSolarRegion.formatPrice(kit.sellPrice);
 
             renderKitComparisonRow('panels', kit.totalPanelArrayKwp, result.recommendedPanelArrayKwp, 'kWp');
             renderKitComparisonRow('battery', kit.totalBatteryCapacityKwh, result.recommendedBatteryCapacityKwh, 'kWh');

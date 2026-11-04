@@ -111,7 +111,7 @@
                         <p class="text-secondary mb-0" th:text="${kit.description}">Descripción</p>
                     </div>
                     <strong class="fs-3 text-success"
-                            th:data-price-mxn="${kit.priceOverride != null ? kit.priceOverride : kit.computedPrice}">
+                            th:data-price-mxn="${kit.sellPrice}">
                         $0.00
                     </strong>
                 </div>

@@ -16,6 +16,8 @@
     const settingsPanel = document.getElementById('settings-panel');
     const settingsError = document.getElementById('settings-error');
     const settingsSuccess = document.getElementById('settings-success');
+    const marginError = document.getElementById('margin-error');
+    const marginSuccess = document.getElementById('margin-success');
     const modalEl = document.getElementById('entity-modal');
     const modal = new bootstrap.Modal(modalEl);
     const modalFormEl = document.getElementById('entity-form');
@@ -319,7 +321,7 @@
         showEntityTable();
         listAlert.classList.add('d-none');
         entityTitle.textContent = 'Kits';
-        tableHead.innerHTML = '<tr><th>Nombre</th><th>Precio</th><th># Ítems</th><th>Activo</th><th></th></tr>';
+        tableHead.innerHTML = '<tr><th>Nombre</th><th>Costo / Venta</th><th># Ítems</th><th>Activo</th><th></th></tr>';
 
         try {
             await loadAllProducts();
@@ -327,8 +329,8 @@
             const kits = await response.json();
 
             tableBody.innerHTML = kits.map((kit) => {
-                const price = kit.priceOverride != null ? kit.priceOverride : kit.computedPrice;
-                return '<tr><td>' + kit.name + '</td><td>$' + price + '</td><td>' + kit.items.length + '</td>' +
+                const priceCell = 'Costo: $' + kit.computedPrice + ' · Venta: $' + kit.sellPrice;
+                return '<tr><td>' + kit.name + '</td><td>' + priceCell + '</td><td>' + kit.items.length + '</td>' +
                     '<td>' + (kit.active ? 'Sí' : 'No') + '</td>' + actionButtonsHtml(kit.id) + '</tr>';
             }).join('');
 
@@ -408,6 +410,8 @@
         showSettingsPanel();
         settingsError.classList.add('d-none');
         settingsSuccess.classList.add('d-none');
+        marginError.classList.add('d-none');
+        marginSuccess.classList.add('d-none');
 
         try {
             const response = await authFetch('/api/settings/exchange-rate');
@@ -416,6 +420,15 @@
         } catch (err) {
             settingsError.textContent = 'No se pudo cargar el tipo de cambio.';
             settingsError.classList.remove('d-none');
+        }
+
+        try {
+            const response = await authFetch('/api/settings/profit-margin');
+            const data = await response.json();
+            document.getElementById('margin-input').value = data.marginPercent;
+        } catch (err) {
+            marginError.textContent = 'No se pudo cargar el margen de ganancia.';
+            marginError.classList.remove('d-none');
         }
     }
 
@@ -437,6 +450,27 @@
         } else {
             settingsError.textContent = await errorMessage(response, 'No se pudo guardar el tipo de cambio.');
             settingsError.classList.remove('d-none');
+        }
+    });
+
+    document.getElementById('margin-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        marginError.classList.add('d-none');
+        marginSuccess.classList.add('d-none');
+
+        const marginPercent = Number(document.getElementById('margin-input').value);
+        const response = await authFetch('/api/settings/profit-margin', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ marginPercent: marginPercent })
+        });
+
+        if (response.ok) {
+            marginSuccess.textContent = 'Margen de ganancia actualizado.';
+            marginSuccess.classList.remove('d-none');
+        } else {
+            marginError.textContent = await errorMessage(response, 'No se pudo guardar el margen de ganancia.');
+            marginError.classList.remove('d-none');
         }
     });
 

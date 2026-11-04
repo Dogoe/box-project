@@ -36,7 +36,7 @@
 <h2 th:text="${kit.name}">Nombre del kit</h2>
 <p th:text="${kit.description}">Descripcion</p>
 <p class="price"
-   th:text="'$' + ${#numbers.formatDecimal(kit.priceOverride != null ? kit.priceOverride : kit.computedPrice, 1, 2)} + ' MXN'">
+   th:text="'$' + ${#numbers.formatDecimal(kit.sellPrice, 1, 2)} + ' MXN'">
     $0.00 MXN
 </p>
 <p class="price-usd" th:text="'~ $' + ${#numbers.formatDecimal(priceUsd, 1, 2)} + ' USD'">~ $0.00 USD</p>

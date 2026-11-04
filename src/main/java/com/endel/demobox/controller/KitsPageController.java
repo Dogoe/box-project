@@ -41,10 +41,6 @@ public class KitsPageController {
         this.exchangeRateService = exchangeRateService;
     }
 
-    private static BigDecimal effectivePrice(KitDto kit) {
-        return kit.getPriceOverride() != null ? kit.getPriceOverride() : kit.getComputedPrice();
-    }
-
     @GetMapping("/kits")
     public String kits(Model model, @CookieValue(name = "lang", defaultValue = "es") String lang) {
         List<KitDto> kits = kitService.findAllActive();
@@ -66,7 +62,7 @@ public class KitsPageController {
         Context context = new Context();
         context.setVariable("kit", kit);
         context.setVariable("capacity", capacity);
-        context.setVariable("priceUsd", exchangeRateService.toUsd(effectivePrice(kit), rate.getUsdToMxnRate()));
+        context.setVariable("priceUsd", exchangeRateService.toUsd(kit.getSellPrice(), rate.getUsdToMxnRate()));
         context.setVariable("generatedAt", LocalDateTime.now());
 
         byte[] pdf = pdfRenderingService.render("pdf/kit", context);
@@ -86,7 +82,7 @@ public class KitsPageController {
         ExchangeRateDto rate = exchangeRateService.getCurrentRate();
         Map<Long, BigDecimal> usdPriceByKitId = kits.stream()
                 .collect(Collectors.toMap(KitDto::getId,
-                        kit -> exchangeRateService.toUsd(effectivePrice(kit), rate.getUsdToMxnRate())));
+                        kit -> exchangeRateService.toUsd(kit.getSellPrice(), rate.getUsdToMxnRate())));
 
         Context context = new Context();
         context.setVariable("kits", kits);
