@@ -18,12 +18,12 @@ public class AppliancePresetResolver {
         this.catalog = catalog;
     }
 
-    public ApplianceLoadDto resolve(ApplianceLoadDto input) {
+    public ApplianceLoadDto resolve(ApplianceLoadDto input, String lang) {
         if (input.getTemplateId() == null || input.getTemplateId().isBlank()) {
             return input;
         }
 
-        ApplianceTemplate template = catalog.findById(input.getTemplateId())
+        ApplianceTemplate template = catalog.findById(input.getTemplateId(), lang)
                 .orElseThrow(() -> new InvalidApplianceTemplateException(
                         "Unknown appliance template: " + input.getTemplateId()));
 

@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -54,18 +55,21 @@ public class QuoteCalculatorController {
     }
 
     @GetMapping("/appliance-presets")
-    public Map<ApplianceCategory, List<ApplianceTemplate>> getAppliancePresets() {
-        return templateCatalog.groupedByCategory();
+    public Map<ApplianceCategory, List<ApplianceTemplate>> getAppliancePresets(
+            @CookieValue(name = "lang", defaultValue = "es") String lang) {
+        return templateCatalog.groupedByCategory(lang);
     }
 
     @PostMapping("/calculate")
-    public SizingResultDto calculate(@Valid @RequestBody LoadSurveyDto survey) {
-        return computeResult(survey);
+    public SizingResultDto calculate(@Valid @RequestBody LoadSurveyDto survey,
+                                      @CookieValue(name = "lang", defaultValue = "es") String lang) {
+        return computeResult(survey, lang);
     }
 
     @PostMapping("/calculate/pdf")
-    public ResponseEntity<byte[]> calculatePdf(@Valid @RequestBody LoadSurveyDto survey) {
-        SizingResultDto result = computeResult(survey);
+    public ResponseEntity<byte[]> calculatePdf(@Valid @RequestBody LoadSurveyDto survey,
+                                                @CookieValue(name = "lang", defaultValue = "es") String lang) {
+        SizingResultDto result = computeResult(survey, lang);
         List<KitComparisonRowDto> comparison = result.getRecommendedKit() != null
                 ? kitRecommendationService.buildComparison(result.getRecommendedKit(), result)
                 : List.of();
@@ -92,9 +96,9 @@ public class QuoteCalculatorController {
                 .body(pdf);
     }
 
-    private SizingResultDto computeResult(LoadSurveyDto survey) {
+    private SizingResultDto computeResult(LoadSurveyDto survey, String lang) {
         List<ApplianceLoadDto> resolved = survey.getAppliances().stream()
-                .map(presetResolver::resolve)
+                .map(appliance -> presetResolver.resolve(appliance, lang))
                 .toList();
         survey.setAppliances(resolved);
 

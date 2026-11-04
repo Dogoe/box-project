@@ -2,11 +2,14 @@ package com.endel.demobox.service.catalog;
 
 import com.endel.demobox.model.dto.catalog.KitCapacityDto;
 import com.endel.demobox.model.dto.catalog.KitDto;
+import com.endel.demobox.quote.ApplianceCategory;
 import com.endel.demobox.quote.ApplianceTemplate;
 import com.endel.demobox.quote.ApplianceTemplateCatalog;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Estimates what a kit can realistically power, for display on the public
@@ -24,6 +27,10 @@ import java.util.List;
  * (fridge, Starlink Mini, LED bulbs, ...) can comfortably show up in both
  * lists, exactly like running it at night off the battery or during the day
  * off the panels would both genuinely work.
+ * <p>
+ * Within a budget, only one appliance per category is shown (the biggest one
+ * that still fits) - a kit that could power any of three pump sizes doesn't
+ * need all three listed, just "yes, a pump works, up to this size."
  */
 @Service
 public class KitCapacityEstimator {
@@ -47,7 +54,7 @@ public class KitCapacityEstimator {
         this.applianceTemplateCatalog = applianceTemplateCatalog;
     }
 
-    public KitCapacityDto estimate(KitDto kit) {
+    public KitCapacityDto estimate(KitDto kit, String lang) {
         // No battery means nothing sustains the kit after dark.
         double nightBudgetKwh = kit.getTotalBatteryCapacityKwh() > 0
                 ? kit.getTotalBatteryCapacityKwh() * DEFAULT_DEPTH_OF_DISCHARGE * DEFAULT_BATTERY_ROUND_TRIP_EFFICIENCY / DEFAULT_AUTONOMY_DAYS
@@ -57,7 +64,7 @@ public class KitCapacityEstimator {
 
         double estimatedMaxContinuousKw = round(kit.getTotalInverterPowerKw() / DEFAULT_INVERTER_SAFETY_MARGIN);
 
-        List<ApplianceTemplate> allTemplates = applianceTemplateCatalog.groupedByCategory().values().stream()
+        List<ApplianceTemplate> allTemplates = applianceTemplateCatalog.groupedByCategory(lang).values().stream()
                 .flatMap(List::stream)
                 .toList();
 
@@ -76,12 +83,30 @@ public class KitCapacityEstimator {
 
     private List<String> compatibleAppliances(List<ApplianceTemplate> templates, double budgetKwh) {
         double allowance = budgetKwh * COMPATIBLE_APPLIANCE_BUDGET_FRACTION;
-        return templates.stream()
-                .filter(template -> dailyEnergyKwh(template) <= allowance)
-                .map(ApplianceTemplate::getLabel)
-                .distinct()
+
+        Map<ApplianceCategory, ApplianceTemplate> biggestFitPerCategory = new LinkedHashMap<>();
+        for (ApplianceTemplate template : templates) {
+            if (dailyEnergyKwh(template) > allowance) {
+                continue;
+            }
+            ApplianceTemplate current = biggestFitPerCategory.get(template.getCategory());
+            if (current == null || dailyEnergyKwh(template) > dailyEnergyKwh(current)) {
+                biggestFitPerCategory.put(template.getCategory(), template);
+            }
+        }
+
+        return biggestFitPerCategory.values().stream()
+                .map(this::labelWithHours)
                 .sorted()
                 .toList();
+    }
+
+    private String labelWithHours(ApplianceTemplate template) {
+        return template.getLabel() + " (" + formatHours(template.getDefaultHoursPerDay()) + "h)";
+    }
+
+    private String formatHours(double hours) {
+        return hours == Math.rint(hours) ? String.format("%.0f", hours) : String.format("%.2f", hours);
     }
 
     private double dailyEnergyKwh(ApplianceTemplate template) {
