@@ -2,6 +2,7 @@ package com.endel.demobox.exception;
 
 import com.endel.demobox.model.dto.CustomErrorDTO;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -92,6 +93,16 @@ public class GlobalControllerExceptionHandler {
         return new ResponseEntity<>(
                 new CustomErrorDTO("unauthorized", ex.getMessage()),
                 HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<CustomErrorDTO> handleTooManyRequestsException(TooManyRequestsException ex){
+        long seconds = Math.max(1, (ex.getRetryAfter().toMillis() + 999) / 1000); // rounded up
+        long minutes = Math.max(1, (seconds + 59) / 60);
+        String wait = minutes == 1 ? "1 minuto" : minutes + " minutos";
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(seconds))
+                .body(new CustomErrorDTO("too_many_requests", ex.getMessage() + " Intenta de nuevo en " + wait + "."));
     }
 
     @ExceptionHandler(InvalidApplianceTemplateException.class)

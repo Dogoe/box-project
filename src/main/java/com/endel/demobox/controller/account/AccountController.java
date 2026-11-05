@@ -10,8 +10,12 @@ import com.endel.demobox.model.dto.account.RegisterAccountRequest;
 import com.endel.demobox.model.dto.account.ResetPasswordRequest;
 import com.endel.demobox.model.dto.account.UpdateAccountRequest;
 import com.endel.demobox.model.dto.order.OrderDto;
+import com.endel.demobox.ratelimit.LoginAttemptGuard;
+import com.endel.demobox.ratelimit.RateLimit;
+import com.endel.demobox.ratelimit.RateLimiter;
 import com.endel.demobox.service.account.AccountService;
 import com.endel.demobox.service.order.OrderService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -32,27 +36,35 @@ import java.util.Map;
 public class AccountController {
     private final AccountService accountService;
     private final OrderService orderService;
+    private final RateLimiter rateLimiter;
+    private final LoginAttemptGuard loginGuard;
 
-    public AccountController(AccountService accountService, OrderService orderService) {
+    public AccountController(AccountService accountService, OrderService orderService,
+                             RateLimiter rateLimiter, LoginAttemptGuard loginGuard) {
         this.accountService = accountService;
         this.orderService = orderService;
+        this.rateLimiter = rateLimiter;
+        this.loginGuard = loginGuard;
     }
 
     /** Lets checkout offer "log in" vs "create an account" as soon as the email is typed. */
     @PostMapping("/email-status")
-    public Map<String, Boolean> emailStatus(@Valid @RequestBody EmailRequest request) {
+    public Map<String, Boolean> emailStatus(@Valid @RequestBody EmailRequest request, HttpServletRequest http) {
+        rateLimiter.consume(RateLimit.EMAIL_STATUS_PER_IP, http.getRemoteAddr());
         return Map.of("registered", accountService.isRegistered(request.getEmail()));
     }
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public AuthResponse register(@Valid @RequestBody RegisterAccountRequest request) {
+    public AuthResponse register(@Valid @RequestBody RegisterAccountRequest request, HttpServletRequest http) {
+        rateLimiter.consume(RateLimit.REGISTER_PER_IP, http.getRemoteAddr());
         return accountService.register(request);
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
-        return accountService.login(request.getEmail(), request.getPassword());
+    public AuthResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
+        return loginGuard.attempt(request.getEmail(), http.getRemoteAddr(),
+                () -> accountService.login(request.getEmail(), request.getPassword()));
     }
 
     @GetMapping("/me")
@@ -73,17 +85,23 @@ public class AccountController {
     @PostMapping("/verification-email")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void resendVerification(Authentication auth) {
-        accountService.resendVerification(currentUser(auth));
+        User user = currentUser(auth);
+        rateLimiter.consume(RateLimit.EMAIL_LINK_PER_EMAIL, user.getEmail());
+        accountService.resendVerification(user);
     }
 
     @PostMapping("/forgot-password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void forgotPassword(@Valid @RequestBody EmailRequest request) {
+    public void forgotPassword(@Valid @RequestBody EmailRequest request, HttpServletRequest http) {
+        // Counted for unknown emails too, so the answer never tells whether an account exists.
+        rateLimiter.consume(RateLimit.EMAIL_LINK_PER_IP, http.getRemoteAddr());
+        rateLimiter.consume(RateLimit.EMAIL_LINK_PER_EMAIL, request.getEmail());
         accountService.forgotPassword(request.getEmail());
     }
 
     @PostMapping("/reset-password")
-    public AuthResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    public AuthResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request, HttpServletRequest http) {
+        rateLimiter.consume(RateLimit.RESET_PASSWORD_PER_IP, http.getRemoteAddr());
         return accountService.resetPassword(request.getToken(), request.getPassword());
     }
 

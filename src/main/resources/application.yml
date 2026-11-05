@@ -42,6 +42,10 @@ app:
     # false skips sending entirely (orders still work); emails are only ever a notification.
     enabled: true
     from: "Baja Solar Supply <pedidos@bajasolarsupply.local>"
+  rate-limit:
+    # Caps login attempts, sign-ups, password-reset emails and orders per IP/email (see RateLimit).
+    # Answers 429 "Intenta de nuevo en N minutos" when exceeded.
+    enabled: true
 
 jwt:
   secret: K0zDf0M5GyPlZtX7RhV0I5uPzZsZ3YgYV7Z7XgWyfL0=

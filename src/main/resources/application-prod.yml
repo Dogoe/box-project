@@ -29,3 +29,11 @@ app:
     # Must be an address your SMTP account is allowed to send from
     # (Gmail: the same Gmail address; Brevo: a verified sender or domain).
     from: ${MAIL_FROM:Baja Solar Supply <CAMBIAR@gmail.com>}
+
+server:
+  # The rate limits count attempts per client IP. Behind a hosting proxy / load balancer every
+  # request would otherwise look like it comes from the proxy, so read the real IP from its
+  # X-Forwarded-For header. "native" only trusts that header when the request comes from a
+  # private-network address (10.x, 192.168.x, 172.16-31.x, 127.x), i.e. from the platform's proxy,
+  # so visitors can't fake it. If the app is exposed directly with no proxy, it's harmless.
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:native}

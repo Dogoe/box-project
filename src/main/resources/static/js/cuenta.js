@@ -134,7 +134,7 @@
             const result = await account.sendJson('POST', '/api/account/verification-email', null, true);
             resultEl.textContent = result.ok
                 ? 'Listo, te enviamos un nuevo correo. Revisa también tu carpeta de spam.'
-                : 'No se pudo enviar el correo. Intenta más tarde.';
+                : (result.body && result.body.message) || 'No se pudo enviar el correo. Intenta más tarde.';
         } catch (err) {
             resultEl.textContent = 'Ocurrió un error de conexión. Intenta nuevamente.';
         }

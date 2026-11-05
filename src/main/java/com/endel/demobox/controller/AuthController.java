@@ -5,7 +5,12 @@ import com.endel.demobox.authentication.CustomUserDetails;
 import com.endel.demobox.authentication.JWTAuthenticationService;
 import com.endel.demobox.authentication.LoginRequestDTO;
 import com.endel.demobox.authentication.RegisterRequestDTO;
+import com.endel.demobox.exception.InvalidCredentialsException;
+import com.endel.demobox.ratelimit.LoginAttemptGuard;
+import com.endel.demobox.ratelimit.RateLimit;
+import com.endel.demobox.ratelimit.RateLimiter;
 import com.endel.demobox.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,35 +34,36 @@ public class AuthController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private LoginAttemptGuard loginGuard;
+
+    @Autowired
+    private RateLimiter rateLimiter;
+
     public AuthController(AuthenticationManager authenticationManager) {
         this.authenticationManager = authenticationManager;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequestDTO request) {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequestDTO request, HttpServletRequest http) {
+        String token = loginGuard.attempt(request.getEmail(), http.getRemoteAddr(), () -> {
+            try {
+                Authentication authentication = authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+                return jwtAuthenticationService.generateToken((CustomUserDetails) authentication.getPrincipal());
+            } catch (AuthenticationException e) {
+                throw new InvalidCredentialsException("Correo o contraseña incorrectos.");
+            }
+        });
         Map<String, Object> response = new HashMap<>();
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.getEmail(),
-                            request.getPassword()
-                    )
-            );
-
-            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-            String token = jwtAuthenticationService.generateToken(userDetails);
-
-            response.put("Response",true);
-            response.put("token",token);
-            return ResponseEntity.ok(response);
-        } catch (AuthenticationException e) {
-            throw new RuntimeException("Invalid username or password");
-        }
-
+        response.put("Response", true);
+        response.put("token", token);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Map<String, Object>> register(@RequestBody RegisterRequestDTO registerRequest) {
+    public ResponseEntity<Map<String, Object>> register(@RequestBody RegisterRequestDTO registerRequest, HttpServletRequest http) {
+        rateLimiter.consume(RateLimit.REGISTER_PER_IP, http.getRemoteAddr());
         Map<String, Object> response = new HashMap<>();
         userService.registerUser(registerRequest);
         response.put("Response","User registered successfully");

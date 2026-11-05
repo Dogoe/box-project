@@ -19,3 +19,6 @@ app:
   mail:
     # Tests never talk to an SMTP server; notifier behavior is tested with a mocked EmailService.
     enabled: false
+  rate-limit:
+    # Tests share one in-memory limiter per Spring context; RateLimitTest turns it back on.
+    enabled: false
