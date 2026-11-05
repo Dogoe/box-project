@@ -10,6 +10,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @ControllerAdvice
 @Log4j2
@@ -103,6 +104,20 @@ public class GlobalControllerExceptionHandler {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .header(HttpHeaders.RETRY_AFTER, String.valueOf(seconds))
                 .body(new CustomErrorDTO("too_many_requests", ex.getMessage() + " Intenta de nuevo en " + wait + "."));
+    }
+
+    @ExceptionHandler(StorageUnavailableException.class)
+    public ResponseEntity<CustomErrorDTO> handleStorageUnavailableException(StorageUnavailableException ex){
+        return new ResponseEntity<>(
+                new CustomErrorDTO("storage_unavailable", ex.getMessage()),
+                HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<CustomErrorDTO> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex){
+        return new ResponseEntity<>(
+                new CustomErrorDTO("invalid_request", "La foto pesa más de 10 MB; usa una más ligera."),
+                HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
     @ExceptionHandler(InvalidApplianceTemplateException.class)

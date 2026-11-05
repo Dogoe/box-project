@@ -102,7 +102,7 @@
                 { key: 'description', label: 'Descripción', type: 'textarea' },
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
-                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'imageUrl', label: 'Foto (sube un archivo o pega un link)', type: 'image', folder: 'products' },
                 { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'wattage', label: 'Potencia (W)', type: 'number', required: true },
                 { key: 'technology', label: 'Tecnología', type: 'select', required: true,
@@ -136,7 +136,7 @@
                 { key: 'description', label: 'Descripción', type: 'textarea' },
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
-                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'imageUrl', label: 'Foto (sube un archivo o pega un link)', type: 'image', folder: 'products' },
                 { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'capacityAh', label: 'Capacidad (Ah)', type: 'number', step: '0.1', required: true },
                 { key: 'voltage', label: 'Voltaje nominal (V)', type: 'number', step: '0.1', required: true },
@@ -171,7 +171,7 @@
                 { key: 'description', label: 'Descripción', type: 'textarea' },
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
-                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'imageUrl', label: 'Foto (sube un archivo o pega un link)', type: 'image', folder: 'products' },
                 { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'ratedPowerKw', label: 'Potencia nominal (kW)', type: 'number', step: '0.1', required: true },
                 { key: 'surgePowerKw', label: 'Potencia pico (kW)', type: 'number', step: '0.1', required: true },
@@ -212,7 +212,7 @@
                 { key: 'description', label: 'Descripción', type: 'textarea' },
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
-                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'imageUrl', label: 'Foto (sube un archivo o pega un link)', type: 'image', folder: 'products' },
                 { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'supportedBatteryVoltages', label: 'Voltajes de batería que admite', type: 'checkboxes',
                     options: [12, 24, 48], defaultValue: [12, 24, 48] },
@@ -244,7 +244,7 @@
                 { key: 'description', label: 'Descripción', type: 'textarea' },
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
-                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'imageUrl', label: 'Foto (sube un archivo o pega un link)', type: 'image', folder: 'products' },
                 { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
@@ -269,7 +269,7 @@
                 { key: 'description', label: 'Descripción', type: 'textarea' },
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
-                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'imageUrl', label: 'Foto (sube un archivo o pega un link)', type: 'image', folder: 'products' },
                 { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'gauge', label: 'Calibre', type: 'select', required: true, options: WIRE_GAUGES },
                 { key: 'lengthMeters', label: 'Longitud (m)', type: 'number', step: '0.1', required: true },
@@ -395,6 +395,9 @@
             return '<div class="form-check"><input type="checkbox" class="form-check-input" id="' + id + '"' +
                 (val ? ' checked' : '') + '></div>';
         }
+        if (field.type === 'image') {
+            return imageInputHtml(id, val, field.folder);
+        }
         if (field.type === 'checkboxes') {
             const selected = (Array.isArray(val) ? val : []).map(String);
             return '<div id="' + id + '">' + field.options.map((opt) =>
@@ -407,6 +410,68 @@
         const step = field.step ? ' step="' + field.step + '"' : '';
         const placeholder = field.placeholder ? ' placeholder="' + field.placeholder + '"' : '';
         return '<input type="' + field.type + '" class="form-control" id="' + id + '" value="' + escapeAttr(val) + '"' + step + placeholder + ' ' + requiredAttr + '>';
+    }
+
+    // ---- Photo uploads (stored in Cloudflare R2; the field keeps the resulting public URL) ----
+
+    function imageInputHtml(inputId, value, folder) {
+        return '<div class="image-field" data-folder="' + folder + '">' +
+            '<div class="input-group">' +
+            '<input type="text" class="form-control image-url-input" id="' + inputId + '" value="' + escapeAttr(value || '') + '" placeholder="https://">' +
+            '<button type="button" class="btn btn-outline-secondary image-upload-btn"><i class="bi bi-upload"></i> Subir foto</button>' +
+            '</div>' +
+            '<input type="file" class="d-none image-file-input" accept="image/jpeg,image/png,image/webp">' +
+            '<div class="small text-danger mt-1 d-none image-upload-error"></div>' +
+            '<img class="image-preview mt-2 rounded border d-none" alt="" style="max-height: 120px; max-width: 100%; object-fit: contain;">' +
+            '</div>';
+    }
+
+    function wireImageFields(container) {
+        container.querySelectorAll('.image-field').forEach((field) => {
+            const urlInput = field.querySelector('.image-url-input');
+            const fileInput = field.querySelector('.image-file-input');
+            const button = field.querySelector('.image-upload-btn');
+            const errorEl = field.querySelector('.image-upload-error');
+            const preview = field.querySelector('.image-preview');
+            const showPreview = () => {
+                const url = urlInput.value.trim();
+                preview.classList.toggle('d-none', !/^https?:\/\//i.test(url));
+                if (/^https?:\/\//i.test(url)) {
+                    preview.src = url;
+                }
+            };
+            preview.onerror = () => preview.classList.add('d-none');
+            urlInput.addEventListener('input', showPreview);
+            button.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', async () => {
+                const file = fileInput.files[0];
+                if (!file) {
+                    return;
+                }
+                errorEl.classList.add('d-none');
+                button.disabled = true;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Subiendo...';
+                try {
+                    const form = new FormData();
+                    form.append('file', file);
+                    form.append('folder', field.dataset.folder);
+                    const response = await authFetch('/api/admin/images', { method: 'POST', body: form });
+                    if (!response.ok) {
+                        throw new Error(await errorMessage(response, 'No se pudo subir la foto.'));
+                    }
+                    urlInput.value = (await response.json()).url;
+                    showPreview();
+                } catch (err) {
+                    errorEl.textContent = err.message || 'No se pudo subir la foto.';
+                    errorEl.classList.remove('d-none');
+                } finally {
+                    fileInput.value = '';
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-upload"></i> Subir foto';
+                }
+            });
+            showPreview();
+        });
     }
 
     function escapeAttr(text) {
@@ -423,6 +488,7 @@
             '</div>'
         ).join('');
         wireFieldDependencies(config);
+        wireImageFields(modalFieldsEl);
     }
 
     function isFieldEnabled(field) {
@@ -454,7 +520,7 @@
                 data[field.key] = input.checked;
             } else if (field.type === 'number' || field.numeric) {
                 data[field.key] = input.value === '' ? null : Number(input.value);
-            } else if (field.type === 'url') {
+            } else if (field.type === 'url' || field.type === 'image') {
                 data[field.key] = input.value.trim() === '' ? null : input.value.trim();
             } else {
                 data[field.key] = input.value;
@@ -705,8 +771,8 @@
             '<textarea class="form-control" id="kit-description">' + (kit && kit.description ? kit.description : '') + '</textarea></div>' +
             '<div class="mb-3"><label class="form-label">Precio manual (opcional; si se deja vacío se calcula sumando sus productos)</label>' +
             '<input type="number" step="0.01" class="form-control" id="kit-price-override" value="' + (kit && kit.priceOverride != null ? kit.priceOverride : '') + '"></div>' +
-            '<div class="mb-3"><label class="form-label">URL de imagen (opcional)</label>' +
-            '<input type="text" class="form-control" id="kit-image-url" value="' + (kit && kit.imageUrl ? kit.imageUrl : '') + '"></div>' +
+            '<div class="mb-3"><label class="form-label">Foto del kit (opcional; sube un archivo o pega un link)</label>' +
+            imageInputHtml('kit-image-url', kit && kit.imageUrl ? kit.imageUrl : '', 'kits') + '</div>' +
             '<div class="form-check mb-3"><input type="checkbox" class="form-check-input" id="kit-active"' + (!kit || kit.active ? ' checked' : '') + '>' +
             '<label class="form-check-label" for="kit-active">Activo</label></div>' +
             '<label class="form-label">Productos incluidos</label>' +
@@ -715,6 +781,7 @@
             '<i class="bi bi-plus-lg"></i> Agregar producto</button>' +
             '<div id="kit-compat-panel" class="mt-3"></div>';
 
+        wireImageFields(modalFieldsEl);
         const itemsContainer = document.getElementById('kit-items-container');
         itemsContainer.addEventListener('change', scheduleCompatibilityCheck);
         itemsContainer.addEventListener('input', scheduleCompatibilityCheck);

@@ -40,6 +40,21 @@ Without those, you can still trigger a reload manually with Build → Recompile.
 
 **Don't run both at once** — the containerized `app` service and IntelliJ's native run both bind port 8080. Stop `docker compose`'s `app` service (or just don't start it) while running natively, and vice versa. The `postgres`/`mailhog` containers are safe to leave running either way.
 
+## Product photos (Cloudflare R2)
+
+Photos uploaded from the admin ("Subir foto" next to any image field) are resized to at most 1600 px, saved as JPEG and stored in a Cloudflare R2 bucket (S3-compatible); the product/kit keeps the photo's public URL. Without R2 configured the button just reports it, and image links can still be pasted by hand.
+
+Configure it with these variables — in production as real environment variables, and locally in a `.env` file at the project root (copy `.env.example`; `.env` is git-ignored). Both the IntelliJ run and `docker compose` read that `.env`:
+
+| Variable | Value |
+|---|---|
+| `R2_ENDPOINT` | `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` (R2 → bucket → Settings → S3 API, without the bucket name) |
+| `R2_BUCKET` | `box-app-images` |
+| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | from an R2 API token with *Object Read & Write* on that bucket — **never commit these** |
+| `R2_PUBLIC_URL` | the bucket's public URL: the `https://pub-….r2.dev` development URL for now, a custom domain later |
+
+Changing `R2_PUBLIC_URL` later (e.g. to your own domain) only affects new uploads; photos saved before keep the URL they were stored with.
+
 ## Default accounts
 
 - A default admin account for the catalog admin panel (`/admin`) is seeded on startup if it doesn't already exist: `admin@bajasolarsupply.com` / `admin123` (see `admin.bootstrap.*` in `application.yml`). **Override `ADMIN_BOOTSTRAP_EMAIL`/`ADMIN_BOOTSTRAP_PASSWORD` before deploying anywhere this default would be a real risk.**

@@ -22,3 +22,9 @@ app:
   rate-limit:
     # Tests share one in-memory limiter per Spring context; RateLimitTest turns it back on.
     enabled: false
+  storage:
+    # Never talk to the real bucket from tests, even if a developer's .env has the keys.
+    endpoint: ""
+    access-key-id: ""
+    secret-access-key: ""
+    public-base-url: ""

@@ -1,4 +1,13 @@
 spring:
+  config:
+    # Local secrets (R2 keys...) can live in a .env file at the project root, one KEY=value per
+    # line; it's git-ignored. Real environment variables still win over it.
+    import: optional:file:.env[.properties]
+  servlet:
+    multipart:
+      # Admin photo uploads; they're resized to web size before being stored.
+      max-file-size: 10MB
+      max-request-size: 11MB
 
   security:
     user:
@@ -46,6 +55,16 @@ app:
     # Caps login attempts, sign-ups, password-reset emails and orders per IP/email (see RateLimit).
     # Answers 429 "Intenta de nuevo en N minutos" when exceeded.
     enabled: true
+
+  storage:
+    # Product and kit photos: Cloudflare R2 (S3-compatible). Set these as environment variables, or
+    # in a local .env file (see .env.example). While any is empty, the admin just pastes image links.
+    endpoint: ${R2_ENDPOINT:}
+    region: auto
+    bucket: ${R2_BUCKET:box-app-images}
+    access-key-id: ${R2_ACCESS_KEY_ID:}
+    secret-access-key: ${R2_SECRET_ACCESS_KEY:}
+    public-base-url: ${R2_PUBLIC_URL:}
 
 jwt:
   secret: K0zDf0M5GyPlZtX7RhV0I5uPzZsZ3YgYV7Z7XgWyfL0=
