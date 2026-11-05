@@ -49,6 +49,11 @@
             <a href="#" class="nav-link entity-tab" data-entity="kits">Kits</a>
         </li>
         <li class="nav-item">
+            <a href="#" class="nav-link entity-tab" data-entity="orders">
+                Pedidos <span class="badge rounded-pill bg-warning text-dark d-none" id="pending-orders-badge">0</span>
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="#" class="nav-link entity-tab" data-entity="settings">Configuración</a>
         </li>
     </ul>
@@ -62,6 +67,14 @@
         </button>
     </div>
 
+    <div class="btn-group btn-group-sm mb-3 d-none" role="group" id="orders-filter" aria-label="Filtrar pedidos">
+        <button type="button" class="btn btn-outline-dark active" data-status="">Todos</button>
+        <button type="button" class="btn btn-outline-dark" data-status="PENDING">Pendientes</button>
+        <button type="button" class="btn btn-outline-dark" data-status="PAID">Pagados</button>
+        <button type="button" class="btn btn-outline-dark" data-status="DELIVERED">Entregados</button>
+        <button type="button" class="btn btn-outline-dark" data-status="CANCELLED">Cancelados</button>
+    </div>
+
     <div class="table-responsive" id="entity-table-wrapper">
         <table class="table table-hover align-middle">
             <thead id="entity-table-head"></thead>
@@ -70,6 +83,28 @@
     </div>
 
     <div id="settings-panel" class="d-none" style="max-width: 420px;">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h6 class="card-title">Pedidos</h6>
+                <p class="text-secondary small">
+                    Lo que ve el cliente al hacer su pedido. Si dejas vacío el WhatsApp, no se muestra el botón.
+                </p>
+                <div id="store-error" class="alert alert-danger d-none"></div>
+                <div id="store-success" class="alert alert-success d-none"></div>
+                <form id="store-form">
+                    <div class="mb-3">
+                        <label class="form-label" for="store-whatsapp-input">Tu WhatsApp (10 dígitos)</label>
+                        <input type="tel" class="form-control" id="store-whatsapp-input" maxlength="20" placeholder="6461234567">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="store-instructions-input">Instrucciones de pago</label>
+                        <textarea class="form-control" id="store-instructions-input" rows="3" maxlength="1000" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </form>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-body">
                 <h6 class="card-title">Tipo de cambio</h6>
@@ -137,6 +172,21 @@
 <!-- ========================================================= -->
 <!-- ENTITY MODAL -->
 <!-- ========================================================= -->
+
+<div class="modal fade" id="order-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="order-modal-title">Pedido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="order-modal-error" class="alert alert-danger d-none"></div>
+                <div id="order-modal-body"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="modal fade" id="entity-modal" tabindex="-1">
     <div class="modal-dialog">

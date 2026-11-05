@@ -49,12 +49,17 @@ public class JwtConfig {
                                 "/api/quotes/calculate",
                                 "/api/quotes/calculate/pdf",
                                 "/api/quotes/appliance-presets",
+                                "/carrito",
+                                "/pedido/**",
                                 // Spring forwards error responses here; securing it turns every error into a 403.
                                 "/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/settings/exchange-rate").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/settings/exchange-rate").hasRole("ADMIN")
                         .requestMatchers("/api/settings/profit-margin").hasRole("ADMIN")
                         .requestMatchers("/api/settings/wiring").hasRole("ADMIN")
+                        .requestMatchers("/api/settings/store").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/catalog/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

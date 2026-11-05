@@ -48,6 +48,7 @@
     const downloadPdfBtn = document.getElementById('download-pdf-btn');
 
     let lastPayload = null;
+    let suggestedKitId = null;
 
     function showAlert(message) {
         alertBox.textContent = message;
@@ -191,6 +192,7 @@
         const kitSuggestion = document.getElementById('kit-suggestion');
         if (result.recommendedKit) {
             const kit = result.recommendedKit;
+            suggestedKitId = kit.id;
             document.getElementById('kit-suggestion-name').textContent = kit.name;
             document.getElementById('kit-suggestion-description').textContent = kit.description || '';
             const priceEl = document.getElementById('kit-suggestion-price');
@@ -299,6 +301,13 @@
         });
         form.addEventListener('submit', handleSubmit);
         downloadPdfBtn.addEventListener('click', handleDownloadPdf);
+        const addSuggestedBtn = document.getElementById('kit-suggestion-add');
+        addSuggestedBtn.addEventListener('click', () => {
+            if (suggestedKitId != null) {
+                window.BajaSolarCart.add(suggestedKitId, 1);
+                window.BajaSolarCart.flashAdded(addSuggestedBtn);
+            }
+        });
     }
 
     document.addEventListener('DOMContentLoaded', init);

@@ -66,6 +66,20 @@ public class GlobalControllerExceptionHandler {
                 HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<CustomErrorDTO> handleBadRequestException(BadRequestException ex){
+        return new ResponseEntity<>(
+                new CustomErrorDTO("invalid_request", ex.getMessage()),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(InvalidOrderTransitionException.class)
+    public ResponseEntity<CustomErrorDTO> handleInvalidOrderTransitionException(InvalidOrderTransitionException ex){
+        return new ResponseEntity<>(
+                new CustomErrorDTO("conflict", ex.getMessage()),
+                HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(InvalidApplianceTemplateException.class)
     public ResponseEntity<CustomErrorDTO> handleInvalidApplianceTemplateException(InvalidApplianceTemplateException ex){
         return new ResponseEntity<>(

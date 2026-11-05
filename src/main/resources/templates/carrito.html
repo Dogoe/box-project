@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Carrito | Baja Solar Supply</title>
+
+    <!-- Bootstrap 5.3.8 -->
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+            rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+</head>
+
+<body>
+
+<!-- ========================================================= -->
+<!-- NAVBAR -->
+<!-- ========================================================= -->
+
+<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
+    <div class="container">
+
+        <a class="navbar-brand fw-bold fs-3" href="/home">
+            Baja Solar<span>Supply</span>
+        </a>
+
+        <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#mainNavbar">
+
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNavbar">
+
+            <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/home">Inicio</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link text-success fw-semibold" href="/cotizacion">
+                        <i class="bi bi-calculator"></i> Cotizador
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/kits">Kits</a>
+                </li>
+
+            </ul>
+
+            <div class="d-flex align-items-center gap-3">
+                <a href="/carrito" class="btn btn-sm btn-outline-success position-relative" aria-label="Carrito">
+                    <i class="bi bi-cart3"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success d-none" data-cart-count>0</span>
+                </a>
+
+                <div class="btn-group btn-group-sm" role="group" aria-label="Región">
+                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="es">MX</button>
+                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="en">US</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</nav>
+
+
+<section class="py-5">
+    <div class="container" style="max-width: 1000px;">
+        <h1 class="fw-bold mb-4"><i class="bi bi-cart3 text-success"></i> Tu carrito</h1>
+
+        <div id="cart-empty" class="text-center text-secondary py-5 d-none">
+            <p class="mb-3">Tu carrito está vacío.</p>
+            <a href="/kits" class="btn btn-success">Ver kits</a>
+        </div>
+
+        <div id="cart-removed-notice" class="alert alert-warning d-none" role="alert">
+            Quitamos de tu carrito kits que ya no están disponibles.
+        </div>
+
+        <div id="cart-content" class="row g-4 d-none">
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead>
+                                <tr>
+                                    <th>Kit</th>
+                                    <th class="text-end">Precio</th>
+                                    <th style="width: 90px;">Cant.</th>
+                                    <th class="text-end">Subtotal</th>
+                                    <th></th>
+                                </tr>
+                                </thead>
+                                <tbody id="cart-items"></tbody>
+                                <tfoot>
+                                <tr>
+                                    <th colspan="3" class="text-end">Total</th>
+                                    <th class="text-end fs-5" id="cart-total" data-price-mxn="0">-</th>
+                                    <th></th>
+                                </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <p class="small text-muted mt-3 mb-0">
+                            <i class="bi bi-cash-coin"></i>
+                            Pago en efectivo, en pesos (<span id="cart-total-mxn">-</span>). No se cobra nada en línea:
+                            al hacer tu pedido te contactamos para coordinar el pago y la entrega.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="fw-semibold mb-3">Datos de entrega</h5>
+                        <div id="checkout-alert" class="alert alert-danger d-none" role="alert"></div>
+                        <form id="checkout-form" novalidate>
+                            <div class="mb-2">
+                                <label class="form-label small" for="customer-name">Nombre completo *</label>
+                                <input type="text" class="form-control" id="customer-name" maxlength="120" required autocomplete="name">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small" for="customer-phone">Teléfono (WhatsApp) *</label>
+                                <input type="tel" class="form-control" id="customer-phone" maxlength="20" required
+                                       placeholder="10 dígitos" autocomplete="tel">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small" for="customer-email">Correo (opcional)</label>
+                                <input type="email" class="form-control" id="customer-email" maxlength="200" autocomplete="email">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small" for="street">Calle y número *</label>
+                                <input type="text" class="form-control" id="street" maxlength="200" required autocomplete="address-line1">
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-7">
+                                    <label class="form-label small" for="neighborhood">Colonia *</label>
+                                    <input type="text" class="form-control" id="neighborhood" maxlength="120" required>
+                                </div>
+                                <div class="col-5">
+                                    <label class="form-label small" for="postal-code">C.P. *</label>
+                                    <input type="text" class="form-control" id="postal-code" maxlength="5" required
+                                           inputmode="numeric" pattern="\d{5}" autocomplete="postal-code">
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small" for="city">Ciudad</label>
+                                <input type="text" class="form-control" id="city" th:value="${serviceCity}" value="Ensenada, B.C." disabled>
+                                <div class="form-text">Por ahora solo entregamos en <span th:text="${serviceCity}">Ensenada, B.C.</span></div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small" for="address-references">Referencias (opcional)</label>
+                                <input type="text" class="form-control" id="address-references" maxlength="500"
+                                       placeholder="Portón negro, frente a la tienda...">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small" for="notes">Notas (opcional)</label>
+                                <textarea class="form-control" id="notes" rows="2" maxlength="1000"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100" id="checkout-submit">
+                                Hacer pedido
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- FOOTER -->
+<!-- ========================================================= -->
+
+<footer class="footer bg-dark text-white-50 py-4 mt-5">
+    <div class="container text-center">
+        <small>© 2026 Baja Solar Supply. Todos los derechos reservados.</small>
+    </div>
+</footer>
+
+
+<!-- Bootstrap JS -->
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
+</script>
+
+<script th:src="@{/js/region.js}"></script>
+<script th:src="@{/js/cart.js}"></script>
+<script th:inline="javascript">
+    window.CART_KITS = /*[[${cartKits}]]*/ [];
+</script>
+<script th:src="@{/js/carrito.js}"></script>
+
+</body>
+</html>

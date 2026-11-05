@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Tu pedido | Baja Solar Supply</title>
+    <meta name="robots" content="noindex">
+
+    <!-- Bootstrap 5.3.8 -->
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+            rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+</head>
+
+<body>
+
+<!-- ========================================================= -->
+<!-- NAVBAR -->
+<!-- ========================================================= -->
+
+<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
+    <div class="container">
+
+        <a class="navbar-brand fw-bold fs-3" href="/home">
+            Baja Solar<span>Supply</span>
+        </a>
+
+        <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#mainNavbar">
+
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNavbar">
+
+            <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/home">Inicio</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link text-success fw-semibold" href="/cotizacion">
+                        <i class="bi bi-calculator"></i> Cotizador
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/kits">Kits</a>
+                </li>
+
+            </ul>
+
+            <div class="d-flex align-items-center gap-3">
+                <a href="/carrito" class="btn btn-sm btn-outline-success position-relative" aria-label="Carrito">
+                    <i class="bi bi-cart3"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success d-none" data-cart-count>0</span>
+                </a>
+
+                <div class="btn-group btn-group-sm" role="group" aria-label="Región">
+                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="es">MX</button>
+                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="en">US</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</nav>
+
+
+<section class="py-5">
+    <div class="container" style="max-width: 820px;">
+
+        <div class="text-center py-5" th:if="${order == null}">
+            <h1 class="fw-bold">No encontramos ese pedido</h1>
+            <p class="text-secondary">Revisa el folio <strong th:text="${folio}">-</strong> o contáctanos.</p>
+            <a href="/kits" class="btn btn-success">Ver kits</a>
+        </div>
+
+        <th:block th:if="${order != null}">
+            <div class="text-center mb-4">
+                <i class="bi bi-check-circle-fill text-success display-5" th:if="${order.status.name() != 'CANCELLED'}"></i>
+                <h1 class="fw-bold mt-2" th:text="${order.status.name() == 'PENDING'} ? '¡Recibimos tu pedido!' : 'Tu pedido'">¡Recibimos tu pedido!</h1>
+                <p class="mb-1">Folio <strong class="fs-4" th:text="${order.folio}">BSS-XXXXXXXX</strong></p>
+                <span class="badge fs-6"
+                      th:classappend="${order.status.name() == 'PENDING'} ? 'bg-warning text-dark' : (${order.status.name() == 'CANCELLED'} ? 'bg-secondary' : 'bg-success')"
+                      th:text="${order.statusLabel}">Pendiente</span>
+                <p class="text-secondary mt-3 mb-0" th:switch="${order.status.name()}">
+                    <span th:case="'PENDING'">Te contactaremos para coordinar el pago en efectivo y la entrega.</span>
+                    <span th:case="'PAID'">Recibimos tu pago; estamos preparando tu entrega.</span>
+                    <span th:case="'DELIVERED'">Tu pedido fue entregado. ¡Gracias por tu compra!</span>
+                    <span th:case="'CANCELLED'">Este pedido fue cancelado. Si tienes dudas, contáctanos.</span>
+                </p>
+            </div>
+
+            <div class="card mb-4" th:if="${order.status.name() == 'PENDING'}">
+                <div class="card-body">
+                    <h5 class="fw-semibold"><i class="bi bi-cash-coin text-success"></i> Cómo pagar</h5>
+                    <p class="mb-3" style="white-space: pre-line;" th:text="${paymentInstructions}">Instrucciones</p>
+                    <a th:if="${whatsappUrl != null}" th:href="${whatsappUrl}" target="_blank" rel="noopener noreferrer"
+                       class="btn btn-success" id="whatsapp-order-btn">
+                        <i class="bi bi-whatsapp"></i> Enviar mi pedido por WhatsApp
+                    </a>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="fw-semibold mb-3">Resumen</h5>
+                    <table class="table align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>Kit</th>
+                            <th class="text-center">Cant.</th>
+                            <th class="text-end">Precio</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="item : ${order.items}">
+                            <td th:text="${item.kitName}">Kit</td>
+                            <td class="text-center" th:text="${item.quantity}">1</td>
+                            <td class="text-end" th:text="'$' + ${#numbers.formatDecimal(item.unitPriceMxn, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                            <td class="text-end" th:text="'$' + ${#numbers.formatDecimal(item.lineTotalMxn, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                        </tr>
+                        </tbody>
+                        <tfoot>
+                        <tr>
+                            <th colspan="3" class="text-end">Total a pagar</th>
+                            <th class="text-end fs-5" th:text="'$' + ${#numbers.formatDecimal(order.totalMxn, 1, 'COMMA', 2, 'POINT')} + ' MXN'">$0.00 MXN</th>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="fw-semibold mb-2">Entrega</h5>
+                    <p class="mb-1"><strong th:text="${order.customerName}">Nombre</strong> · <span th:text="${order.customerPhone}">-</span></p>
+                    <p class="mb-1" th:text="${order.fullAddress}">Dirección</p>
+                    <p class="small text-secondary mb-0" th:if="${order.addressReferences != null}" th:text="'Referencias: ' + ${order.addressReferences}">-</p>
+                </div>
+            </div>
+
+            <p class="small text-muted text-center mb-0">
+                <i class="bi bi-bookmark"></i> Guarda esta página para consultar el estado de tu pedido.
+            </p>
+        </th:block>
+    </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- FOOTER -->
+<!-- ========================================================= -->
+
+<footer class="footer bg-dark text-white-50 py-4 mt-5">
+    <div class="container text-center">
+        <small>© 2026 Baja Solar Supply. Todos los derechos reservados.</small>
+    </div>
+</footer>
+
+
+<!-- Bootstrap JS -->
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
+</script>
+
+<script th:src="@{/js/region.js}"></script>
+<script th:src="@{/js/cart.js}"></script>
+
+</body>
+</html>
