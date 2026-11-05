@@ -522,9 +522,10 @@ public class KitCompatibilityService {
         segment.setFuseNote("Fusible o breaker DC entre batería e inversor");
 
         if (operatingA > HIGH_CURRENT_WARNING_A && busVolts < 48) {
+            // Only suggest voltages above the current one: a 12 V system can go to 24 or 48 V, a 24 V one only to 48 V.
             report.warn(String.format(Locale.US,
-                    "La corriente batería–inversor llega a %s A en %s V; considera un banco de 24 V o 48 V.",
-                    fmt(operatingA), fmt(busVolts)));
+                    "La corriente batería–inversor llega a %s A en %s V; considera un banco de %s.",
+                    fmt(operatingA), fmt(busVolts), busVolts < 24 ? "24 V o 48 V" : "48 V"));
         }
         if (bank.maxDischargeA() > 0 && dischargeA > bank.maxDischargeA()) {
             report.warn(String.format(Locale.US,

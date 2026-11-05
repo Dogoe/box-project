@@ -570,4 +570,19 @@ class KitCompatibilityServiceTest {
         legacy.setBuiltInCharger(null);
         assertTrue(legacy.hasBuiltInCharger());
     }
+
+    @Test
+    void highBatteryCurrentSuggestsOnlyHigherBankVoltages() {
+        // 3.3 kW / (24 V x 0.9) = 152.8 A
+        KitCompatibilityReportDto at24 = service.analyze(List.of(
+                new KitLine(inverter(3.3, 24.0, InverterType.OFF_GRID), 1),
+                new KitLine(battery(25.6, 100), 2)), lengths);
+        assertTrue(hasCheck(at24, CompatibilitySeverity.WARNING, "llega a 152.8 A en 24 V; considera un banco de 48 V."), at24.getChecks().toString());
+
+        // 2 kW / (12 V x 0.9) = 185.2 A
+        KitCompatibilityReportDto at12 = service.analyze(List.of(
+                new KitLine(inverter(2.0, 12.0, InverterType.OFF_GRID), 1),
+                new KitLine(battery(12.8, 200), 1)), lengths);
+        assertTrue(hasCheck(at12, CompatibilitySeverity.WARNING, "llega a 185.2 A en 12 V; considera un banco de 24 V o 48 V."), at12.getChecks().toString());
+    }
 }
