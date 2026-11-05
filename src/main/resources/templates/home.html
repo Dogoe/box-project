@@ -19,6 +19,7 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/kits.css}">
 </head>
 
 <body>
@@ -260,16 +261,10 @@
 
                 <div class="product-card">
 
-                    <div class="product-image">
-
-                        <img th:if="${kit.imageUrl != null and !kit.imageUrl.isEmpty()}"
-                             th:src="${kit.imageUrl}" alt="" class="w-100 h-100" style="object-fit: cover;">
-
-                        <div th:unless="${kit.imageUrl != null and !kit.imageUrl.isEmpty()}" class="product-placeholder kit">
-                            <i class="bi bi-box-seam"></i>
-                        </div>
-
-                    </div>
+                    <a class="product-image kit-picture d-block" th:href="@{/kits/{id}/{slug}(id=${kit.id},slug=${kit.slug})}"
+                       th:aria-label="'Ver ' + ${kit.name}">
+                        <th:block th:replace="~{fragments/kit-picture :: picture(${kit})}"></th:block>
+                    </a>
 
                     <div class="p-3">
 
@@ -277,7 +272,10 @@
                             KIT SOLAR
                         </small>
 
-                        <h5 class="mt-2" th:text="${kit.name}">Kit</h5>
+                        <h5 class="mt-2">
+                            <a class="text-dark text-decoration-none" th:href="@{/kits/{id}/{slug}(id=${kit.id},slug=${kit.slug})}"
+                               th:text="${kit.name}">Kit</a>
+                        </h5>
 
                         <p class="small text-secondary" th:text="${kit.description}">Descripción</p>
 

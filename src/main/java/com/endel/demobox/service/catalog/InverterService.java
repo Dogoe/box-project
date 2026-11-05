@@ -1,5 +1,6 @@
 package com.endel.demobox.service.catalog;
 
+import com.endel.demobox.model.catalog.PhotoUrls;
 import com.endel.demobox.exception.ResourceNotFoundException;
 import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.dto.catalog.InverterDto;
@@ -59,7 +60,7 @@ public class InverterService {
         inverter.setDescription(dto.getDescription());
         inverter.setPrice(dto.getPrice());
         inverter.setStockQuantity(dto.getStockQuantity());
-        inverter.setImageUrl(dto.getImageUrl());
+        inverter.setPhotos(PhotoUrls.resolve(dto.getImageUrls(), dto.getImageUrl()));
         inverter.setReferenceUrl(dto.getReferenceUrl());
         inverter.setActive(dto.isActive());
         inverter.setRatedPowerKw(dto.getRatedPowerKw());
@@ -95,7 +96,8 @@ public class InverterService {
         dto.setDescription(inverter.getDescription());
         dto.setPrice(inverter.getPrice());
         dto.setStockQuantity(inverter.getStockQuantity());
-        dto.setImageUrl(inverter.getImageUrl());
+        dto.setImageUrls(inverter.getPhotos());
+        dto.setImageUrl(inverter.getPhotos().isEmpty() ? null : inverter.getPhotos().get(0));
         dto.setReferenceUrl(inverter.getReferenceUrl());
         dto.setActive(inverter.isActive());
         dto.setRatedPowerKw(inverter.getRatedPowerKw());

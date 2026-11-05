@@ -23,9 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -116,6 +119,47 @@ class KitsPageControllerTest {
                 .andReturn();
 
         assertPdf(result);
+    }
+
+    @Test
+    void kitPage_showsTheGalleryAndLinkPreview() throws Exception {
+        String path = "/kits/" + kit.getId() + "/kit-pdf-test";
+        mockMvc.perform(get(path))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("<title>Kit PDF Test | Baja Solar Supply</title>")))
+                .andExpect(content().string(containsString("property=\"og:url\" content=\"http://localhost:8080" + path + "\"")))
+                .andExpect(content().string(containsString("id=\"gallery-main\"")))
+                .andExpect(content().string(containsString("Qué incluye")))
+                .andExpect(content().string(containsString("Qué puede alimentar")));
+    }
+
+    @Test
+    void kitPage_shortLinkAndOldSlugRedirectToTheCurrentAddress() throws Exception {
+        String canonical = "/kits/" + kit.getId() + "/kit-pdf-test";
+        mockMvc.perform(get("/kits/" + kit.getId()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl(canonical));
+        mockMvc.perform(get("/kits/" + kit.getId() + "/nombre-anterior"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl(canonical));
+    }
+
+    @Test
+    void kitPage_missingOrInactiveKitsAre404() throws Exception {
+        mockMvc.perform(get("/kits/999999/x"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string(containsString("Este kit ya no está disponible")));
+        kit.setActive(false);
+        kitRepository.save(kit);
+        mockMvc.perform(get("/kits/" + kit.getId() + "/kit-pdf-test"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void kitsGrid_linksEachCardToItsPage() throws Exception {
+        mockMvc.perform(get("/kits"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/kits/" + kit.getId() + "/kit-pdf-test\"")));
     }
 
     private static void assertPdf(MvcResult result) throws Exception {

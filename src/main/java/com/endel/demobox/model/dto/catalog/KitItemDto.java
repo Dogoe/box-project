@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class KitItemDto {
@@ -24,6 +26,9 @@ public class KitItemDto {
 
     /** Formatted headline spec for display, e.g. "400 W", "5 kWh", "2 kW". */
     private String specLabel;
+
+    /** The product's photos in order (read-only), for the kit gallery and collage. */
+    private List<String> productImageUrls = new ArrayList<>();
 
     @NotNull
     @Positive

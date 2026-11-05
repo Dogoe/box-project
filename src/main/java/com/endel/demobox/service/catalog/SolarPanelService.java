@@ -1,5 +1,6 @@
 package com.endel.demobox.service.catalog;
 
+import com.endel.demobox.model.catalog.PhotoUrls;
 import com.endel.demobox.exception.ResourceNotFoundException;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.dto.catalog.SolarPanelDto;
@@ -59,7 +60,7 @@ public class SolarPanelService {
         panel.setDescription(dto.getDescription());
         panel.setPrice(dto.getPrice());
         panel.setStockQuantity(dto.getStockQuantity());
-        panel.setImageUrl(dto.getImageUrl());
+        panel.setPhotos(PhotoUrls.resolve(dto.getImageUrls(), dto.getImageUrl()));
         panel.setReferenceUrl(dto.getReferenceUrl());
         panel.setActive(dto.isActive());
         panel.setWattage(dto.getWattage());
@@ -78,7 +79,8 @@ public class SolarPanelService {
         dto.setDescription(panel.getDescription());
         dto.setPrice(panel.getPrice());
         dto.setStockQuantity(panel.getStockQuantity());
-        dto.setImageUrl(panel.getImageUrl());
+        dto.setImageUrls(panel.getPhotos());
+        dto.setImageUrl(panel.getPhotos().isEmpty() ? null : panel.getPhotos().get(0));
         dto.setReferenceUrl(panel.getReferenceUrl());
         dto.setActive(panel.isActive());
         dto.setWattage(panel.getWattage());
