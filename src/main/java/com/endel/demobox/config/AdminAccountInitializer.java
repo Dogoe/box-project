@@ -12,10 +12,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Self-registration always assigns ROLE_USER, so there is otherwise no way to
- * reach the catalog admin panel. Seeds a default admin account on startup if
- * one doesn't already exist. Override admin.bootstrap.password via an
- * environment variable before deploying anywhere the default would matter.
+ * Customer accounts never get ROLE_ADMIN, so this is the only way to get into the admin panel:
+ * on startup it creates the admin from admin.bootstrap.email / .password if that user doesn't
+ * exist yet. It never changes an existing admin. In production both values are required env vars
+ * (ADMIN_BOOTSTRAP_EMAIL / ADMIN_BOOTSTRAP_PASSWORD).
  */
 @Component
 @Log4j2
@@ -48,6 +48,6 @@ public class AdminAccountInitializer implements CommandLineRunner {
         admin.setRoles(new HashSet<>(Set.of("ROLE_ADMIN")));
         userRepository.save(admin);
 
-        log.info("Created default admin account ({}). Override ADMIN_BOOTSTRAP_PASSWORD before deploying anywhere real.", adminEmail);
+        log.info("Created the admin account ({}).", adminEmail);
     }
 }

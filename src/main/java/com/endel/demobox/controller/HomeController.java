@@ -14,6 +14,12 @@ public class HomeController {
         this.kitService = kitService;
     }
 
+    /** Visitors typing just the domain land on the store's home page. */
+    @GetMapping("/")
+    public String root() {
+        return "redirect:/home";
+    }
+
     @GetMapping("/home")
     public String home(Model model) {
         model.addAttribute("kits", kitService.findAllActive());

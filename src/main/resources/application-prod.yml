@@ -1,17 +1,37 @@
-# Production overrides. Activate with SPRING_PROFILES_ACTIVE=prod.
+# Production. Activate with SPRING_PROFILES_ACTIVE=prod.
 #
-# Keep secrets OUT of this file (it's committed to git): pass them as environment variables.
-# Each ${VAR:default} below reads the env var VAR and falls back to the default after the colon.
+# Every secret comes from an environment variable (set them in the hosting panel, e.g. Render >
+# Environment, or in a .env file next to the app). A "${NAME}" without a default is required:
+# the app won't start without it. .env.example lists them all and DEPLOY.md explains each one.
+# Keep real values OUT of this file: it's committed to git.
 
 spring:
+  datasource:
+    # Neon: use the direct (non "-pooler") host, e.g.
+    # jdbc:postgresql://ep-xxxx.us-west-2.aws.neon.tech/neondb?sslmode=require
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      # Small pool for a small store. Idle connections close so a serverless database (Neon)
+      # can go to sleep and stop using its free compute hours.
+      maximum-pool-size: ${DB_POOL_SIZE:5}
+      minimum-idle: 0
+      idle-timeout: 60000
+      max-lifetime: 300000
+      connection-timeout: 30000
+
+  jpa:
+    show-sql: false
+
   mail:
     # Gmail (with an App Password):  smtp.gmail.com, port 587
     # Brevo:                         smtp-relay.brevo.com, port 587
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
     # Gmail: your full Gmail address.  Brevo: the "SMTP login" shown in Brevo (not your email).
-    username: ${MAIL_USERNAME:CAMBIAR@gmail.com}
-    # Gmail: the 16-character App Password.  Brevo: the SMTP key.  Set it ONLY as an env var.
+    username: ${MAIL_USERNAME:}
+    # Gmail: the 16-character App Password.  Brevo: the SMTP key.
     password: ${MAIL_PASSWORD:}
     properties:
       mail:
@@ -22,25 +42,67 @@ spring:
             required: true
 
 app:
-  # Your public site address, used for links inside the emails.
-  public-base-url: ${PUBLIC_BASE_URL:https://CAMBIAR-tu-dominio.com}
+  # The site's public address (https://...), used for links in emails and link previews.
+  # On Render it falls back to the service's own https://<name>.onrender.com address
+  # (RENDER_EXTERNAL_URL, set by Render) until you set PUBLIC_BASE_URL to your domain.
+  public-base-url: ${PUBLIC_BASE_URL:${RENDER_EXTERNAL_URL:}}
   mail:
+    # Set MAIL_ENABLED=false to test without email; orders still work.
     enabled: ${MAIL_ENABLED:true}
-    # Must be an address your SMTP account is allowed to send from
-    # (Gmail: the same Gmail address; Brevo: a verified sender or domain).
-    from: ${MAIL_FROM:Baja Solar Supply <CAMBIAR@gmail.com>}
+    # Must be an address your SMTP account is allowed to send from.
+    from: ${MAIL_FROM:Baja Solar Supply <pedidos@bajasolarsupply.com>}
+  # Product/kit photos (Cloudflare R2) use R2_ENDPOINT, R2_BUCKET, R2_ACCESS_KEY_ID,
+  # R2_SECRET_ACCESS_KEY and R2_PUBLIC_URL (see application.yml). Without them the admin can
+  # still paste image links.
 
-  # Product/kit photos (Cloudflare R2) are configured in application.yml from these env vars:
-  #   R2_ENDPOINT          https://<ACCOUNT_ID>.r2.cloudflarestorage.com
-  #   R2_BUCKET            box-app-images
-  #   R2_ACCESS_KEY_ID     from the R2 API token  (secret: env var only)
-  #   R2_SECRET_ACCESS_KEY from the R2 API token  (secret: env var only)
-  #   R2_PUBLIC_URL        https://pub-xxxx.r2.dev for now, later https://imagenes.<tu-dominio>
+jwt:
+  # Long random value, e.g. `openssl rand -base64 48`. Changing it signs everyone out.
+  secret: ${JWT_SECRET}
+
+admin:
+  bootstrap:
+    # Only used to create the first admin when it doesn't exist yet.
+    email: ${ADMIN_BOOTSTRAP_EMAIL}
+    password: ${ADMIN_BOOTSTRAP_PASSWORD}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Only the health check is public in production (env, metrics, loggers stay off).
+        include: health
+  endpoint:
+    health:
+      show-details: never
+  health:
+    # The platform pings /actuator/health often; checking the database each time would keep a
+    # serverless database awake. The app still fails loudly if the database is unreachable.
+    db:
+      enabled: false
+    mail:
+      enabled: false
+
+springdoc:
+  # The API docs (Swagger) are for development only.
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
 
 server:
   # The rate limits count attempts per client IP. Behind a hosting proxy / load balancer every
   # request would otherwise look like it comes from the proxy, so read the real IP from its
   # X-Forwarded-For header. "native" only trusts that header when the request comes from a
-  # private-network address (10.x, 192.168.x, 172.16-31.x, 127.x), i.e. from the platform's proxy,
-  # so visitors can't fake it. If the app is exposed directly with no proxy, it's harmless.
+  # private-network address, i.e. from the platform's proxy, so visitors can't fake it.
   forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:native}
+  # Gzip HTML/CSS/JS responses.
+  compression:
+    enabled: true
+  error:
+    include-stacktrace: never
+    include-message: never
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN
