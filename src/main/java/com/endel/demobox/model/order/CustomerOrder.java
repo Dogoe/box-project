@@ -43,6 +43,9 @@ public class CustomerOrder {
     @Column(nullable = false)
     private OrderStatus status = OrderStatus.PENDING;
 
+    /** Account that placed the order (or claimed it after verifying its email); null for guest orders. */
+    private Long userId;
+
     @Column(nullable = false, length = 120)
     private String customerName;
 

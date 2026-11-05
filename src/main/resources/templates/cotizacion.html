@@ -55,6 +55,10 @@
             </ul>
 
             <div class="d-flex align-items-center gap-3">
+                <a href="/cuenta" class="btn btn-sm btn-outline-dark" aria-label="Mi cuenta">
+                    <i class="bi bi-person"></i> <span data-account-label>Entrar</span>
+                </a>
+
                 <a href="/carrito" class="btn btn-sm btn-outline-success position-relative" aria-label="Carrito">
                     <i class="bi bi-cart3"></i>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success d-none" data-cart-count>0</span>
@@ -328,6 +332,7 @@
 </script>
 
 <script th:src="@{/js/region.js}"></script>
+<script th:src="@{/js/account.js}"></script>
 <script th:src="@{/js/cart.js}"></script>
 <script th:src="@{/js/cotizacion.js}"></script>
 

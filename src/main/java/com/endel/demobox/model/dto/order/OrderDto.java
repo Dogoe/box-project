@@ -11,6 +11,8 @@ import java.util.List;
 public class OrderDto {
     private Long id;
     private String folio;
+    /** Whether the order belongs to a customer account (vs. a guest checkout). */
+    private boolean registeredCustomer;
     private OrderStatus status;
     private String statusLabel;
     private String customerName;

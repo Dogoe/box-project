@@ -14,6 +14,8 @@
     const alertEl = document.getElementById('checkout-alert');
     const submitBtn = document.getElementById('checkout-submit');
     const cart = window.BajaSolarCart;
+    const account = window.BajaSolarAccount;
+    const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     function escapeHtml(text) {
         const div = document.createElement('div');
@@ -94,25 +96,183 @@
         return document.getElementById(id).value.trim();
     }
 
+    // ---------------------------------------------------------------
+    // Account: logged in, log in inline, or create an account at checkout
+    // ---------------------------------------------------------------
+    const emailInput = document.getElementById('customer-email');
+    const loginBox = document.getElementById('email-login-box');
+    const registerBox = document.getElementById('email-register-box');
+    const createAccountCheck = document.getElementById('create-account');
+    const createAccountPassword = document.getElementById('create-account-password');
+    const inlineLoginPassword = document.getElementById('inline-login-password');
+    const inlineLoginBtn = document.getElementById('inline-login-btn');
+    const inlineLoginAlert = document.getElementById('inline-login-alert');
+    let loggedIn = false;
+    let checkedEmail = null;
+
+    function setIfEmpty(id, text) {
+        const input = document.getElementById(id);
+        if (text && !input.value.trim()) {
+            input.value = text;
+        }
+    }
+
+    function showMember(me) {
+        loggedIn = true;
+        document.getElementById('checkout-member').classList.remove('d-none');
+        document.getElementById('checkout-member-name').textContent = me.fullName || me.email;
+        document.getElementById('email-optional').classList.add('d-none');
+        document.getElementById('email-hint').classList.add('d-none');
+        emailInput.value = me.email;
+        emailInput.readOnly = true;
+        loginBox.classList.add('d-none');
+        registerBox.classList.add('d-none');
+        createAccountCheck.checked = false;
+        setIfEmpty('customer-name', me.fullName);
+        setIfEmpty('customer-phone', me.phone);
+        setIfEmpty('street', me.defaultStreet);
+        setIfEmpty('neighborhood', me.defaultNeighborhood);
+        setIfEmpty('postal-code', me.defaultPostalCode);
+        setIfEmpty('address-references', me.defaultAddressReferences);
+    }
+
+    function showGuest() {
+        loggedIn = false;
+        checkedEmail = null;
+        document.getElementById('checkout-member').classList.add('d-none');
+        document.getElementById('email-optional').classList.remove('d-none');
+        document.getElementById('email-hint').classList.remove('d-none');
+        emailInput.readOnly = false;
+        checkEmail();
+    }
+
+    function toggleCreateAccount() {
+        document.getElementById('create-account-password-box').classList.toggle('d-none', !createAccountCheck.checked);
+        createAccountPassword.required = createAccountCheck.checked;
+        if (createAccountCheck.checked) {
+            createAccountPassword.focus();
+        }
+    }
+
+    /** Asks the server whether the typed email has an account, and offers login or sign-up. */
+    async function checkEmail() {
+        const email = emailInput.value.trim().toLowerCase();
+        if (loggedIn || email === checkedEmail) {
+            return;
+        }
+        checkedEmail = email;
+        loginBox.classList.add('d-none');
+        registerBox.classList.add('d-none');
+        if (!EMAIL_PATTERN.test(email)) {
+            return;
+        }
+        try {
+            const result = await account.sendJson('POST', '/api/account/email-status', { email: email });
+            if (!result.ok || checkedEmail !== email || loggedIn) {
+                return;
+            }
+            loginBox.classList.toggle('d-none', !result.body.registered);
+            registerBox.classList.toggle('d-none', result.body.registered);
+            if (result.body.registered) {
+                createAccountCheck.checked = false;
+                toggleCreateAccount();
+            }
+        } catch (err) {
+            // offline: the guest checkout still works
+        }
+    }
+
+    async function inlineLogin() {
+        inlineLoginAlert.classList.add('d-none');
+        if (!inlineLoginPassword.value) {
+            inlineLoginPassword.focus();
+            return;
+        }
+        inlineLoginBtn.disabled = true;
+        try {
+            const result = await account.sendJson('POST', '/api/account/login',
+                { email: emailInput.value.trim(), password: inlineLoginPassword.value });
+            if (!result.ok) {
+                inlineLoginAlert.textContent = (result.body && result.body.message) || 'No se pudo iniciar sesión.';
+                inlineLoginAlert.classList.remove('d-none');
+                return;
+            }
+            inlineLoginPassword.value = '';
+            account.setSession(result.body);
+            showMember(result.body.account);
+        } catch (err) {
+            inlineLoginAlert.textContent = 'Ocurrió un error de conexión. Intenta nuevamente.';
+            inlineLoginAlert.classList.remove('d-none');
+        } finally {
+            inlineLoginBtn.disabled = false;
+        }
+    }
+
+    emailInput.addEventListener('blur', checkEmail);
+    emailInput.addEventListener('change', checkEmail);
+    createAccountCheck.addEventListener('change', toggleCreateAccount);
+    inlineLoginBtn.addEventListener('click', inlineLogin);
+    inlineLoginPassword.addEventListener('keydown', (event) => {
+        // Enter here means "log in", not "place the order".
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            inlineLogin();
+        }
+    });
+    document.getElementById('checkout-logout').addEventListener('click', () => {
+        account.clear();
+        showGuest();
+    });
+
+    /** Creates the account right before the order, so the order is placed already linked to it. */
+    async function registerAtCheckout() {
+        const result = await account.sendJson('POST', '/api/account/register', {
+            fullName: value('customer-name'),
+            phone: value('customer-phone'),
+            email: value('customer-email'),
+            password: createAccountPassword.value
+        });
+        if (!result.ok) {
+            return (result.body && result.body.message) || 'No se pudo crear tu cuenta.';
+        }
+        account.setSession(result.body);
+        showMember(result.body.account);
+        return null;
+    }
+
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
         alertEl.classList.add('d-none');
         if (!form.checkValidity()) {
             form.classList.add('was-validated');
-            showError('Revisa los campos marcados.');
+            showError(createAccountPassword.required && !createAccountPassword.validity.valid
+                ? 'La contraseña de tu cuenta debe tener al menos 8 caracteres.'
+                : 'Revisa los campos marcados.');
             return;
         }
         if (value('customer-phone').replace(/\D/g, '').replace(/^52(?=\d{10}$)/, '').length !== 10) {
             showError('El teléfono debe tener 10 dígitos.');
             return;
         }
+        const creatingAccount = !loggedIn && createAccountCheck.checked && !registerBox.classList.contains('d-none');
+        if (creatingAccount && !value('customer-email')) {
+            showError('Escribe tu correo para crear tu cuenta.');
+            return;
+        }
 
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando pedido...';
         try {
+            if (creatingAccount) {
+                const registerError = await registerAtCheckout();
+                if (registerError) {
+                    showError(registerError);
+                    return;
+                }
+            }
             const response = await fetch('/api/orders', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: Object.assign({ 'Content-Type': 'application/json' }, account.authHeaders()),
                 body: JSON.stringify({
                     customerName: value('customer-name'),
                     customerPhone: value('customer-phone'),
@@ -140,8 +300,12 @@
         }
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         dropUnavailableKits();
         render();
+        const me = await account.me();
+        if (me) {
+            showMember(me);
+        }
     });
 })();

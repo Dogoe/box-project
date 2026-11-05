@@ -61,6 +61,10 @@
             </ul>
 
             <div class="d-flex align-items-center gap-3">
+                <a href="/cuenta" class="btn btn-sm btn-outline-dark" aria-label="Mi cuenta">
+                    <i class="bi bi-person"></i> <span data-account-label>Entrar</span>
+                </a>
+
                 <a href="/carrito" class="btn btn-sm btn-outline-success position-relative" aria-label="Carrito">
                     <i class="bi bi-cart3"></i>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success d-none" data-cart-count>0</span>
@@ -130,6 +134,51 @@
                         <h5 class="fw-semibold mb-3">Datos de entrega</h5>
                         <div id="checkout-alert" class="alert alert-danger d-none" role="alert"></div>
                         <form id="checkout-form" novalidate>
+                            <div id="checkout-member" class="alert alert-success py-2 small d-none">
+                                <i class="bi bi-person-check"></i>
+                                Comprando como <strong id="checkout-member-name"></strong>.
+                                El pedido quedará en <a href="/cuenta">tu cuenta</a>.
+                                <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="checkout-logout">Cerrar sesión</button>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small" for="customer-email">Correo <span id="email-optional">(opcional)</span></label>
+                                <input type="email" class="form-control" id="customer-email" maxlength="200" autocomplete="email">
+                                <div class="form-text" id="email-hint">Con tu correo te avisamos del pedido y puedes guardarlo en una cuenta.</div>
+                            </div>
+
+                            <!-- El correo ya tiene cuenta: entrar sin salir del carrito -->
+                            <div id="email-login-box" class="border rounded p-2 mb-2 bg-light d-none">
+                                <p class="small mb-2">
+                                    <i class="bi bi-person-circle text-success"></i>
+                                    Ya tienes cuenta con este correo. Entra para guardar el pedido en tu cuenta y llenar tus datos.
+                                </p>
+                                <div class="input-group input-group-sm mb-1">
+                                    <input type="password" class="form-control" id="inline-login-password" placeholder="Contraseña"
+                                           autocomplete="current-password" aria-label="Contraseña">
+                                    <button type="button" class="btn btn-success" id="inline-login-btn">Entrar</button>
+                                </div>
+                                <div id="inline-login-alert" class="small text-danger d-none"></div>
+                                <div class="small">
+                                    <a href="/cuenta/olvide" target="_blank" rel="noopener">¿Olvidaste tu contraseña?</a>
+                                    <span class="text-muted">· o sigue como invitado llenando el resto.</span>
+                                </div>
+                            </div>
+
+                            <!-- Correo nuevo: ofrecer crear cuenta con los mismos datos -->
+                            <div id="email-register-box" class="border rounded p-2 mb-2 bg-light d-none">
+                                <div class="form-check small">
+                                    <input class="form-check-input" type="checkbox" id="create-account">
+                                    <label class="form-check-label" for="create-account">
+                                        Crear mi cuenta con estos datos (para ver mis pedidos y no volver a escribir mi dirección)
+                                    </label>
+                                </div>
+                                <div id="create-account-password-box" class="mt-2 d-none">
+                                    <input type="password" class="form-control form-control-sm" id="create-account-password" minlength="8"
+                                           placeholder="Elige una contraseña (mínimo 8 caracteres)" autocomplete="new-password"
+                                           aria-label="Contraseña para tu cuenta">
+                                </div>
+                            </div>
+
                             <div class="mb-2">
                                 <label class="form-label small" for="customer-name">Nombre completo *</label>
                                 <input type="text" class="form-control" id="customer-name" maxlength="120" required autocomplete="name">
@@ -138,10 +187,6 @@
                                 <label class="form-label small" for="customer-phone">Teléfono (WhatsApp) *</label>
                                 <input type="tel" class="form-control" id="customer-phone" maxlength="20" required
                                        placeholder="10 dígitos" autocomplete="tel">
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label small" for="customer-email">Correo (opcional)</label>
-                                <input type="email" class="form-control" id="customer-email" maxlength="200" autocomplete="email">
                             </div>
                             <div class="mb-2">
                                 <label class="form-label small" for="street">Calle y número *</label>
@@ -200,6 +245,7 @@
 </script>
 
 <script th:src="@{/js/region.js}"></script>
+<script th:src="@{/js/account.js}"></script>
 <script th:src="@{/js/cart.js}"></script>
 <script th:inline="javascript">
     window.CART_KITS = /*[[${cartKits}]]*/ [];

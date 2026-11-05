@@ -874,7 +874,7 @@
                 ? orders.map((order) =>
                     '<tr><td class="fw-semibold">' + escapeHtml(order.folio) + '</td>' +
                     '<td class="small">' + dateTime(order.createdAt) + '</td>' +
-                    '<td>' + escapeHtml(order.customerName) + '<div class="small text-muted">' + escapeHtml(order.customerPhone) + '</div></td>' +
+                    '<td>' + escapeHtml(order.customerName) + accountBadge(order) + '<div class="small text-muted">' + escapeHtml(order.customerPhone) + '</div></td>' +
                     '<td class="small">' + order.items.map((i) => i.quantity + ' × ' + escapeHtml(i.kitName)).join('<br>') + '</td>' +
                     '<td class="text-end">' + money(order.totalMxn) + '</td>' +
                     '<td>' + statusBadge(order) + '</td>' +
@@ -961,12 +961,19 @@
             '</div></div>';
     }
 
+    /** Marks orders placed from a customer account (vs. guest checkout). */
+    function accountBadge(order) {
+        return order.registeredCustomer
+            ? ' <span class="badge text-bg-info" title="Pedido hecho con cuenta de cliente"><i class="bi bi-person-check"></i> Cuenta</span>'
+            : '';
+    }
+
     function renderOrder(order) {
         orderModalTitle.innerHTML = 'Pedido ' + escapeHtml(order.folio) + ' ' + statusBadge(order);
         orderModalBody.innerHTML =
             '<div class="row g-3 mb-3">' +
             '<div class="col-md-6"><h6 class="fw-semibold mb-1">Cliente</h6>' +
-            '<div>' + escapeHtml(order.customerName) + '</div>' +
+            '<div>' + escapeHtml(order.customerName) + accountBadge(order) + '</div>' +
             '<div class="small">' + escapeHtml(order.customerPhone) + (order.customerEmail ? ' · ' + escapeHtml(order.customerEmail) : '') + '</div>' +
             '<a class="btn btn-success btn-sm mt-2" target="_blank" rel="noopener noreferrer" href="' + escapeAttr(whatsappToCustomerUrl(order)) + '">' +
             '<i class="bi bi-whatsapp"></i> Escribir por WhatsApp</a></div>' +

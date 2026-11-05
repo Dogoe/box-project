@@ -51,6 +51,13 @@ public class JwtConfig {
                                 "/api/quotes/appliance-presets",
                                 "/carrito",
                                 "/pedido/**",
+                                "/cuenta",
+                                "/cuenta/**",
+                                "/api/account/email-status",
+                                "/api/account/register",
+                                "/api/account/login",
+                                "/api/account/forgot-password",
+                                "/api/account/reset-password",
                                 // Spring forwards error responses here; securing it turns every error into a 403.
                                 "/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/settings/exchange-rate").permitAll()

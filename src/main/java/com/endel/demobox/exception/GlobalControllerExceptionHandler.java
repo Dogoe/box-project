@@ -80,6 +80,20 @@ public class GlobalControllerExceptionHandler {
                 HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<CustomErrorDTO> handleConflictException(ConflictException ex){
+        return new ResponseEntity<>(
+                new CustomErrorDTO("conflict", ex.getMessage()),
+                HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<CustomErrorDTO> handleInvalidCredentialsException(InvalidCredentialsException ex){
+        return new ResponseEntity<>(
+                new CustomErrorDTO("unauthorized", ex.getMessage()),
+                HttpStatus.UNAUTHORIZED);
+    }
+
     @ExceptionHandler(InvalidApplianceTemplateException.class)
     public ResponseEntity<CustomErrorDTO> handleInvalidApplianceTemplateException(InvalidApplianceTemplateException ex){
         return new ResponseEntity<>(

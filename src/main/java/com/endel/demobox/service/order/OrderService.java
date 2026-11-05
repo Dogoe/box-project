@@ -3,6 +3,7 @@ package com.endel.demobox.service.order;
 import com.endel.demobox.exception.BadRequestException;
 import com.endel.demobox.exception.InvalidOrderTransitionException;
 import com.endel.demobox.exception.ResourceNotFoundException;
+import com.endel.demobox.model.User;
 import com.endel.demobox.model.dto.catalog.KitDto;
 import com.endel.demobox.model.dto.order.CreateOrderRequest;
 import com.endel.demobox.model.dto.order.OrderDto;
@@ -11,6 +12,7 @@ import com.endel.demobox.model.dto.order.OrderItemRequest;
 import com.endel.demobox.model.order.CustomerOrder;
 import com.endel.demobox.model.order.OrderItem;
 import com.endel.demobox.model.order.OrderStatus;
+import com.endel.demobox.repository.UserRepository;
 import com.endel.demobox.repository.order.CustomerOrderRepository;
 import com.endel.demobox.service.ExchangeRateService;
 import com.endel.demobox.service.PhoneNumbers;
@@ -44,10 +46,12 @@ public class OrderService {
     private final KitService kitService;
     private final ExchangeRateService exchangeRateService;
     private final ApplicationEventPublisher events;
+    private final UserRepository userRepository;
 
     public OrderService(CustomerOrderRepository orderRepository, KitService kitService, ExchangeRateService exchangeRateService,
-                        ApplicationEventPublisher events) {
+                        ApplicationEventPublisher events, UserRepository userRepository) {
         this.orderRepository = orderRepository;
+        this.userRepository = userRepository;
         this.kitService = kitService;
         this.exchangeRateService = exchangeRateService;
         this.events = events;
@@ -55,6 +59,15 @@ public class OrderService {
 
     @Transactional
     public CustomerOrder create(CreateOrderRequest request) {
+        return create(request, null);
+    }
+
+    /**
+     * @param customer the logged-in customer placing the order, or null for a guest checkout. Their
+     *                 delivery address is remembered to prefill the next checkout.
+     */
+    @Transactional
+    public CustomerOrder create(CreateOrderRequest request, User customer) {
         String phone = PhoneNumbers.normalizeMexican(request.getCustomerPhone())
                 .orElseThrow(() -> new BadRequestException("El teléfono debe tener 10 dígitos."));
 
@@ -102,9 +115,46 @@ public class OrderService {
         order.setNotes(blankToNull(request.getNotes()));
         order.setTotalMxn(total);
         order.setUsdToMxnRate(exchangeRateService.getCurrentRate().getUsdToMxnRate());
+        if (customer != null) {
+            order.setUserId(customer.getId());
+            // The account's email is the order's contact email, so its updates reach the right inbox.
+            order.setCustomerEmail(customer.getEmail());
+            rememberDeliveryDetails(customer, order);
+        }
         CustomerOrder saved = orderRepository.save(order);
         events.publishEvent(new OrderEvent(saved.getId(), OrderEvent.Type.CREATED));
         return saved;
+    }
+
+    private void rememberDeliveryDetails(User customer, CustomerOrder order) {
+        customer.setDefaultStreet(order.getStreet());
+        customer.setDefaultNeighborhood(order.getNeighborhood());
+        customer.setDefaultPostalCode(order.getPostalCode());
+        customer.setDefaultAddressReferences(order.getAddressReferences());
+        if (customer.getPhone() == null) {
+            customer.setPhone(order.getCustomerPhone());
+        }
+        if (customer.getFullName() == null) {
+            customer.setFullName(order.getCustomerName());
+        }
+        userRepository.save(customer);
+    }
+
+    public List<OrderDto> findByCustomer(Long userId) {
+        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId).stream().map(this::toDto).toList();
+    }
+
+    /**
+     * Attaches guest orders placed with this email to the account. Only call once the account has
+     * proven it owns the email; otherwise anyone could register someone else's address and read
+     * their orders.
+     */
+    @Transactional
+    public int claimGuestOrders(Long userId, String email) {
+        List<CustomerOrder> guestOrders = orderRepository.findByUserIdIsNullAndCustomerEmailIgnoreCase(email);
+        guestOrders.forEach(order -> order.setUserId(userId));
+        orderRepository.saveAll(guestOrders);
+        return guestOrders.size();
     }
 
     public Optional<OrderDto> findByFolio(String folio) {
@@ -212,6 +262,7 @@ public class OrderService {
         OrderDto dto = new OrderDto();
         dto.setId(order.getId());
         dto.setFolio(order.getFolio());
+        dto.setRegisteredCustomer(order.getUserId() != null);
         dto.setStatus(order.getStatus());
         dto.setStatusLabel(order.getStatus().getLabel());
         dto.setCustomerName(order.getCustomerName());

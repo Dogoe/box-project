@@ -1,6 +1,7 @@
 package com.endel.demobox.service;
 
 import com.endel.demobox.authentication.RegisterRequestDTO;
+import com.endel.demobox.exception.ConflictException;
 import com.endel.demobox.model.User;
 import com.endel.demobox.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 
 import java.util.Optional;
+import java.util.HashSet;
 import java.util.Set;
 
 
@@ -25,14 +27,14 @@ public class UserService {
 
     public void registerUser(RegisterRequestDTO request) {
         if (userRepository.existsByUsername(request.getEmail())) {
-            throw new RuntimeException("Username is already taken");
+            throw new ConflictException("Este correo ya tiene cuenta.");
         }
 
         User user = new User();
         user.setEmail(request.getEmail());
         user.setUsername(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRoles(Set.of("ROLE_USER")); // default role
+        user.setRoles(new HashSet<>(Set.of("ROLE_USER")));
 
         userRepository.save(user);
     }

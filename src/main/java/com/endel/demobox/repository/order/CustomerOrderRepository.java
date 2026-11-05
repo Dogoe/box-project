@@ -15,4 +15,8 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
     List<CustomerOrder> findAllByOrderByCreatedAtDesc();
 
     List<CustomerOrder> findByStatusOrderByCreatedAtDesc(OrderStatus status);
+
+    List<CustomerOrder> findByUserIdOrderByCreatedAtDesc(Long userId);
+
+    List<CustomerOrder> findByUserIdIsNullAndCustomerEmailIgnoreCase(String customerEmail);
 }
