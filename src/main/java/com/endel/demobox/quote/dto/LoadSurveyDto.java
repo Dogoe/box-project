@@ -18,8 +18,9 @@ public class LoadSurveyDto {
     @Valid
     private List<ApplianceLoadDto> appliances;
 
+    /** The store only sells off-grid systems, so that's what the calculator assumes unless told otherwise. */
     @NotNull
-    private SystemType systemType;
+    private SystemType systemType = SystemType.OFF_GRID;
 
     @Positive
     private double autonomyDays = 1;

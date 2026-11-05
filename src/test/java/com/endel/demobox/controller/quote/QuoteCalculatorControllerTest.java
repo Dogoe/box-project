@@ -9,9 +9,13 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -110,5 +114,34 @@ class QuoteCalculatorControllerTest {
         byte[] pdfBytes = result.getResponse().getContentAsByteArray();
         assertTrue(pdfBytes.length > 0);
         assertTrue(new String(pdfBytes, 0, 4, java.nio.charset.StandardCharsets.US_ASCII).equals("%PDF"));
+    }
+
+    @Test
+    void calculate_withoutSystemTypeSizesAnOffGridSystem() throws Exception {
+        // What the cotizador page sends now: no system type, zone hours and 1 day of autonomy.
+        String body = """
+                {
+                  "autonomyDays": 1,
+                  "peakSunHours": 6.0,
+                  "appliances": [ { "templateId": "fridge_medium", "quantity": 1 } ]
+                }
+                """;
+
+        mockMvc.perform(post("/api/quotes/calculate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recommendedBatteryCapacityKwh").value(greaterThan(0.0)));
+    }
+
+    @Test
+    void cotizacionPage_asksForZoneAndDaysOnly() throws Exception {
+        mockMvc.perform(get("/cotizacion"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("selected=\"selected\">Baja California — 6 h de sol pico</option>")))
+                .andExpect(content().string(containsString("selected=\"selected\">1 día</option>")))
+                .andExpect(content().string(containsString(">4 días</option>")))
+                .andExpect(content().string(not(containsString(">5 días</option>"))))
+                .andExpect(content().string(not(containsString("systemType"))));
     }
 }

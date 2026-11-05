@@ -8,11 +8,11 @@
 <th:block th:fragment="commonHead">
     <!--
       Set the theme before anything is painted so the page never flashes the wrong colors:
-      the visitor's saved choice, otherwise dark. theme.js handles the switch button.
+      the visitor's saved choice, otherwise light. theme.js handles the switch button.
     -->
     <script>
         (function () {
-            var theme = 'dark';
+            var theme = 'light';
             try {
                 var saved = localStorage.getItem('bss-theme');
                 if (saved === 'light' || saved === 'dark') {

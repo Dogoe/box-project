@@ -42,49 +42,31 @@
 
         <form id="quote-form">
 
-            <!-- SYSTEM TYPE -->
+            <!-- SITE PARAMETERS (every system is off-grid) -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <h5 class="card-title">1. ¿Qué tipo de sistema quieres?</h5>
-
-                    <div class="btn-group w-100 flex-wrap mt-3" role="group">
-                        <input type="radio" class="btn-check" name="systemType" id="systemTypeOffGrid" value="OFF_GRID" checked>
-                        <label class="btn btn-ghost" for="systemTypeOffGrid">
-                            Fuera de la red (Off-Grid)
-                        </label>
-
-                        <input type="radio" class="btn-check" name="systemType" id="systemTypeHybrid" value="HYBRID">
-                        <label class="btn btn-ghost" for="systemTypeHybrid">
-                            Híbrido (red + batería)
-                        </label>
-
-                        <input type="radio" class="btn-check" name="systemType" id="systemTypeOnGrid" value="ON_GRID">
-                        <label class="btn btn-ghost" for="systemTypeOnGrid">
-                            Conectado a la red (On-Grid)
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SITE PARAMETERS -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">2. Datos de tu zona</h5>
+                    <h5 class="card-title">1. Datos de tu zona</h5>
 
                     <div class="row g-3 mt-1">
                         <div class="col-md-6">
-                            <label for="peakSunHours" class="form-label">Horas de sol pico al día</label>
-                            <input type="number" class="form-control" id="peakSunHours" min="1" max="12" step="0.5" value="6">
+                            <label for="peakSunHours" class="form-label">Zona</label>
+                            <select class="form-select" id="peakSunHours">
+                                <option th:each="zone, stat : ${zones}" th:value="${zone.peakSunHours}"
+                                        th:text="${zone.label}" th:selected="${stat.first}">Baja California — 6 h de sol pico</option>
+                            </select>
                             <div class="form-text">
-                                Promedio de horas de sol útil en tu zona. 6 es un valor típico si no lo sabes.
+                                Horas de sol útil al día en promedio en tu zona.
                             </div>
                         </div>
 
                         <div class="col-md-6">
-                            <label for="autonomyDays" class="form-label">Días de autonomía deseados</label>
-                            <input type="number" class="form-control" id="autonomyDays" min="0.5" max="7" step="0.5" value="1">
+                            <label for="autonomyDays" class="form-label">Días de autonomía</label>
+                            <select class="form-select" id="autonomyDays">
+                                <option th:each="days, stat : ${autonomyDays}" th:value="${days}"
+                                        th:text="${days == 1} ? '1 día' : ${days} + ' días'" th:selected="${stat.first}">1 día</option>
+                            </select>
                             <div class="form-text">
-                                Cuántos días quieres seguir funcionando sin sol. No aplica para sistemas On-Grid.
+                                Cuántos días quieres que funcione sin sol (nublado). Lo común es 1 o 2.
                             </div>
                         </div>
                     </div>
@@ -95,7 +77,7 @@
             <div class="card mb-4">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">3. ¿Qué aparatos quieres alimentar?</h5>
+                        <h5 class="card-title mb-0">2. ¿Qué aparatos quieres alimentar?</h5>
                         <button type="button" id="add-appliance-btn" class="btn btn-sm btn-accent">
                             <i class="bi bi-plus-lg"></i> Agregar aparato
                         </button>
@@ -241,7 +223,7 @@
             <input type="number" class="form-control form-control-sm quantity-input" min="1" value="1">
         </td>
         <td>
-            <input type="number" class="form-control form-control-sm hours-input" min="0" max="24" step="0.5">
+            <input type="number" class="form-control form-control-sm hours-input" min="0" max="24" step="0.25">
         </td>
         <td class="text-center">
             <input type="checkbox" class="form-check-input custom-motor d-none" title="Tiene motor o compresor">

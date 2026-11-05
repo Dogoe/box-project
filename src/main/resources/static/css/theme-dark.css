@@ -1,5 +1,5 @@
 /*
- * Dark theme (default): pure black background, white text and controls.
+ * Dark theme: pure black background, white text and controls.
  * Only colors live here; layout and typography are in site.css.
  * ":root[...]" outranks the light sheet's ":root" fallback, whichever loads last.
  */

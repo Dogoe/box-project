@@ -100,28 +100,38 @@
     color: rgba(255, 255, 255, 0.85);
 }
 
+/* Five facts in a row on desktop, 3 on tablets, 2 on phones. */
 .hero-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 40px;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 28px;
     margin-top: 48px;
     padding-top: 24px;
     border-top: 1px solid rgba(255, 255, 255, 0.25);
-    max-width: 560px;
 }
 
 .hero-stats strong {
     display: block;
-    font-size: 1.6rem;
+    font-size: 1.3rem;
     font-weight: 600;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .hero-stats span {
-    font-size: 0.72rem;
-    letter-spacing: 0.16em;
+    display: block;
+    margin-top: 4px;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: rgba(255, 255, 255, 0.75);
+}
+
+@media (max-width: 991.98px) {
+    .hero-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
 .hero-scroll {
@@ -188,7 +198,8 @@
     }
 
     .hero-stats {
-        gap: 24px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
     }
 
     .photo-panel {

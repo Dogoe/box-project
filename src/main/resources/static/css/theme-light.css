@@ -1,6 +1,6 @@
 /*
- * Light theme: white background, black text and controls. Also the fallback when the
- * theme script can't run. Only colors live here; layout and typography are in site.css.
+ * Light theme (default): white background, black text and controls. Also the fallback
+ * when the theme script can't run. Only colors live here; layout and typography are in site.css.
  */
 :root,
 [data-theme="light"] {
