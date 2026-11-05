@@ -24,6 +24,7 @@ public class WiringSettingsService {
         WiringSettings settings = findOrCreate();
         settings.setBatteryToInverterMeters(dto.getBatteryToInverterMeters());
         settings.setPvToInverterMeters(dto.getPvToInverterMeters());
+        settings.setControllerToBatteryMeters(dto.getControllerToBatteryMeters());
         return toDto(repository.save(settings));
     }
 
@@ -42,6 +43,9 @@ public class WiringSettingsService {
         WiringSettingsDto dto = new WiringSettingsDto();
         dto.setBatteryToInverterMeters(settings.getBatteryToInverterMeters());
         dto.setPvToInverterMeters(settings.getPvToInverterMeters());
+        dto.setControllerToBatteryMeters(settings.getControllerToBatteryMeters() != null
+                ? settings.getControllerToBatteryMeters()
+                : WiringSettingsDto.DEFAULT_CONTROLLER_TO_BATTERY_METERS);
         dto.setUpdatedAt(settings.getUpdatedAt());
         return dto;
     }

@@ -23,11 +23,17 @@
                 body: JSON.stringify({ email: email, password: password })
             });
 
+            const body = await response.json().catch(() => ({}));
+            if (response.status === 429) {
+                // Too many attempts: the server says how long to wait.
+                alertBox.textContent = body.message || 'Demasiados intentos. Intenta más tarde.';
+                alertBox.classList.remove('d-none');
+                return;
+            }
             if (!response.ok) {
                 throw new Error('Login failed');
             }
 
-            const body = await response.json();
             if (!body.token) {
                 throw new Error('No token in response');
             }

@@ -60,9 +60,20 @@
 
             </ul>
 
-            <div class="btn-group btn-group-sm" role="group" aria-label="Región">
-                <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="es">MX</button>
-                <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="en">US</button>
+            <div class="d-flex align-items-center gap-3">
+                <a href="/cuenta" class="btn btn-sm btn-outline-dark" aria-label="Mi cuenta">
+                    <i class="bi bi-person"></i> <span data-account-label>Entrar</span>
+                </a>
+
+                <a href="/carrito" class="btn btn-sm btn-outline-success position-relative" aria-label="Carrito">
+                    <i class="bi bi-cart3"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success d-none" data-cart-count>0</span>
+                </a>
+
+                <div class="btn-group btn-group-sm" role="group" aria-label="Región">
+                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="es">MX</button>
+                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="en">US</button>
+                </div>
             </div>
 
         </div>
@@ -241,6 +252,9 @@
                 </th:block>
 
                 <div class="text-center mt-4">
+                    <button type="button" class="btn btn-success btn-sm" th:data-add-to-cart="${kit.id}">
+                        <i class="bi bi-cart-plus"></i> Agregar al carrito
+                    </button>
                     <a href="/cotizacion" class="btn btn-outline-dark btn-sm">
                         Cotizar mi sistema
                     </a>
@@ -273,6 +287,8 @@
 </script>
 
 <script th:src="@{/js/region.js}"></script>
+<script th:src="@{/js/account.js}"></script>
+<script th:src="@{/js/cart.js}"></script>
 
 </body>
 </html>

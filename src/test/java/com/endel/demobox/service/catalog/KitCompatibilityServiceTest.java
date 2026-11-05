@@ -3,6 +3,7 @@ package com.endel.demobox.service.catalog;
 import com.endel.demobox.model.catalog.AluminumStructure;
 import com.endel.demobox.model.catalog.Battery;
 import com.endel.demobox.model.catalog.BatteryChemistry;
+import com.endel.demobox.model.catalog.ChargeController;
 import com.endel.demobox.model.catalog.ConnectionCable;
 import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.catalog.InverterType;
@@ -19,8 +20,11 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -56,6 +60,29 @@ class KitCompatibilityServiceTest {
         inverter.setMpptMaxInputCurrentA(27.0);
         inverter.setMpptMaxChargeCurrentA(40.0);
         return inverter;
+    }
+
+    /** Inverter-only unit (no solar charger): the MPPT data comes from a separate controller. */
+    private Inverter inverterWithoutCharger(double kw, double batteryVolts) {
+        Inverter inverter = inverter(kw, batteryVolts, InverterType.OFF_GRID);
+        inverter.setBuiltInCharger(false);
+        inverter.setMpptChannels(null);
+        inverter.setMaxInputVoltage(0);
+        inverter.setMpptMinVoltage(null);
+        inverter.setMpptMaxInputCurrentA(null);
+        inverter.setMpptMaxChargeCurrentA(null);
+        return inverter;
+    }
+
+    private ChargeController controller(double maxVolts, double chargeA, Integer... batteryVolts) {
+        ChargeController controller = new ChargeController();
+        controller.setId(nextId++);
+        controller.setName("MPPT " + (int) maxVolts + "/" + (int) chargeA);
+        controller.setMaxInputVoltage(maxVolts);
+        controller.setMaxChargeCurrentA(chargeA);
+        controller.setMpptMaxInputCurrentA(35.0);
+        controller.getSupportedBatteryVoltages().addAll(Set.of(batteryVolts));
+        return controller;
     }
 
     private Battery battery(double volts, double ah) {
@@ -433,5 +460,114 @@ class KitCompatibilityServiceTest {
 
         assertTrue(hasCheck(report, CompatibilitySeverity.WARNING, "Falta capturar el voltaje de baterías"));
         assertTrue(report.getWiring().isEmpty());
+    }
+
+    // ---- Separate charge controller ----
+
+    @Test
+    void inverterWithoutCharger_usesTheControllersLimitsAndGetsAControllerBatteryRun() {
+        lengths.setControllerToBatteryMeters(1.5);
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverterWithoutCharger(3.0, 48.0), 1),
+                new KitLine(controller(250, 60, 12, 24, 48), 1),
+                new KitLine(battery(51.2, 100), 2),
+                new KitLine(panel(), 6)), lengths);
+
+        assertTrue(report.getStatus() != CompatibilitySeverity.ERROR, report.getChecks().toString());
+        assertEquals("Controlador MPPT 250/60 · 60 A de carga", report.getSolarCharger());
+        assertTrue(hasCheck(report, CompatibilitySeverity.OK, "El controlador MPPT 250/60 carga el banco de 48 V"));
+        // Max 250 V / (49.5 V x 1.25 cold) = 4 in series; 6 panels split evenly into 2 strings of 3.
+        assertTrue(report.getPanelArray().startsWith("2 cadenas de 3 paneles en serie"), report.getPanelArray());
+
+        // The inverter cable only carries discharge (3000 W / (48 V x 0.9) = 69.4 A); the controller has its own run.
+        assertEquals(69.4, segment(report, "Batería – inversor").getOperatingCurrentA(), 0.1);
+        WiringSegmentDto controllerRun = segment(report, "Controlador – batería");
+        assertEquals(60.0, controllerRun.getOperatingCurrentA(), 0.1);
+        assertEquals(1.5, controllerRun.getLengthMeters());
+        assertNotNull(controllerRun.getGauge());
+        segment(report, "Paneles – controlador MPPT");
+
+        // Expansion is measured against the controller: 48 V x 60 A = 2880 W charge, ~3744 W PV estimated.
+        assertNotNull(report.getExpansion());
+        assertTrue(report.getExpansion().getPanels().getDetail().contains("3744 W estimado"), report.getExpansion().getPanels().getDetail());
+        assertTrue(report.getExpansion().getBatteries().getDetail().contains("el controlador recarga"), report.getExpansion().getBatteries().getDetail());
+    }
+
+    @Test
+    void controllerPvLimitsDriveTheWarnings() {
+        ChargeController small = controller(100, 30, 12, 24, 48);
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverterWithoutCharger(3.0, 48.0), 1),
+                new KitLine(small, 1),
+                new KitLine(battery(51.2, 100), 1),
+                new KitLine(panel(), 4)), lengths);
+
+        // 4 x 550 W = 2200 W over 48 V x 30 A x 1.3 = 1872 W estimated for the controller.
+        assertTrue(hasCheck(report, CompatibilitySeverity.WARNING, "potencia PV máxima estimada del controlador (~1872 W"), report.getChecks().toString());
+    }
+
+    @Test
+    void inverterWithoutChargerAndPanelsButNoController_isAnError() {
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverterWithoutCharger(3.0, 48.0), 1),
+                new KitLine(battery(51.2, 100), 1),
+                new KitLine(panel(), 4)), lengths);
+
+        assertEquals(CompatibilitySeverity.ERROR, report.getStatus());
+        assertTrue(hasCheck(report, CompatibilitySeverity.ERROR, "no tiene cargador solar; agrega un controlador de carga MPPT"));
+        assertNull(report.getPanelArray());
+        assertNull(report.getExpansion());
+    }
+
+    @Test
+    void inverterWithoutChargerAndNoPanels_onlyNeedsTheBatteries() {
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverterWithoutCharger(3.0, 48.0), 1),
+                new KitLine(battery(51.2, 100), 1)), lengths);
+
+        assertTrue(report.getChecks().stream().noneMatch(c -> c.getSeverity() == CompatibilitySeverity.ERROR), report.getChecks().toString());
+        assertNull(report.getSolarCharger());
+        assertEquals(1, report.getWiring().size());
+    }
+
+    @Test
+    void controllerThatCannotChargeTheBankVoltage_isAnError() {
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverterWithoutCharger(3.0, 48.0), 1),
+                new KitLine(controller(150, 40, 12, 24), 1),
+                new KitLine(battery(51.2, 100), 1),
+                new KitLine(panel(), 2)), lengths);
+
+        assertTrue(hasCheck(report, CompatibilitySeverity.ERROR, "no admite baterías de 48 V (admite 12/24 V)"), report.getChecks().toString());
+    }
+
+    @Test
+    void inverterWithBuiltInCharger_ignoresAControllerWithAWarning() {
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverter(5.0, 48.0, InverterType.HYBRID), 1),
+                new KitLine(controller(250, 60, 48), 1),
+                new KitLine(battery(51.2, 100), 1),
+                new KitLine(panel(), 6)), lengths);
+
+        assertTrue(hasCheck(report, CompatibilitySeverity.WARNING, "ya trae cargador solar (MPPT); se usa el suyo y el controlador MPPT 250/60 no se toma en cuenta"));
+        assertEquals("Integrado en el inversor · 40 A de carga", report.getSolarCharger());
+        assertFalse(report.getWiring().stream().anyMatch(s -> s.getSegment().startsWith("Controlador")));
+        segment(report, "Paneles – inversor (MPPT)");
+    }
+
+    @Test
+    void onlyOneChargeControllerPerKit() {
+        ChargeController controller = controller(250, 60, 48);
+        assertTrue(service.compositionErrors(List.of(new KitLine(controller, 2))).get(0)
+                .contains("solo puede tener un controlador de carga (cantidad 1)"));
+        assertTrue(service.compositionErrors(List.of(new KitLine(controller, 1), new KitLine(controller(150, 40, 48), 1))).get(0)
+                .contains("solo puede tener un controlador de carga; este trae 2 modelos"));
+    }
+
+    @Test
+    void inverterSavedBeforeTheChargerFlagExisted_countsAsAllInOne() {
+        Inverter legacy = inverter(5.0, 48.0, InverterType.HYBRID);
+        legacy.setBuiltInCharger(null);
+        assertTrue(legacy.hasBuiltInCharger());
     }
 }

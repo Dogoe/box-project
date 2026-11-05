@@ -17,29 +17,35 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-#  mail:
-#    host: smtp.gmail.com
-#    port: 587
-#    username: your-email@gmail.com
-#    password: your-app-password
-#    properties:
-#      mail:
-#        smtp:
-#          auth: true
-#          starttls:
-#            enable: true
-
+  # Development: MailHog captures every email without delivering it (UI on http://localhost:8025).
+  # Production SMTP settings live in application-prod.yml.
   mail:
-    host: localhost        # MailHog runs locally
-    port: 1025             # default MailHog SMTP port
-    username: ""           # no auth needed
-    password: ""           # no auth needed
+    host: localhost
+    port: 1025
+    username: ""
+    password: ""
     properties:
       mail:
         smtp:
-          auth: false      # disable auth
+          auth: false
           starttls:
-            enable: false # MailHog does not need TLS
+            enable: false
+          # Fail fast instead of tying up a thread when the SMTP server is unreachable.
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+app:
+  # Absolute base used for links inside emails (customer order page, admin).
+  public-base-url: http://localhost:8080
+  mail:
+    # false skips sending entirely (orders still work); emails are only ever a notification.
+    enabled: true
+    from: "Baja Solar Supply <pedidos@bajasolarsupply.local>"
+  rate-limit:
+    # Caps login attempts, sign-ups, password-reset emails and orders per IP/email (see RateLimit).
+    # Answers 429 "Intenta de nuevo en N minutos" when exceeded.
+    enabled: true
 
 jwt:
   secret: K0zDf0M5GyPlZtX7RhV0I5uPzZsZ3YgYV7Z7XgWyfL0=

@@ -8,6 +8,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -44,7 +45,7 @@ public class AdminAccountInitializer implements CommandLineRunner {
         admin.setEmail(adminEmail);
         admin.setUsername(adminEmail);
         admin.setPassword(passwordEncoder.encode(adminPassword));
-        admin.setRoles(Set.of("ROLE_ADMIN"));
+        admin.setRoles(new HashSet<>(Set.of("ROLE_ADMIN")));
         userRepository.save(admin);
 
         log.info("Created default admin account ({}). Override ADMIN_BOOTSTRAP_PASSWORD before deploying anywhere real.", adminEmail);

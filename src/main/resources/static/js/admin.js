@@ -26,6 +26,16 @@
     const modalErrorEl = document.getElementById('entity-modal-error');
     const modalDialogEl = modalEl.querySelector('.modal-dialog');
     const wiringError = document.getElementById('wiring-error');
+    const storeError = document.getElementById('store-error');
+    const storeSuccess = document.getElementById('store-success');
+    const ordersFilter = document.getElementById('orders-filter');
+    const ordersWhatsappWarning = document.getElementById('orders-whatsapp-warning');
+    const pendingOrdersBadge = document.getElementById('pending-orders-badge');
+    const orderModalEl = document.getElementById('order-modal');
+    const orderModal = new bootstrap.Modal(orderModalEl);
+    const orderModalTitle = document.getElementById('order-modal-title');
+    const orderModalBody = document.getElementById('order-modal-body');
+    const orderModalError = document.getElementById('order-modal-error');
     const wiringSuccess = document.getElementById('wiring-success');
 
     let currentEntity = null;
@@ -144,7 +154,9 @@
                 { key: 'name', label: 'Nombre' },
                 { key: 'ratedPowerKw', label: 'Potencia', suffix: ' kW' },
                 { key: 'batteryVoltage', label: 'Batería', suffix: ' V' },
-                { key: 'mpptMaxChargeCurrentA', label: 'Carga MPPT', suffix: ' A' },
+                { key: 'mpptMaxChargeCurrentA', label: 'Carga MPPT', format: (item) => item.builtInCharger === false
+                    ? '<span class="text-muted">Controlador aparte</span>'
+                    : (item.mpptMaxChargeCurrentA != null ? item.mpptMaxChargeCurrentA + ' A' : '') },
                 { key: 'effectiveMaxPvPowerW', label: 'PV máx.', format: (item) => item.effectiveMaxPvPowerW > 0
                     ? Math.round(item.effectiveMaxPvPowerW) + ' W' + (item.maxPvPowerEstimated ? ' (est.)' : '') : '' },
                 { key: 'price', label: 'Precio', prefix: '$' },
@@ -167,12 +179,50 @@
                     options: ['HYBRID', 'OFF_GRID', 'STRING', 'MICRO'], defaultValue: 'HYBRID' },
                 { key: 'batteryVoltage', label: 'Voltaje de baterías (V)', type: 'select', required: true,
                     options: [12, 24, 48], defaultValue: 48, numeric: true },
-                { key: 'mpptChannels', label: 'Canales MPPT', type: 'number', defaultValue: 1 },
-                { key: 'maxInputVoltage', label: 'MPPT: voltaje PV máx. (Voc, V)', type: 'number', step: '0.1', required: true },
-                { key: 'mpptMinVoltage', label: 'MPPT: voltaje PV mínimo de operación (V)', type: 'number', step: '0.1' },
-                { key: 'mpptMaxInputCurrentA', label: 'MPPT: corriente PV máx. por canal (A)', type: 'number', step: '0.1' },
-                { key: 'mpptMaxChargeCurrentA', label: 'MPPT: corriente máx. de carga a batería (A)', type: 'number', step: '0.1', required: true },
-                { key: 'maxPvInputPowerW', label: 'MPPT: potencia PV máx. (W) — opcional, dato de la ficha', type: 'number', step: '1' },
+                { key: 'builtInCharger', label: 'Incluye cargador solar (MPPT)', type: 'checkbox', defaultValue: true,
+                    help: 'Desmárcalo si el inversor no carga desde paneles: el kit necesitará un controlador de carga MPPT aparte.' },
+                { key: 'mpptChannels', label: 'Canales MPPT', type: 'number', defaultValue: 1, dependsOn: 'builtInCharger' },
+                { key: 'maxInputVoltage', label: 'MPPT: voltaje PV máx. (Voc, V)', type: 'number', step: '0.1', required: true, dependsOn: 'builtInCharger' },
+                { key: 'mpptMinVoltage', label: 'MPPT: voltaje PV mínimo de operación (V)', type: 'number', step: '0.1', dependsOn: 'builtInCharger' },
+                { key: 'mpptMaxInputCurrentA', label: 'MPPT: corriente PV máx. por canal (A)', type: 'number', step: '0.1', dependsOn: 'builtInCharger' },
+                { key: 'mpptMaxChargeCurrentA', label: 'MPPT: corriente máx. de carga a batería (A)', type: 'number', step: '0.1', required: true, dependsOn: 'builtInCharger' },
+                { key: 'maxPvInputPowerW', label: 'MPPT: potencia PV máx. (W) — opcional, dato de la ficha', type: 'number', step: '1', dependsOn: 'builtInCharger' },
+                { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
+            ]
+        },
+        controllers: {
+            label: 'Controladores MPPT',
+            endpoint: '/api/catalog/charge-controllers',
+            columns: [
+                { key: 'sku', label: 'SKU' },
+                { key: 'name', label: 'Nombre' },
+                { key: 'supportedBatteryVoltages', label: 'Batería', format: (item) => (item.supportedBatteryVoltages || []).join('/') + ' V' },
+                { key: 'maxChargeCurrentA', label: 'Carga', suffix: ' A' },
+                { key: 'maxInputVoltage', label: 'PV máx. (Voc)', suffix: ' V' },
+                { key: 'maxPvInputPowerW', label: 'PV máx.', format: (item) => item.maxPvInputPowerW ? item.maxPvInputPowerW + ' W' : '<span class="text-muted">estimado</span>' },
+                { key: 'price', label: 'Precio', prefix: '$' },
+                { key: 'stockQuantity', label: 'Stock' },
+                { key: 'referenceUrl', label: 'Ref.', type: 'link' },
+                { key: 'active', label: 'Activo', type: 'boolean' }
+            ],
+            fields: [
+                { key: 'sku', label: 'SKU', type: 'text', required: true },
+                { key: 'name', label: 'Nombre', type: 'text', required: true },
+                { key: 'brand', label: 'Marca', type: 'text' },
+                { key: 'description', label: 'Descripción', type: 'textarea' },
+                { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
+                { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
+                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
+                { key: 'supportedBatteryVoltages', label: 'Voltajes de batería que admite', type: 'checkboxes',
+                    options: [12, 24, 48], defaultValue: [12, 24, 48] },
+                { key: 'maxChargeCurrentA', label: 'Corriente máx. de carga a batería (A)', type: 'number', step: '0.1', required: true },
+                { key: 'maxInputVoltage', label: 'Voltaje PV máx. (Voc, V)', type: 'number', step: '0.1', required: true },
+                { key: 'mpptMinVoltage', label: 'Voltaje PV mínimo de operación (V)', type: 'number', step: '0.1' },
+                { key: 'mpptMaxInputCurrentA', label: 'Corriente PV máx. por entrada (A)', type: 'number', step: '0.1' },
+                { key: 'maxPvInputPowerW', label: 'Potencia PV máx. (W) — opcional, dato de la ficha', type: 'number', step: '1',
+                    placeholder: 'Vacío = se estima con la corriente de carga × voltaje del banco × 1.3' },
+                { key: 'mpptChannels', label: 'Entradas MPPT', type: 'number', defaultValue: 1 },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
         },
@@ -236,12 +286,23 @@
         newBtn.classList.remove('d-none');
         entityTableWrapper.classList.remove('d-none');
         settingsPanel.classList.add('d-none');
+        ordersFilter.classList.add('d-none');
+        ordersWhatsappWarning.classList.add('d-none');
     }
 
     function showSettingsPanel() {
         newBtn.classList.add('d-none');
         entityTableWrapper.classList.add('d-none');
         settingsPanel.classList.remove('d-none');
+        ordersFilter.classList.add('d-none');
+        ordersWhatsappWarning.classList.add('d-none');
+    }
+
+    function showOrdersTable() {
+        newBtn.classList.add('d-none');
+        entityTableWrapper.classList.remove('d-none');
+        settingsPanel.classList.add('d-none');
+        ordersFilter.classList.remove('d-none');
     }
 
     // ---- Generic (panels/batteries/inverters) rendering ----
@@ -334,6 +395,15 @@
             return '<div class="form-check"><input type="checkbox" class="form-check-input" id="' + id + '"' +
                 (val ? ' checked' : '') + '></div>';
         }
+        if (field.type === 'checkboxes') {
+            const selected = (Array.isArray(val) ? val : []).map(String);
+            return '<div id="' + id + '">' + field.options.map((opt) =>
+                '<div class="form-check form-check-inline">' +
+                '<input type="checkbox" class="form-check-input" id="' + id + '-' + opt + '" value="' + opt + '"' +
+                (selected.includes(String(opt)) ? ' checked' : '') + '>' +
+                '<label class="form-check-label" for="' + id + '-' + opt + '">' + opt + ' V</label></div>'
+            ).join('') + '</div>';
+        }
         const step = field.step ? ' step="' + field.step + '"' : '';
         const placeholder = field.placeholder ? ' placeholder="' + field.placeholder + '"' : '';
         return '<input type="' + field.type + '" class="form-control" id="' + id + '" value="' + escapeAttr(val) + '"' + step + placeholder + ' ' + requiredAttr + '>';
@@ -346,18 +416,41 @@
 
     function renderGenericForm(config, item) {
         modalFieldsEl.innerHTML = config.fields.map((field) =>
-            '<div class="mb-3">' +
+            '<div class="mb-3" data-field="' + field.key + '">' +
             '<label class="form-label" for="field-' + field.key + '">' + field.label + '</label>' +
             fieldInputHtml(field, item ? item[field.key] : undefined) +
+            (field.help ? '<div class="form-text">' + field.help + '</div>' : '') +
             '</div>'
         ).join('');
+        wireFieldDependencies(config);
+    }
+
+    function isFieldEnabled(field) {
+        return !field.dependsOn || document.getElementById('field-' + field.dependsOn).checked;
+    }
+
+    /** Hides fields whose controlling checkbox is off (e.g. MPPT data on an inverter without a charger). */
+    function wireFieldDependencies(config) {
+        const update = () => config.fields.filter((f) => f.dependsOn).forEach((field) => {
+            const enabled = isFieldEnabled(field);
+            modalFieldsEl.querySelector('[data-field="' + field.key + '"]').classList.toggle('d-none', !enabled);
+            document.getElementById('field-' + field.key).required = enabled && !!field.required;
+        });
+        new Set(config.fields.filter((f) => f.dependsOn).map((f) => f.dependsOn)).forEach((key) => {
+            document.getElementById('field-' + key).addEventListener('change', update);
+        });
+        update();
     }
 
     function collectGenericFormData(config) {
         const data = {};
         config.fields.forEach((field) => {
             const input = document.getElementById('field-' + field.key);
-            if (field.type === 'checkbox') {
+            if (!isFieldEnabled(field)) {
+                data[field.key] = null;
+            } else if (field.type === 'checkboxes') {
+                data[field.key] = Array.from(input.querySelectorAll('input:checked')).map((box) => Number(box.value));
+            } else if (field.type === 'checkbox') {
                 data[field.key] = input.checked;
             } else if (field.type === 'number' || field.numeric) {
                 data[field.key] = input.value === '' ? null : Number(input.value);
@@ -412,14 +505,15 @@
     // ---- Kits (own logic: nested items referencing existing products) ----
 
     async function loadAllProducts() {
-        const [panels, batteries, inverters, structures, cables] = await Promise.all([
+        const [panels, batteries, inverters, controllers, structures, cables] = await Promise.all([
             authFetch('/api/catalog/panels').then((r) => r.json()),
             authFetch('/api/catalog/batteries').then((r) => r.json()),
             authFetch('/api/catalog/inverters').then((r) => r.json()),
+            authFetch('/api/catalog/charge-controllers').then((r) => r.json()),
             authFetch('/api/catalog/structures').then((r) => r.json()),
             authFetch('/api/catalog/cables').then((r) => r.json())
         ]);
-        allProducts = panels.concat(batteries, inverters, structures, cables).map((p) => ({
+        allProducts = panels.concat(batteries, inverters, controllers, structures, cables).map((p) => ({
             id: p.id,
             label: p.sku + ' — ' + p.name + ' ($' + p.price + ')'
         }));
@@ -505,6 +599,7 @@
 
     function compatibilityHtml(report) {
         const summary = [
+            report.solarCharger ? '<div><strong>Cargador solar:</strong> ' + escapeHtml(report.solarCharger) + '</div>' : '',
             report.batteryBank ? '<div><strong>Banco de baterías:</strong> ' + escapeHtml(report.batteryBank) + '</div>' : '',
             report.panelArray ? '<div><strong>Paneles:</strong> ' + escapeHtml(report.panelArray) + '</div>' : ''
         ].join('');
@@ -680,6 +775,19 @@
             marginError.classList.remove('d-none');
         }
 
+        storeError.classList.add('d-none');
+        storeSuccess.classList.add('d-none');
+        try {
+            const response = await authFetch('/api/settings/store');
+            const data = await response.json();
+            document.getElementById('store-whatsapp-input').value = data.whatsappNumber || '';
+            document.getElementById('store-email-input').value = data.notificationEmail || '';
+            document.getElementById('store-instructions-input').value = data.paymentInstructions || '';
+        } catch (err) {
+            storeError.textContent = 'No se pudo cargar la configuración de pedidos.';
+            storeError.classList.remove('d-none');
+        }
+
         wiringError.classList.add('d-none');
         wiringSuccess.classList.add('d-none');
         try {
@@ -687,11 +795,38 @@
             const data = await response.json();
             document.getElementById('wiring-battery-input').value = data.batteryToInverterMeters;
             document.getElementById('wiring-pv-input').value = data.pvToInverterMeters;
+            document.getElementById('wiring-controller-input').value = data.controllerToBatteryMeters;
         } catch (err) {
             wiringError.textContent = 'No se pudieron cargar las longitudes de cableado.';
             wiringError.classList.remove('d-none');
         }
     }
+
+    document.getElementById('store-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        storeError.classList.add('d-none');
+        storeSuccess.classList.add('d-none');
+
+        const response = await authFetch('/api/settings/store', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                whatsappNumber: document.getElementById('store-whatsapp-input').value.trim() || null,
+                notificationEmail: document.getElementById('store-email-input').value.trim() || null,
+                paymentInstructions: document.getElementById('store-instructions-input').value
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('store-whatsapp-input').value = data.whatsappNumber || '';
+            storeSuccess.textContent = 'Configuración de pedidos actualizada.';
+            storeSuccess.classList.remove('d-none');
+        } else {
+            storeError.textContent = await errorMessage(response, 'No se pudo guardar la configuración de pedidos.');
+            storeError.classList.remove('d-none');
+        }
+    });
 
     document.getElementById('wiring-form').addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -703,7 +838,8 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 batteryToInverterMeters: Number(document.getElementById('wiring-battery-input').value),
-                pvToInverterMeters: Number(document.getElementById('wiring-pv-input').value)
+                pvToInverterMeters: Number(document.getElementById('wiring-pv-input').value),
+                controllerToBatteryMeters: Number(document.getElementById('wiring-controller-input').value)
             })
         });
 
@@ -758,6 +894,225 @@
         }
     });
 
+    // ---- Orders ----
+
+    const ORDER_STATUS_BADGES = {
+        PENDING: 'bg-warning text-dark',
+        PAID: 'bg-info text-dark',
+        DELIVERED: 'bg-success',
+        CANCELLED: 'bg-secondary'
+    };
+    const mxnFormatter = new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    let ordersStatusFilter = '';
+
+    function money(value) {
+        return '$' + mxnFormatter.format(Number(value)) + ' MXN';
+    }
+
+    function dateTime(value) {
+        return value ? new Date(value).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+    }
+
+    function statusBadge(order) {
+        return '<span class="badge ' + ORDER_STATUS_BADGES[order.status] + '">' + escapeHtml(order.statusLabel) + '</span>';
+    }
+
+    function fullAddress(order) {
+        return order.street + ', Col. ' + order.neighborhood + ', C.P. ' + order.postalCode + ', ' + order.city;
+    }
+
+    async function refreshPendingBadge() {
+        try {
+            const pending = await authFetch('/api/admin/orders?status=PENDING').then((r) => r.json());
+            pendingOrdersBadge.textContent = pending.length;
+            pendingOrdersBadge.classList.toggle('d-none', pending.length === 0);
+        } catch (err) {
+            // badge is a convenience; ignore failures
+        }
+    }
+
+    async function loadOrders() {
+        currentEntity = 'orders';
+        showOrdersTable();
+        listAlert.classList.add('d-none');
+        entityTitle.textContent = 'Pedidos';
+        ordersFilter.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.status === ordersStatusFilter));
+        tableHead.innerHTML = '<tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Kits</th><th class="text-end">Total</th><th>Estado</th><th></th></tr>';
+        authFetch('/api/settings/store')
+            .then((r) => r.json())
+            .then((store) => ordersWhatsappWarning.classList.toggle('d-none', Boolean(store.whatsappNumber)))
+            .catch(() => ordersWhatsappWarning.classList.add('d-none'));
+
+        try {
+            const url = '/api/admin/orders' + (ordersStatusFilter ? '?status=' + ordersStatusFilter : '');
+            const orders = await authFetch(url).then((r) => r.json());
+            tableBody.innerHTML = orders.length
+                ? orders.map((order) =>
+                    '<tr><td class="fw-semibold">' + escapeHtml(order.folio) + '</td>' +
+                    '<td class="small">' + dateTime(order.createdAt) + '</td>' +
+                    '<td>' + escapeHtml(order.customerName) + accountBadge(order) + '<div class="small text-muted">' + escapeHtml(order.customerPhone) + '</div></td>' +
+                    '<td class="small">' + order.items.map((i) => i.quantity + ' × ' + escapeHtml(i.kitName)).join('<br>') + '</td>' +
+                    '<td class="text-end">' + money(order.totalMxn) + '</td>' +
+                    '<td>' + statusBadge(order) + '</td>' +
+                    '<td class="text-end"><button type="button" class="btn btn-sm btn-outline-secondary order-open-btn" data-id="' + order.id + '">Ver</button></td></tr>'
+                ).join('')
+                : '<tr><td colspan="7" class="text-center text-muted py-4">No hay pedidos' + (ordersStatusFilter ? ' con este estado' : '') + '.</td></tr>';
+            tableBody.querySelectorAll('.order-open-btn').forEach((btn) => {
+                btn.addEventListener('click', () => openOrderModal(Number(btn.dataset.id)));
+            });
+        } catch (err) {
+            listAlert.textContent = 'No se pudo cargar la lista de pedidos.';
+            listAlert.classList.remove('d-none');
+        }
+        refreshPendingBadge();
+    }
+
+    document.getElementById('orders-whatsapp-settings-link').addEventListener('click', (event) => {
+        event.preventDefault();
+        document.querySelector('.entity-tab[data-entity="settings"]').click();
+    });
+
+    ordersFilter.querySelectorAll('button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            ordersStatusFilter = btn.dataset.status;
+            loadOrders();
+        });
+    });
+
+    // wa.me opens WhatsApp with this text prefilled; the admin reviews it and presses send.
+    function whatsappToCustomerUrl(order) {
+        const greeting = 'Hola ' + order.customerName.split(' ')[0] + ', ';
+        const messages = {
+            PENDING: greeting + 'recibimos tu pedido ' + order.folio + ' por ' + money(order.totalMxn) +
+                '. ¿Cuándo te queda bien para coordinar el pago en efectivo y la entrega en ' + fullAddress(order) + '?',
+            PAID: greeting + 'confirmamos tu pago del pedido ' + order.folio + '. Te avisamos para coordinar la entrega.',
+            DELIVERED: greeting + 'gracias por tu compra (pedido ' + order.folio + '). Cualquier duda con tu sistema, aquí estamos.',
+            CANCELLED: greeting + 'tu pedido ' + order.folio + ' fue cancelado. Si tienes dudas, con gusto te ayudamos.'
+        };
+        return 'https://wa.me/52' + order.customerPhone + '?text=' + encodeURIComponent(messages[order.status]);
+    }
+
+    function orderTimelineHtml(order) {
+        const lines = ['<li>Recibido: ' + dateTime(order.createdAt) + '</li>'];
+        if (order.paidAt) {
+            lines.push('<li>Pagado: ' + dateTime(order.paidAt) + ' · ' + money(order.paidAmountMxn) + ' · ' + escapeHtml(order.paidBy) +
+                (order.paymentNote ? ' · ' + escapeHtml(order.paymentNote) : '') + '</li>');
+        }
+        if (order.deliveredAt) {
+            lines.push('<li>Entregado: ' + dateTime(order.deliveredAt) + ' · ' + escapeHtml(order.deliveredBy) + '</li>');
+        }
+        if (order.cancelledAt) {
+            lines.push('<li>Cancelado: ' + dateTime(order.cancelledAt) + ' · ' + escapeHtml(order.cancelledBy) + ' · ' + escapeHtml(order.cancelReason) + '</li>');
+        }
+        return '<ul class="small mb-0">' + lines.join('') + '</ul>';
+    }
+
+    function orderActionsHtml(order) {
+        if (order.status === 'PENDING') {
+            return '<div class="border rounded p-3 bg-light">' +
+                '<h6 class="fw-semibold">Registrar pago en efectivo</h6>' +
+                '<div class="row g-2 align-items-end">' +
+                '<div class="col-md-4"><label class="form-label small" for="order-amount">Monto recibido (MXN)</label>' +
+                '<input type="number" step="0.01" min="0.01" class="form-control form-control-sm" id="order-amount" value="' + order.totalMxn + '"></div>' +
+                '<div class="col-md-8"><label class="form-label small" for="order-payment-note">Nota (opcional)</label>' +
+                '<input type="text" class="form-control form-control-sm" id="order-payment-note" maxlength="500" placeholder="Ej. pagó al instalar"></div>' +
+                '</div>' +
+                '<div class="d-flex gap-2 mt-2">' +
+                '<button type="button" class="btn btn-success btn-sm" data-order-action="pay">Confirmar pago</button>' +
+                '<button type="button" class="btn btn-outline-success btn-sm" data-order-action="pay-and-deliver">Cobrar y entregar</button>' +
+                '</div></div>' + cancelHtml();
+        }
+        if (order.status === 'PAID') {
+            return '<button type="button" class="btn btn-success btn-sm" data-order-action="deliver">Marcar entregado</button>' + cancelHtml();
+        }
+        return '';
+    }
+
+    function cancelHtml() {
+        return '<div class="border rounded p-3 mt-3">' +
+            '<label class="form-label small" for="order-cancel-reason">Motivo de cancelación</label>' +
+            '<div class="input-group input-group-sm">' +
+            '<input type="text" class="form-control" id="order-cancel-reason" maxlength="500">' +
+            '<button type="button" class="btn btn-outline-danger" data-order-action="cancel">Cancelar pedido</button>' +
+            '</div></div>';
+    }
+
+    /** Marks orders placed from a customer account (vs. guest checkout). */
+    function accountBadge(order) {
+        return order.registeredCustomer
+            ? ' <span class="badge text-bg-info" title="Pedido hecho con cuenta de cliente"><i class="bi bi-person-check"></i> Cuenta</span>'
+            : '';
+    }
+
+    function renderOrder(order) {
+        orderModalTitle.innerHTML = 'Pedido ' + escapeHtml(order.folio) + ' ' + statusBadge(order);
+        orderModalBody.innerHTML =
+            '<div class="row g-3 mb-3">' +
+            '<div class="col-md-6"><h6 class="fw-semibold mb-1">Cliente</h6>' +
+            '<div>' + escapeHtml(order.customerName) + accountBadge(order) + '</div>' +
+            '<div class="small">' + escapeHtml(order.customerPhone) + (order.customerEmail ? ' · ' + escapeHtml(order.customerEmail) : '') + '</div>' +
+            '<a class="btn btn-success btn-sm mt-2" target="_blank" rel="noopener noreferrer" href="' + escapeAttr(whatsappToCustomerUrl(order)) + '">' +
+            '<i class="bi bi-whatsapp"></i> Escribir por WhatsApp</a></div>' +
+            '<div class="col-md-6"><h6 class="fw-semibold mb-1">Entrega</h6>' +
+            '<div class="small">' + escapeHtml(fullAddress(order)) + '</div>' +
+            (order.addressReferences ? '<div class="small text-muted">Ref.: ' + escapeHtml(order.addressReferences) + '</div>' : '') +
+            (order.notes ? '<div class="small mt-1"><strong>Notas:</strong> ' + escapeHtml(order.notes) + '</div>' : '') +
+            '<a class="small d-inline-block mt-2" target="_blank" rel="noopener noreferrer" href="/pedido/' + encodeURIComponent(order.folio) + '">Ver página del cliente</a>' +
+            '</div></div>' +
+            '<table class="table table-sm small"><thead><tr><th>Kit</th><th class="text-center">Cant.</th><th class="text-end">Precio</th><th class="text-end">Subtotal</th></tr></thead><tbody>' +
+            order.items.map((i) => '<tr><td>' + escapeHtml(i.kitName) + '</td><td class="text-center">' + i.quantity + '</td>' +
+                '<td class="text-end">' + money(i.unitPriceMxn) + '</td><td class="text-end">' + money(i.lineTotalMxn) + '</td></tr>').join('') +
+            '</tbody><tfoot><tr><th colspan="3" class="text-end">Total</th><th class="text-end">' + money(order.totalMxn) + '</th></tr></tfoot></table>' +
+            '<div class="mb-3">' + orderTimelineHtml(order) + '</div>' +
+            orderActionsHtml(order);
+
+        orderModalBody.querySelectorAll('[data-order-action]').forEach((btn) => {
+            btn.addEventListener('click', () => runOrderAction(order, btn.dataset.orderAction));
+        });
+    }
+
+    async function openOrderModal(id) {
+        orderModalError.classList.add('d-none');
+        const response = await authFetch('/api/admin/orders/' + id);
+        renderOrder(await response.json());
+        orderModal.show();
+    }
+
+    async function runOrderAction(order, action) {
+        orderModalError.classList.add('d-none');
+        let body = null;
+        if (action === 'pay' || action === 'pay-and-deliver') {
+            body = {
+                amountMxn: Number(document.getElementById('order-amount').value),
+                note: document.getElementById('order-payment-note').value.trim() || null
+            };
+        } else if (action === 'cancel') {
+            const reason = document.getElementById('order-cancel-reason').value.trim();
+            if (!reason) {
+                orderModalError.textContent = 'Indica el motivo de la cancelación.';
+                orderModalError.classList.remove('d-none');
+                return;
+            }
+            if (!window.confirm('¿Cancelar el pedido ' + order.folio + '?')) {
+                return;
+            }
+            body = { reason: reason };
+        }
+
+        const response = await authFetch('/api/admin/orders/' + order.id + '/' + action, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: body ? JSON.stringify(body) : undefined
+        });
+        if (!response.ok) {
+            orderModalError.textContent = await errorMessage(response, 'No se pudo actualizar el pedido.');
+            orderModalError.classList.remove('d-none');
+            return;
+        }
+        renderOrder(await response.json());
+        loadOrders();
+    }
+
     // ---- Shared: delete + create/update submit ----
 
     async function deleteItem(id) {
@@ -805,6 +1160,8 @@
             tab.classList.add('active');
             if (tab.dataset.entity === 'kits') {
                 loadKits();
+            } else if (tab.dataset.entity === 'orders') {
+                loadOrders();
             } else if (tab.dataset.entity === 'settings') {
                 loadSettings();
             } else {
@@ -814,4 +1171,5 @@
     });
 
     loadEntity('panels');
+    refreshPendingBadge();
 })();

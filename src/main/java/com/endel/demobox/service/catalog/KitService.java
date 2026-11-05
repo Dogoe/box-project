@@ -5,6 +5,7 @@ import com.endel.demobox.exception.ResourceNotFoundException;
 import com.endel.demobox.model.catalog.AluminumStructure;
 import com.endel.demobox.model.catalog.Battery;
 import com.endel.demobox.model.catalog.ConnectionCable;
+import com.endel.demobox.model.catalog.ChargeController;
 import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.catalog.Kit;
 import com.endel.demobox.model.catalog.KitItem;
@@ -197,6 +198,9 @@ public class KitService {
                 itemDto.setProductType("CABLE");
                 itemDto.setSpecLabel(formatNumber(cable.getLengthMeters()) + " m"
                         + (cable.getGauge() != null ? " · " + cable.getGauge().getLabel() : ""));
+            } else if (product instanceof ChargeController controller) {
+                itemDto.setProductType("CHARGE_CONTROLLER");
+                itemDto.setSpecLabel(formatNumber(controller.getMaxChargeCurrentA()) + " A MPPT");
             } else if (product instanceof AluminumStructure) {
                 itemDto.setProductType("STRUCTURE");
             } else {

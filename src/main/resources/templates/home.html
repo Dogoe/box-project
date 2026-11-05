@@ -84,6 +84,15 @@
 
             <div class="d-flex align-items-center gap-3">
 
+                <a href="/cuenta" class="btn btn-sm btn-outline-dark" aria-label="Mi cuenta">
+                    <i class="bi bi-person"></i> <span data-account-label>Entrar</span>
+                </a>
+
+                <a href="/carrito" class="btn btn-sm btn-outline-success position-relative" aria-label="Carrito">
+                    <i class="bi bi-cart3"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success d-none" data-cart-count>0</span>
+                </a>
+
                 <div class="btn-group btn-group-sm" role="group" aria-label="Región">
                     <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="es">MX</button>
                     <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="en">US</button>
@@ -279,8 +288,10 @@
                                 $0.00
                             </strong>
 
-                            <button class="btn btn-dark btn-sm rounded-circle">
-                                <i class="bi bi-plus"></i>
+                            <button type="button" class="btn btn-dark btn-sm rounded-circle"
+                                    th:data-add-to-cart="${kit.id}" data-icon-only
+                                    title="Agregar al carrito" aria-label="Agregar al carrito">
+                                <i class="bi bi-cart-plus"></i>
                             </button>
 
                         </div>
@@ -692,6 +703,8 @@
 </script>
 
 <script th:src="@{/js/region.js}"></script>
+<script th:src="@{/js/account.js}"></script>
+<script th:src="@{/js/cart.js}"></script>
 
 </body>
 </html>
