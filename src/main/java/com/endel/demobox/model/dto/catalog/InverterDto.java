@@ -47,6 +47,9 @@ public class InverterDto {
     @NotNull
     private InverterType inverterType;
 
+    /** False for inverters without a solar charger: the MPPT fields are ignored and cleared. */
+    private Boolean builtInCharger = true;
+
     private Integer mpptChannels;
 
     private double maxInputVoltage;

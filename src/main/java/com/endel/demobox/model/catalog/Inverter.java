@@ -33,6 +33,13 @@ public class Inverter extends Product {
     @Column(nullable = false)
     private InverterType inverterType;
 
+    /**
+     * Whether the inverter includes its own solar (MPPT) charger. When false, the MPPT fields below
+     * are empty and the kit needs a separate {@link ChargeController}. Null on rows saved before this
+     * field existed; those were all all-in-one units, so null counts as true.
+     */
+    private Boolean builtInCharger;
+
     private Integer mpptChannels;
 
     /** Max PV open-circuit voltage the MPPT input accepts. */
@@ -66,6 +73,10 @@ public class Inverter extends Product {
 
     // Datasheet PV limits typically run 1.25-1.5x charge power, since surplus feeds loads directly.
     public static final double ESTIMATED_PV_TO_CHARGE_POWER_RATIO = 1.30;
+
+    public boolean hasBuiltInCharger() {
+        return !Boolean.FALSE.equals(builtInCharger);
+    }
 
     public double getMaxChargePowerW() {
         return batteryVoltage == null || mpptMaxChargeCurrentA == null ? 0 : batteryVoltage * mpptMaxChargeCurrentA;

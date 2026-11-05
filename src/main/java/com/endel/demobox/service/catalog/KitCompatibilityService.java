@@ -1,6 +1,7 @@
 package com.endel.demobox.service.catalog;
 
 import com.endel.demobox.model.catalog.Battery;
+import com.endel.demobox.model.catalog.ChargeController;
 import com.endel.demobox.model.catalog.ConnectionCable;
 import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.catalog.InverterType;
@@ -25,9 +26,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Checks that a kit's inverter (with its built-in MPPT charger), batteries and panels work
- * together, works out how to wire the battery bank and panel strings, and sizes the
- * battery-to-inverter and panels-to-inverter cables (gauge, voltage drop, fuse).
+ * Checks that a kit's inverter, solar charger, batteries and panels work together, works out how
+ * to wire the battery bank and panel strings, and sizes the cables (gauge, voltage drop, fuse).
+ * <p>
+ * The solar charger is the inverter's built-in MPPT when it has one; otherwise the kit's separate
+ * charge controller, which then gets its own panels and battery cable runs.
  * <p>
  * Everything here is derived from product specs at request time - nothing is stored.
  * Missing spec data produces a warning instead of failing, so half-filled catalogs still work.
@@ -67,6 +70,7 @@ public class KitCompatibilityService {
         List<KitLine> batteries = ofType(lines, Battery.class);
         List<KitLine> inverters = ofType(lines, Inverter.class);
         List<KitLine> cables = ofType(lines, ConnectionCable.class);
+        List<KitLine> controllers = ofType(lines, ChargeController.class);
 
         checkSanityLimits(report, panels, batteries, inverters);
 
@@ -78,7 +82,7 @@ public class KitCompatibilityService {
         }
 
         if (inverters.isEmpty()) {
-            if (!panels.isEmpty() || !batteries.isEmpty()) {
+            if (!panels.isEmpty() || !batteries.isEmpty() || !controllers.isEmpty()) {
                 report.warn("El kit no incluye inversor; no se puede validar la compatibilidad ni calcular el cableado.");
             }
             return report;
@@ -86,30 +90,105 @@ public class KitCompatibilityService {
 
         Inverter inverter = (Inverter) inverters.get(0).product();
 
+        SolarCharger charger = resolveCharger(report, inverter, controllers, !panels.isEmpty());
         BatteryBank bank = analyzeBatteryBank(report, batteries, inverter);
-        PvArray pv = analyzePanels(report, panels, inverter);
+        PvArray pv = charger == null ? null : analyzePanels(report, panels, charger);
 
         List<WiringSegmentDto> segments = new ArrayList<>();
         if (bank != null) {
-            segments.add(batteryToInverterSegment(report, inverter, bank, lengths.getBatteryToInverterMeters()));
+            segments.add(batteryToInverterSegment(report, inverter, charger, bank, lengths.getBatteryToInverterMeters()));
+            if (charger != null && !charger.builtIn()) {
+                segments.add(controllerToBatterySegment(report, charger, lengths.getControllerToBatteryMeters()));
+            }
         }
         if (pv != null) {
-            segments.add(pvToInverterSegment(report, pv, lengths.getPvToInverterMeters()));
+            segments.add(pvSegment(report, pv, charger, lengths.getPvToInverterMeters()));
         }
         report.setWiring(segments);
         checkKitCables(report, cables, segments);
 
         if (report.getStatus() != CompatibilitySeverity.ERROR) {
-            report.setExpansion(expansion(inverter, !panels.isEmpty(), !batteries.isEmpty(), pv, bank));
+            report.setExpansion(expansion(inverter, charger, !panels.isEmpty(), !batteries.isEmpty(), pv, bank));
         }
         return report;
+    }
+
+    // ---- Solar charger ----
+
+    /**
+     * The kit's solar charger, whichever product provides it: the inverter's built-in MPPT, or a
+     * separate charge controller on the inverter's battery bus. {@code owner} names the product in
+     * messages, {@code noun} is just "inversor"/"controlador" and {@code kind} the same with its article.
+     */
+    private record SolarCharger(boolean builtIn, String owner, String noun, String kind, double maxInputVoltage, Double minVoltage,
+                                int channels, Double maxInputCurrentA, Double chargeCurrentA, Double busVolts,
+                                double chargePowerW, double effectiveMaxPvPowerW, boolean pvPowerEstimated) {
+
+        static SolarCharger builtInto(Inverter inverter) {
+            return new SolarCharger(true, "inversor " + inverter.getName(), "inversor", "el inversor", inverter.getMaxInputVoltage(),
+                    inverter.getMpptMinVoltage(), channelsOf(inverter.getMpptChannels()), inverter.getMpptMaxInputCurrentA(),
+                    inverter.getMpptMaxChargeCurrentA(), inverter.getBatteryVoltage(), inverter.getMaxChargePowerW(),
+                    inverter.getEffectiveMaxPvPowerW(), inverter.isMaxPvPowerEstimated());
+        }
+
+        static SolarCharger separate(ChargeController controller, Double busVolts) {
+            double volts = busVolts == null ? 0 : busVolts;
+            return new SolarCharger(false, "controlador " + controller.getName(), "controlador", "el controlador", controller.getMaxInputVoltage(),
+                    controller.getMpptMinVoltage(), channelsOf(controller.getMpptChannels()), controller.getMpptMaxInputCurrentA(),
+                    controller.getMaxChargeCurrentA(), busVolts, controller.maxChargePowerW(volts),
+                    controller.effectiveMaxPvPowerW(volts), controller.isMaxPvPowerEstimated());
+        }
+
+        private static int channelsOf(Integer channels) {
+            return Math.max(1, channels == null ? 1 : channels);
+        }
+    }
+
+    /**
+     * Inverter with a built-in charger: that one is used (a controller in the kit is ignored, with a
+     * warning). Inverter without one: the kit's controller, which must support the battery voltage.
+     */
+    private SolarCharger resolveCharger(KitCompatibilityReportDto report, Inverter inverter, List<KitLine> controllers, boolean hasPanels) {
+        ChargeController controller = controllers.isEmpty() ? null : (ChargeController) controllers.get(0).product();
+        if (inverter.hasBuiltInCharger()) {
+            if (controller != null) {
+                report.warn("El inversor " + inverter.getName() + " ya trae cargador solar (MPPT); se usa el suyo y el controlador "
+                        + controller.getName() + " no se toma en cuenta en los cálculos.");
+            }
+            report.setSolarCharger("Integrado en el inversor" + (inverter.getMpptMaxChargeCurrentA() != null
+                    ? " · " + fmt(inverter.getMpptMaxChargeCurrentA()) + " A de carga" : ""));
+            return SolarCharger.builtInto(inverter);
+        }
+
+        if (controller == null) {
+            if (hasPanels) {
+                report.error("El inversor " + inverter.getName()
+                        + " no tiene cargador solar; agrega un controlador de carga MPPT para conectar los paneles.");
+            }
+            return null;
+        }
+        Double busVolts = inverter.getBatteryVoltage();
+        if (busVolts != null && !controller.supportsBatteryVoltage(busVolts)) {
+            report.error(String.format(Locale.US, "El controlador %s no admite baterías de %s V (admite %s V).",
+                    controller.getName(), fmt(busVolts),
+                    controller.getSupportedBatteryVoltages().stream().sorted().map(String::valueOf).collect(Collectors.joining("/"))));
+            return null;
+        }
+        if (!hasPanels) {
+            report.warn("El kit incluye el controlador " + controller.getName() + " pero no trae paneles.");
+        }
+        report.setSolarCharger("Controlador " + controller.getName() + " · " + fmt(controller.getMaxChargeCurrentA()) + " A de carga");
+        if (busVolts != null) {
+            report.ok(String.format(Locale.US, "El controlador %s carga el banco de %s V.", controller.getName(), fmt(busVolts)));
+        }
+        return SolarCharger.separate(controller, busVolts);
     }
 
     // ---- Composition ----
 
     /**
-     * Residential kits use one all-in-one inverter (these units can't be paralleled), and a single
-     * battery model and panel model: mixed batteries charge/discharge unevenly, and mixed panels in a
+     * Residential kits use one inverter (these units can't be paralleled), at most one separate charge
+     * controller, and a single battery model and panel model: mixed batteries charge/discharge unevenly, and mixed panels in a
      * string are limited by the weakest one (single-MPPT inverters can't separate them). Extras like
      * cables and structures are unrestricted. Used both to block saving and in the live review.
      */
@@ -120,6 +199,12 @@ public class KitCompatibilityService {
             errors.add("Un kit solo puede tener un inversor; este trae " + distinctProducts(inverters) + " modelos: " + names(inverters) + ".");
         } else if (totalQuantity(inverters) > 1) {
             errors.add("Un kit solo puede tener un inversor (cantidad 1); este trae " + totalQuantity(inverters) + ".");
+        }
+        List<KitLine> controllers = ofType(lines, ChargeController.class);
+        if (distinctProducts(controllers) > 1) {
+            errors.add("Un kit solo puede tener un controlador de carga; este trae " + distinctProducts(controllers) + " modelos: " + names(controllers) + ".");
+        } else if (totalQuantity(controllers) > 1) {
+            errors.add("Un kit solo puede tener un controlador de carga (cantidad 1); este trae " + totalQuantity(controllers) + ".");
         }
         List<KitLine> batteries = ofType(lines, Battery.class);
         if (distinctProducts(batteries) > 1) {
@@ -222,7 +307,7 @@ public class KitCompatibilityService {
                            int series, int strings, int stringsPerChannel, double panelIscA, double stringVmp) {
     }
 
-    private PvArray analyzePanels(KitCompatibilityReportDto report, List<KitLine> panels, Inverter inverter) {
+    private PvArray analyzePanels(KitCompatibilityReportDto report, List<KitLine> panels, SolarCharger charger) {
         if (panels.isEmpty()) {
             return null;
         }
@@ -231,30 +316,30 @@ public class KitCompatibilityService {
             report.warn("Falta capturar Voc/Isc del panel " + panel.getName() + "; no se puede validar el acomodo de paneles.");
             return null;
         }
-        if (inverter.getMaxInputVoltage() <= 0) {
-            report.warn("Falta capturar el voltaje PV máximo del MPPT del inversor " + inverter.getName() + ".");
+        if (charger.maxInputVoltage() <= 0) {
+            report.warn("Falta capturar el voltaje PV máximo del MPPT del " + charger.owner() + ".");
             return null;
         }
 
         int count = totalQuantity(panels);
         double coldVoc = panel.getVoc() * PV_COLD_VOC_FACTOR;
         double vmp = panel.getVoc() * PV_VMP_TO_VOC_RATIO;
-        int maxSeries = (int) Math.floor(inverter.getMaxInputVoltage() / coldVoc);
+        int maxSeries = (int) Math.floor(charger.maxInputVoltage() / coldVoc);
         if (maxSeries < 1) {
             report.error(String.format(Locale.US, "El Voc del panel (%s V, ~%s V en frío) supera el máximo del MPPT (%s V).",
-                    fmt(panel.getVoc()), fmt(coldVoc), fmt(inverter.getMaxInputVoltage())));
+                    fmt(panel.getVoc()), fmt(coldVoc), fmt(charger.maxInputVoltage())));
             return null;
         }
-        int minSeries = inverter.getMpptMinVoltage() == null ? 1 : Math.max(1, (int) Math.ceil(inverter.getMpptMinVoltage() / vmp));
+        int minSeries = charger.minVoltage() == null ? 1 : Math.max(1, (int) Math.ceil(charger.minVoltage() / vmp));
         if (minSeries > maxSeries) {
             report.error(String.format(Locale.US, "Ningún acomodo en serie de este panel cae dentro del rango del MPPT (%s–%s V).",
-                    fmt(inverter.getMpptMinVoltage()), fmt(inverter.getMaxInputVoltage())));
+                    fmt(charger.minVoltage()), fmt(charger.maxInputVoltage())));
             return null;
         }
         if (count < minSeries) {
             report.error(String.format(Locale.US,
                     "Se necesitan al menos %d paneles en serie para alcanzar el voltaje mínimo del MPPT (%s V); el kit trae %d.",
-                    minSeries, fmt(inverter.getMpptMinVoltage()), count));
+                    minSeries, fmt(charger.minVoltage()), count));
             return null;
         }
 
@@ -268,37 +353,37 @@ public class KitCompatibilityService {
         }
 
         int strings = (int) Math.ceil((double) count / series);
-        int channels = Math.max(1, inverter.getMpptChannels() == null ? 1 : inverter.getMpptChannels());
+        int channels = charger.channels();
         int stringsPerChannel = (int) Math.ceil((double) strings / channels);
         double channelIsc = panel.getIsc() * stringsPerChannel;
 
-        if (inverter.getMpptMaxInputCurrentA() == null) {
-            report.warn("Falta la corriente PV máxima por canal del inversor " + inverter.getName()
+        if (charger.maxInputCurrentA() == null) {
+            report.warn("Falta la corriente PV máxima por canal del " + charger.owner()
                     + "; no se validó la corriente de los paneles.");
-        } else if (channelIsc > inverter.getMpptMaxInputCurrentA()) {
+        } else if (channelIsc > charger.maxInputCurrentA()) {
             report.warn(String.format(Locale.US,
                     "Cada entrada MPPT recibiría %s A (Isc) y su máximo es %s A; usa menos cadenas en paralelo por entrada.",
-                    fmt(channelIsc), fmt(inverter.getMpptMaxInputCurrentA())));
+                    fmt(channelIsc), fmt(charger.maxInputCurrentA())));
         }
 
         double arrayWatts = count * panel.getWattage();
-        double maxPvWatts = inverter.getEffectiveMaxPvPowerW();
+        double maxPvWatts = charger.effectiveMaxPvPowerW();
         if (maxPvWatts > 0 && arrayWatts > maxPvWatts) {
-            report.warn(inverter.isMaxPvPowerEstimated()
+            report.warn(charger.pvPowerEstimated()
                     ? String.format(Locale.US,
-                    "El arreglo de %s W supera la potencia PV máxima estimada del inversor (~%s W: carga de %s W + 30 %%); "
+                    "El arreglo de %s W supera la potencia PV máxima estimada del %s (~%s W: carga de %s W + 30 %%); "
                             + "parte de la producción se desperdiciará. Captura la potencia PV máx. de la ficha para usar el dato exacto.",
-                    fmt(arrayWatts), fmt(maxPvWatts), fmt(inverter.getMaxChargePowerW()))
+                    fmt(arrayWatts), charger.noun(), fmt(maxPvWatts), fmt(charger.chargePowerW()))
                     : String.format(Locale.US,
-                    "El arreglo de %s W supera la potencia PV máxima del inversor (%s W según ficha).",
-                    fmt(arrayWatts), fmt(maxPvWatts)));
+                    "El arreglo de %s W supera la potencia PV máxima del %s (%s W según ficha).",
+                    fmt(arrayWatts), charger.noun(), fmt(maxPvWatts)));
         }
 
         report.setPanelArray(String.format(Locale.US, "%d %s de %d %s en serie · ~%s V de operación, %s V Voc en frío",
                 strings, strings == 1 ? "cadena" : "cadenas", series, series == 1 ? "panel" : "paneles", fmt(series * vmp), fmt(series * coldVoc)));
         if (evenSplit) {
             report.ok(String.format(Locale.US, "Acomodo de paneles dentro del rango del MPPT (máx. %s V).",
-                    fmt(inverter.getMaxInputVoltage())));
+                    fmt(charger.maxInputVoltage())));
         }
         return new PvArray(panel, count, minSeries, maxSeries, channels, series, strings, stringsPerChannel, panel.getIsc(), series * vmp);
     }
@@ -318,9 +403,9 @@ public class KitCompatibilityService {
 
     // ---- Expansion ----
 
-    private KitExpansionDto expansion(Inverter inverter, boolean hasPanels, boolean hasBatteries, PvArray pv, BatteryBank bank) {
-        ExpansionAspectDto panels = hasPanels ? panelExpansion(inverter, pv) : null;
-        ExpansionAspectDto batteries = hasBatteries ? batteryExpansion(inverter, bank) : null;
+    private KitExpansionDto expansion(Inverter inverter, SolarCharger charger, boolean hasPanels, boolean hasBatteries, PvArray pv, BatteryBank bank) {
+        ExpansionAspectDto panels = hasPanels && charger != null ? panelExpansion(charger, pv) : null;
+        ExpansionAspectDto batteries = hasBatteries && charger != null ? batteryExpansion(charger, bank) : null;
         // A half-known answer would mislead the customer, so only report when every part present can be worked out.
         if ((hasPanels && panels == null) || (hasBatteries && batteries == null) || (panels == null && batteries == null)) {
             return null;
@@ -346,9 +431,9 @@ public class KitCompatibilityService {
         return dto;
     }
 
-    /** More panels of the same model, up to the inverter's PV limit, as long as they still form valid equal strings. */
-    private ExpansionAspectDto panelExpansion(Inverter inverter, PvArray pv) {
-        double maxPvWatts = inverter.getEffectiveMaxPvPowerW();
+    /** More panels of the same model, up to the charger's PV limit, as long as they still form valid equal strings. */
+    private ExpansionAspectDto panelExpansion(SolarCharger charger, PvArray pv) {
+        double maxPvWatts = charger.effectiveMaxPvPowerW();
         if (pv == null || maxPvWatts <= 0 || pv.panel().getWattage() <= 0) {
             return null;
         }
@@ -360,30 +445,30 @@ public class KitCompatibilityService {
                 continue;
             }
             int stringsPerChannel = (int) Math.ceil((double) (n / series) / pv.channels());
-            if (inverter.getMpptMaxInputCurrentA() != null && pv.panelIscA() * stringsPerChannel > inverter.getMpptMaxInputCurrentA()) {
+            if (charger.maxInputCurrentA() != null && pv.panelIscA() * stringsPerChannel > charger.maxInputCurrentA()) {
                 continue;
             }
             best = n;
         }
 
         int additional = best - pv.count();
-        String limit = fmt(maxPvWatts) + " W" + (inverter.isMaxPvPowerEstimated() ? " estimado" : "");
+        String limit = fmt(maxPvWatts) + " W" + (charger.pvPowerEstimated() ? " estimado" : "");
         return aspect(pv.count(), additional, additional > 0
                 ? String.format(Locale.US, "Hasta %d %s más (total %d; límite PV %s).", additional, additional == 1 ? "panel" : "paneles", best, limit)
                 : String.format(Locale.US, "Sin espacio para más paneles (límite PV %s).", limit));
     }
 
     /**
-     * More battery strings in parallel, up to what the inverter can recharge in a day with panels at
-     * its PV/charge limit (same sun hours and derate as the "qué puede alimentar" estimate). Beyond
+     * More battery strings in parallel, up to what the solar charger can recharge in a day with panels
+     * at its PV/charge limit (same sun hours and derate as the "qué puede alimentar" estimate). Beyond
      * that, extra capacity would never be refilled.
      */
-    private ExpansionAspectDto batteryExpansion(Inverter inverter, BatteryBank bank) {
-        double chargeWatts = inverter.getMaxChargePowerW();
+    private ExpansionAspectDto batteryExpansion(SolarCharger charger, BatteryBank bank) {
+        double chargeWatts = charger.chargePowerW();
         if (bank == null || chargeWatts <= 0) {
             return null;
         }
-        double dailyRechargeKwh = Math.min(inverter.getEffectiveMaxPvPowerW(), chargeWatts)
+        double dailyRechargeKwh = Math.min(charger.effectiveMaxPvPowerW(), chargeWatts)
                 * KitCapacityEstimator.DEFAULT_PEAK_SUN_HOURS * KitCapacityEstimator.DEFAULT_SYSTEM_DERATE_FACTOR / 1000;
         Battery battery = bank.battery();
         double usableKwhPerString = bank.series() * battery.getCapacityKwh() * battery.getDepthOfDischarge();
@@ -395,10 +480,10 @@ public class KitCompatibilityService {
         int additionalBatteries = additionalStrings * bank.series();
 
         return aspect(bank.parallel(), additionalStrings, additionalStrings > 0
-                ? String.format(Locale.US, "Hasta %d %s más en paralelo (se agregan de %d en %d; el inversor recarga hasta ~%s kWh/día con paneles al máximo).",
-                additionalBatteries, additionalBatteries == 1 ? "batería" : "baterías", bank.series(), bank.series(), fmt(dailyRechargeKwh))
-                : String.format(Locale.US, "Sin margen: el inversor recarga hasta ~%s kWh/día y el banco ya tiene ~%s kWh útiles.",
-                fmt(dailyRechargeKwh), fmt(bank.parallel() * usableKwhPerString)));
+                ? String.format(Locale.US, "Hasta %d %s más en paralelo (se agregan de %d en %d; %s recarga hasta ~%s kWh/día con paneles al máximo).",
+                additionalBatteries, additionalBatteries == 1 ? "batería" : "baterías", bank.series(), bank.series(), charger.kind(), fmt(dailyRechargeKwh))
+                : String.format(Locale.US, "Sin margen: %s recarga hasta ~%s kWh/día y el banco ya tiene ~%s kWh útiles.",
+                charger.kind(), fmt(dailyRechargeKwh), fmt(bank.parallel() * usableKwhPerString)));
     }
 
     private static ExpansionAspectDto aspect(int current, int additional, String detail) {
@@ -414,14 +499,22 @@ public class KitCompatibilityService {
 
     // ---- Wiring ----
 
-    private WiringSegmentDto batteryToInverterSegment(KitCompatibilityReportDto report, Inverter inverter,
+    /**
+     * Carries the inverter's discharge current, plus the solar charge current when the charger is
+     * built into the inverter; a separate controller charges the bank over its own cable instead.
+     */
+    private WiringSegmentDto batteryToInverterSegment(KitCompatibilityReportDto report, Inverter inverter, SolarCharger charger,
                                                       BatteryBank bank, double lengthMeters) {
         double busVolts = inverter.getBatteryVoltage();
         double dischargeA = inverter.getRatedPowerKw() * 1000 / (busVolts * INVERTER_DC_EFFICIENCY);
-        double chargeA = inverter.getMpptMaxChargeCurrentA() == null ? 0 : inverter.getMpptMaxChargeCurrentA();
-        if (inverter.getMpptMaxChargeCurrentA() == null) {
-            report.warn("Falta la corriente de carga del MPPT del inversor " + inverter.getName()
-                    + "; el cable de batería se calculó solo con la descarga.");
+        double chargeA = 0;
+        if (charger != null && charger.builtIn()) {
+            if (charger.chargeCurrentA() == null) {
+                report.warn("Falta la corriente de carga del MPPT del inversor " + inverter.getName()
+                        + "; el cable de batería se calculó solo con la descarga.");
+            } else {
+                chargeA = charger.chargeCurrentA();
+            }
         }
         double operatingA = Math.max(dischargeA, chargeA);
 
@@ -441,9 +534,17 @@ public class KitCompatibilityService {
         return segment;
     }
 
-    private WiringSegmentDto pvToInverterSegment(KitCompatibilityReportDto report, PvArray pv, double lengthMeters) {
+    /** Separate controller only: its full charge current flows to the battery bank. */
+    private WiringSegmentDto controllerToBatterySegment(KitCompatibilityReportDto report, SolarCharger charger, double lengthMeters) {
+        WiringSegmentDto segment = sizeSegment(report, "Controlador – batería", charger.chargeCurrentA(), charger.busVolts(), lengthMeters);
+        segment.setFuseNote("Fusible o breaker DC entre controlador y batería");
+        return segment;
+    }
+
+    private WiringSegmentDto pvSegment(KitCompatibilityReportDto report, PvArray pv, SolarCharger charger, double lengthMeters) {
         double operatingA = pv.panelIscA() * pv.stringsPerChannel();
-        WiringSegmentDto segment = sizeSegment(report, "Paneles – inversor (MPPT)", operatingA, pv.stringVmp(), lengthMeters);
+        String name = charger.builtIn() ? "Paneles – inversor (MPPT)" : "Paneles – controlador MPPT";
+        WiringSegmentDto segment = sizeSegment(report, name, operatingA, pv.stringVmp(), lengthMeters);
         if (pv.stringsPerChannel() >= MIN_PARALLEL_STRINGS_NEEDING_FUSE) {
             segment.setFuseA(standardFuse(pv.panelIscA() * PV_STRING_FUSE_FACTOR));
             segment.setFuseNote("Fusible por cadena (3 o más cadenas en paralelo)");

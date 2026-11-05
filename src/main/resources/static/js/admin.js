@@ -154,7 +154,9 @@
                 { key: 'name', label: 'Nombre' },
                 { key: 'ratedPowerKw', label: 'Potencia', suffix: ' kW' },
                 { key: 'batteryVoltage', label: 'Batería', suffix: ' V' },
-                { key: 'mpptMaxChargeCurrentA', label: 'Carga MPPT', suffix: ' A' },
+                { key: 'mpptMaxChargeCurrentA', label: 'Carga MPPT', format: (item) => item.builtInCharger === false
+                    ? '<span class="text-muted">Controlador aparte</span>'
+                    : (item.mpptMaxChargeCurrentA != null ? item.mpptMaxChargeCurrentA + ' A' : '') },
                 { key: 'effectiveMaxPvPowerW', label: 'PV máx.', format: (item) => item.effectiveMaxPvPowerW > 0
                     ? Math.round(item.effectiveMaxPvPowerW) + ' W' + (item.maxPvPowerEstimated ? ' (est.)' : '') : '' },
                 { key: 'price', label: 'Precio', prefix: '$' },
@@ -177,12 +179,50 @@
                     options: ['HYBRID', 'OFF_GRID', 'STRING', 'MICRO'], defaultValue: 'HYBRID' },
                 { key: 'batteryVoltage', label: 'Voltaje de baterías (V)', type: 'select', required: true,
                     options: [12, 24, 48], defaultValue: 48, numeric: true },
-                { key: 'mpptChannels', label: 'Canales MPPT', type: 'number', defaultValue: 1 },
-                { key: 'maxInputVoltage', label: 'MPPT: voltaje PV máx. (Voc, V)', type: 'number', step: '0.1', required: true },
-                { key: 'mpptMinVoltage', label: 'MPPT: voltaje PV mínimo de operación (V)', type: 'number', step: '0.1' },
-                { key: 'mpptMaxInputCurrentA', label: 'MPPT: corriente PV máx. por canal (A)', type: 'number', step: '0.1' },
-                { key: 'mpptMaxChargeCurrentA', label: 'MPPT: corriente máx. de carga a batería (A)', type: 'number', step: '0.1', required: true },
-                { key: 'maxPvInputPowerW', label: 'MPPT: potencia PV máx. (W) — opcional, dato de la ficha', type: 'number', step: '1' },
+                { key: 'builtInCharger', label: 'Incluye cargador solar (MPPT)', type: 'checkbox', defaultValue: true,
+                    help: 'Desmárcalo si el inversor no carga desde paneles: el kit necesitará un controlador de carga MPPT aparte.' },
+                { key: 'mpptChannels', label: 'Canales MPPT', type: 'number', defaultValue: 1, dependsOn: 'builtInCharger' },
+                { key: 'maxInputVoltage', label: 'MPPT: voltaje PV máx. (Voc, V)', type: 'number', step: '0.1', required: true, dependsOn: 'builtInCharger' },
+                { key: 'mpptMinVoltage', label: 'MPPT: voltaje PV mínimo de operación (V)', type: 'number', step: '0.1', dependsOn: 'builtInCharger' },
+                { key: 'mpptMaxInputCurrentA', label: 'MPPT: corriente PV máx. por canal (A)', type: 'number', step: '0.1', dependsOn: 'builtInCharger' },
+                { key: 'mpptMaxChargeCurrentA', label: 'MPPT: corriente máx. de carga a batería (A)', type: 'number', step: '0.1', required: true, dependsOn: 'builtInCharger' },
+                { key: 'maxPvInputPowerW', label: 'MPPT: potencia PV máx. (W) — opcional, dato de la ficha', type: 'number', step: '1', dependsOn: 'builtInCharger' },
+                { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
+            ]
+        },
+        controllers: {
+            label: 'Controladores MPPT',
+            endpoint: '/api/catalog/charge-controllers',
+            columns: [
+                { key: 'sku', label: 'SKU' },
+                { key: 'name', label: 'Nombre' },
+                { key: 'supportedBatteryVoltages', label: 'Batería', format: (item) => (item.supportedBatteryVoltages || []).join('/') + ' V' },
+                { key: 'maxChargeCurrentA', label: 'Carga', suffix: ' A' },
+                { key: 'maxInputVoltage', label: 'PV máx. (Voc)', suffix: ' V' },
+                { key: 'maxPvInputPowerW', label: 'PV máx.', format: (item) => item.maxPvInputPowerW ? item.maxPvInputPowerW + ' W' : '<span class="text-muted">estimado</span>' },
+                { key: 'price', label: 'Precio', prefix: '$' },
+                { key: 'stockQuantity', label: 'Stock' },
+                { key: 'referenceUrl', label: 'Ref.', type: 'link' },
+                { key: 'active', label: 'Activo', type: 'boolean' }
+            ],
+            fields: [
+                { key: 'sku', label: 'SKU', type: 'text', required: true },
+                { key: 'name', label: 'Nombre', type: 'text', required: true },
+                { key: 'brand', label: 'Marca', type: 'text' },
+                { key: 'description', label: 'Descripción', type: 'textarea' },
+                { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
+                { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
+                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
+                { key: 'supportedBatteryVoltages', label: 'Voltajes de batería que admite', type: 'checkboxes',
+                    options: [12, 24, 48], defaultValue: [12, 24, 48] },
+                { key: 'maxChargeCurrentA', label: 'Corriente máx. de carga a batería (A)', type: 'number', step: '0.1', required: true },
+                { key: 'maxInputVoltage', label: 'Voltaje PV máx. (Voc, V)', type: 'number', step: '0.1', required: true },
+                { key: 'mpptMinVoltage', label: 'Voltaje PV mínimo de operación (V)', type: 'number', step: '0.1' },
+                { key: 'mpptMaxInputCurrentA', label: 'Corriente PV máx. por entrada (A)', type: 'number', step: '0.1' },
+                { key: 'maxPvInputPowerW', label: 'Potencia PV máx. (W) — opcional, dato de la ficha', type: 'number', step: '1',
+                    placeholder: 'Vacío = se estima con la corriente de carga × voltaje del banco × 1.3' },
+                { key: 'mpptChannels', label: 'Entradas MPPT', type: 'number', defaultValue: 1 },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
         },
@@ -355,6 +395,15 @@
             return '<div class="form-check"><input type="checkbox" class="form-check-input" id="' + id + '"' +
                 (val ? ' checked' : '') + '></div>';
         }
+        if (field.type === 'checkboxes') {
+            const selected = (Array.isArray(val) ? val : []).map(String);
+            return '<div id="' + id + '">' + field.options.map((opt) =>
+                '<div class="form-check form-check-inline">' +
+                '<input type="checkbox" class="form-check-input" id="' + id + '-' + opt + '" value="' + opt + '"' +
+                (selected.includes(String(opt)) ? ' checked' : '') + '>' +
+                '<label class="form-check-label" for="' + id + '-' + opt + '">' + opt + ' V</label></div>'
+            ).join('') + '</div>';
+        }
         const step = field.step ? ' step="' + field.step + '"' : '';
         const placeholder = field.placeholder ? ' placeholder="' + field.placeholder + '"' : '';
         return '<input type="' + field.type + '" class="form-control" id="' + id + '" value="' + escapeAttr(val) + '"' + step + placeholder + ' ' + requiredAttr + '>';
@@ -367,18 +416,41 @@
 
     function renderGenericForm(config, item) {
         modalFieldsEl.innerHTML = config.fields.map((field) =>
-            '<div class="mb-3">' +
+            '<div class="mb-3" data-field="' + field.key + '">' +
             '<label class="form-label" for="field-' + field.key + '">' + field.label + '</label>' +
             fieldInputHtml(field, item ? item[field.key] : undefined) +
+            (field.help ? '<div class="form-text">' + field.help + '</div>' : '') +
             '</div>'
         ).join('');
+        wireFieldDependencies(config);
+    }
+
+    function isFieldEnabled(field) {
+        return !field.dependsOn || document.getElementById('field-' + field.dependsOn).checked;
+    }
+
+    /** Hides fields whose controlling checkbox is off (e.g. MPPT data on an inverter without a charger). */
+    function wireFieldDependencies(config) {
+        const update = () => config.fields.filter((f) => f.dependsOn).forEach((field) => {
+            const enabled = isFieldEnabled(field);
+            modalFieldsEl.querySelector('[data-field="' + field.key + '"]').classList.toggle('d-none', !enabled);
+            document.getElementById('field-' + field.key).required = enabled && !!field.required;
+        });
+        new Set(config.fields.filter((f) => f.dependsOn).map((f) => f.dependsOn)).forEach((key) => {
+            document.getElementById('field-' + key).addEventListener('change', update);
+        });
+        update();
     }
 
     function collectGenericFormData(config) {
         const data = {};
         config.fields.forEach((field) => {
             const input = document.getElementById('field-' + field.key);
-            if (field.type === 'checkbox') {
+            if (!isFieldEnabled(field)) {
+                data[field.key] = null;
+            } else if (field.type === 'checkboxes') {
+                data[field.key] = Array.from(input.querySelectorAll('input:checked')).map((box) => Number(box.value));
+            } else if (field.type === 'checkbox') {
                 data[field.key] = input.checked;
             } else if (field.type === 'number' || field.numeric) {
                 data[field.key] = input.value === '' ? null : Number(input.value);
@@ -433,14 +505,15 @@
     // ---- Kits (own logic: nested items referencing existing products) ----
 
     async function loadAllProducts() {
-        const [panels, batteries, inverters, structures, cables] = await Promise.all([
+        const [panels, batteries, inverters, controllers, structures, cables] = await Promise.all([
             authFetch('/api/catalog/panels').then((r) => r.json()),
             authFetch('/api/catalog/batteries').then((r) => r.json()),
             authFetch('/api/catalog/inverters').then((r) => r.json()),
+            authFetch('/api/catalog/charge-controllers').then((r) => r.json()),
             authFetch('/api/catalog/structures').then((r) => r.json()),
             authFetch('/api/catalog/cables').then((r) => r.json())
         ]);
-        allProducts = panels.concat(batteries, inverters, structures, cables).map((p) => ({
+        allProducts = panels.concat(batteries, inverters, controllers, structures, cables).map((p) => ({
             id: p.id,
             label: p.sku + ' — ' + p.name + ' ($' + p.price + ')'
         }));
@@ -526,6 +599,7 @@
 
     function compatibilityHtml(report) {
         const summary = [
+            report.solarCharger ? '<div><strong>Cargador solar:</strong> ' + escapeHtml(report.solarCharger) + '</div>' : '',
             report.batteryBank ? '<div><strong>Banco de baterías:</strong> ' + escapeHtml(report.batteryBank) + '</div>' : '',
             report.panelArray ? '<div><strong>Paneles:</strong> ' + escapeHtml(report.panelArray) + '</div>' : ''
         ].join('');
@@ -721,6 +795,7 @@
             const data = await response.json();
             document.getElementById('wiring-battery-input').value = data.batteryToInverterMeters;
             document.getElementById('wiring-pv-input').value = data.pvToInverterMeters;
+            document.getElementById('wiring-controller-input').value = data.controllerToBatteryMeters;
         } catch (err) {
             wiringError.textContent = 'No se pudieron cargar las longitudes de cableado.';
             wiringError.classList.remove('d-none');
@@ -763,7 +838,8 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 batteryToInverterMeters: Number(document.getElementById('wiring-battery-input').value),
-                pvToInverterMeters: Number(document.getElementById('wiring-pv-input').value)
+                pvToInverterMeters: Number(document.getElementById('wiring-pv-input').value),
+                controllerToBatteryMeters: Number(document.getElementById('wiring-controller-input').value)
             })
         });
 

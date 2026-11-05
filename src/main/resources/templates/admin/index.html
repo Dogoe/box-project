@@ -40,6 +40,9 @@
             <a href="#" class="nav-link entity-tab" data-entity="inverters">Inversores</a>
         </li>
         <li class="nav-item">
+            <a href="#" class="nav-link entity-tab" data-entity="controllers">Controladores MPPT</a>
+        </li>
+        <li class="nav-item">
             <a href="#" class="nav-link entity-tab" data-entity="structures">Estructura de Aluminio</a>
         </li>
         <li class="nav-item">
@@ -171,6 +174,11 @@
                     <div class="mb-3">
                         <label class="form-label" for="wiring-pv-input">Paneles → inversor (m)</label>
                         <input type="number" step="0.1" min="0.1" class="form-control" id="wiring-pv-input" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="wiring-controller-input">Controlador MPPT → batería (m)</label>
+                        <input type="number" step="0.1" min="0.1" class="form-control" id="wiring-controller-input" required>
+                        <div class="form-text">Solo en kits con controlador de carga aparte del inversor.</div>
                     </div>
                     <button type="submit" class="btn btn-success">Guardar</button>
                 </form>

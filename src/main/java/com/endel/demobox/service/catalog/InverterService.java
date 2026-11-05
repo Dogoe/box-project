@@ -65,13 +65,25 @@ public class InverterService {
         inverter.setRatedPowerKw(dto.getRatedPowerKw());
         inverter.setSurgePowerKw(dto.getSurgePowerKw());
         inverter.setInverterType(dto.getInverterType());
-        inverter.setMpptChannels(dto.getMpptChannels());
-        inverter.setMaxInputVoltage(dto.getMaxInputVoltage());
         inverter.setBatteryVoltage(dto.getBatteryVoltage());
-        inverter.setMpptMinVoltage(dto.getMpptMinVoltage());
-        inverter.setMpptMaxChargeCurrentA(dto.getMpptMaxChargeCurrentA());
-        inverter.setMpptMaxInputCurrentA(dto.getMpptMaxInputCurrentA());
-        inverter.setMaxPvInputPowerW(dto.getMaxPvInputPowerW());
+        boolean builtInCharger = !Boolean.FALSE.equals(dto.getBuiltInCharger());
+        inverter.setBuiltInCharger(builtInCharger);
+        if (builtInCharger) {
+            inverter.setMpptChannels(dto.getMpptChannels());
+            inverter.setMaxInputVoltage(dto.getMaxInputVoltage());
+            inverter.setMpptMinVoltage(dto.getMpptMinVoltage());
+            inverter.setMpptMaxChargeCurrentA(dto.getMpptMaxChargeCurrentA());
+            inverter.setMpptMaxInputCurrentA(dto.getMpptMaxInputCurrentA());
+            inverter.setMaxPvInputPowerW(dto.getMaxPvInputPowerW());
+        } else {
+            // No solar charger: the kit's charge controller provides these, so don't keep stale values.
+            inverter.setMpptChannels(null);
+            inverter.setMaxInputVoltage(0);
+            inverter.setMpptMinVoltage(null);
+            inverter.setMpptMaxChargeCurrentA(null);
+            inverter.setMpptMaxInputCurrentA(null);
+            inverter.setMaxPvInputPowerW(null);
+        }
     }
 
     private InverterDto toDto(Inverter inverter) {
@@ -89,6 +101,7 @@ public class InverterService {
         dto.setRatedPowerKw(inverter.getRatedPowerKw());
         dto.setSurgePowerKw(inverter.getSurgePowerKw());
         dto.setInverterType(inverter.getInverterType());
+        dto.setBuiltInCharger(inverter.hasBuiltInCharger());
         dto.setMpptChannels(inverter.getMpptChannels());
         dto.setMaxInputVoltage(inverter.getMaxInputVoltage());
         dto.setBatteryVoltage(inverter.getBatteryVoltage());

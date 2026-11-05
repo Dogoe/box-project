@@ -32,6 +32,13 @@ public class WiringSettings {
     @Column(nullable = false)
     private double pvToInverterMeters;
 
+    /**
+     * Default one-way run length for the charge-controller-to-battery cable (kits with a separate
+     * controller). Nullable so ddl-auto can add it to the existing row; empty means the default.
+     */
+    @Positive
+    private Double controllerToBatteryMeters;
+
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 }
