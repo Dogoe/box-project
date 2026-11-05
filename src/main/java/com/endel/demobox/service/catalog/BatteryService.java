@@ -1,5 +1,6 @@
 package com.endel.demobox.service.catalog;
 
+import com.endel.demobox.model.catalog.PhotoUrls;
 import com.endel.demobox.exception.ResourceNotFoundException;
 import com.endel.demobox.model.catalog.Battery;
 import com.endel.demobox.model.catalog.BatteryChemistry;
@@ -60,7 +61,7 @@ public class BatteryService {
         battery.setDescription(dto.getDescription());
         battery.setPrice(dto.getPrice());
         battery.setStockQuantity(dto.getStockQuantity());
-        battery.setImageUrl(dto.getImageUrl());
+        battery.setPhotos(PhotoUrls.resolve(dto.getImageUrls(), dto.getImageUrl()));
         battery.setReferenceUrl(dto.getReferenceUrl());
         battery.setActive(dto.isActive());
         battery.setCapacityAh(dto.getCapacityAh());
@@ -78,7 +79,8 @@ public class BatteryService {
         dto.setDescription(battery.getDescription());
         dto.setPrice(battery.getPrice());
         dto.setStockQuantity(battery.getStockQuantity());
-        dto.setImageUrl(battery.getImageUrl());
+        dto.setImageUrls(battery.getPhotos());
+        dto.setImageUrl(battery.getPhotos().isEmpty() ? null : battery.getPhotos().get(0));
         dto.setReferenceUrl(battery.getReferenceUrl());
         dto.setActive(battery.isActive());
         dto.setCapacityAh(battery.getCapacityAh());

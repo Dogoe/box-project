@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title th:text="${kit != null} ? ${kit.name} + ' | Baja Solar Supply' : 'Kit no disponible | Baja Solar Supply'">Kit | Baja Solar Supply</title>
+    <th:block th:if="${kit != null}">
+        <meta name="description" th:content="${kit.description != null} ? ${kit.description} : ${kit.name}">
+        <link rel="canonical" th:href="${pageUrl}">
+        <!-- Link previews (WhatsApp, Facebook...) -->
+        <meta property="og:type" content="product">
+        <meta property="og:site_name" content="Baja Solar Supply">
+        <meta property="og:title" th:content="${kit.name}">
+        <meta property="og:description" th:content="${kit.description != null} ? ${kit.description} : 'Kit solar listo para instalar'">
+        <meta property="og:url" th:content="${pageUrl}">
+        <meta property="og:image" th:if="${ogImage != null}" th:content="${ogImage}">
+        <meta name="twitter:card" content="summary_large_image">
+    </th:block>
+
+    <!-- Bootstrap 5.3.8 -->
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+            rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/kits.css}">
+</head>
+
+<body>
+
+<!-- ========================================================= -->
+<!-- NAVBAR -->
+<!-- ========================================================= -->
+
+<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
+    <div class="container">
+
+        <a class="navbar-brand fw-bold fs-3" href="/home">
+            Baja Solar<span>Supply</span>
+        </a>
+
+        <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#mainNavbar">
+
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNavbar">
+
+            <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/home">Inicio</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link text-success fw-semibold" href="/cotizacion">
+                        <i class="bi bi-calculator"></i> Cotizador
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link active" href="/kits">Kits</a>
+                </li>
+
+            </ul>
+
+            <div class="d-flex align-items-center gap-3">
+                <a href="/cuenta" class="btn btn-sm btn-outline-dark" aria-label="Mi cuenta">
+                    <i class="bi bi-person"></i> <span data-account-label>Entrar</span>
+                </a>
+
+                <a href="/carrito" class="btn btn-sm btn-outline-success position-relative" aria-label="Carrito">
+                    <i class="bi bi-cart3"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success d-none" data-cart-count>0</span>
+                </a>
+
+                <div class="btn-group btn-group-sm" role="group" aria-label="Región">
+                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="es">MX</button>
+                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="en">US</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</nav>
+
+
+<!-- ========================================================= -->
+<!-- KIT NOT FOUND -->
+<!-- ========================================================= -->
+
+<section class="py-5" th:if="${kit == null}">
+    <div class="container text-center" style="max-width: 560px;">
+        <i class="bi bi-box-seam text-secondary" style="font-size: 3rem;"></i>
+        <h1 class="fw-bold fs-2 mt-2">Este kit ya no está disponible</h1>
+        <p class="text-secondary">Puede que lo hayamos actualizado o retirado del catálogo.</p>
+        <a href="/kits" class="btn btn-success">Ver kits disponibles</a>
+    </div>
+</section>
+
+<th:block th:if="${kit != null}">
+
+<!-- ========================================================= -->
+<!-- GALLERY + SUMMARY -->
+<!-- ========================================================= -->
+
+<section class="py-4">
+    <div class="container">
+
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small mb-3">
+                <li class="breadcrumb-item"><a href="/kits">Kits</a></li>
+                <li class="breadcrumb-item active" aria-current="page" th:text="${kit.name}">Kit</li>
+            </ol>
+        </nav>
+
+        <div class="row g-4">
+
+            <!-- Gallery: thumbnails left on desktop, below on phones -->
+            <div class="col-lg-7">
+                <div class="d-flex flex-column-reverse flex-md-row gap-2" id="gallery">
+
+                    <div class="gallery-thumbs" id="gallery-thumbs"
+                         th:if="${(collageSlide ? 1 : 0) + #lists.size(gallery) > 1}">
+                        <button type="button" class="gallery-thumb" th:if="${collageSlide}" data-index="0"
+                                aria-label="Ver collage del kit">
+                            <th:block th:replace="~{fragments/kit-picture :: picture(${kit})}"></th:block>
+                        </button>
+                        <button type="button" class="gallery-thumb" th:each="photo, stat : ${gallery}"
+                                th:attr="data-index=${stat.index + (collageSlide ? 1 : 0)}"
+                                th:aria-label="'Ver foto: ' + ${photo.caption}">
+                            <img th:src="${photo.url}" alt="" loading="lazy">
+                        </button>
+                    </div>
+
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <div class="gallery-main" id="gallery-main" tabindex="0" aria-label="Fotos del kit">
+                            <div class="h-100" id="gallery-collage" th:classappend="${collageSlide} ? '' : 'd-none'">
+                                <th:block th:replace="~{fragments/kit-picture :: picture(${kit})}"></th:block>
+                            </div>
+                            <img id="gallery-main-img" th:if="${not #lists.isEmpty(gallery)}"
+                                 th:src="${gallery[0].url}" th:alt="${gallery[0].caption}"
+                                 th:classappend="${collageSlide} ? 'd-none' : ''">
+                            <div class="kit-picture-empty" th:if="${#lists.isEmpty(gallery) and not collageSlide}">
+                                <i class="bi bi-box-seam"></i>
+                            </div>
+                            <th:block th:if="${(collageSlide ? 1 : 0) + #lists.size(gallery) > 1}">
+                                <button type="button" class="gallery-nav prev" id="gallery-prev" aria-label="Foto anterior">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <button type="button" class="gallery-nav next" id="gallery-next" aria-label="Foto siguiente">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                                <span class="gallery-counter" id="gallery-counter"></span>
+                            </th:block>
+                        </div>
+                        <div class="small text-secondary text-center mt-2" id="gallery-caption"
+                             th:text="${collageSlide or #lists.isEmpty(gallery)} ? ${kit.name} : ${gallery[0].caption}">Kit</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="col-lg-5">
+                <span class="badge bg-success-subtle text-success-emphasis mb-2">KIT SOLAR</span>
+                <h1 class="fw-bold fs-2" th:text="${kit.name}">Kit</h1>
+                <p class="text-secondary" th:text="${kit.description}" th:if="${kit.description != null}">Descripción</p>
+
+                <div class="fs-2 fw-bold text-success mb-1" th:data-price-mxn="${kit.sellPrice}">$0.00</div>
+                <p class="small text-muted">
+                    <i class="bi bi-cash-coin"></i> Pago en efectivo al recibir o al confirmar · Entrega en Ensenada, B.C.
+                </p>
+
+                <div class="row g-2 text-center my-3">
+                    <div class="col-4">
+                        <div class="border rounded py-2">
+                            <div class="text-muted small">Paneles</div>
+                            <div class="fw-bold" th:text="${kit.totalPanelArrayKwp} + ' kWp'">-</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded py-2">
+                            <div class="text-muted small">Batería</div>
+                            <div class="fw-bold" th:text="${kit.totalBatteryCapacityKwh} + ' kWh'">-</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded py-2">
+                            <div class="text-muted small">Inversor</div>
+                            <div class="fw-bold" th:text="${kit.totalInverterPowerKw} + ' kW'">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-success btn-lg" th:data-add-to-cart="${kit.id}">
+                        <i class="bi bi-cart-plus"></i> Agregar al carrito
+                    </button>
+                    <div class="d-flex gap-2">
+                        <a th:href="@{'/kits/' + ${kit.id} + '/pdf'}" class="btn btn-outline-secondary flex-fill">
+                            <i class="bi bi-file-earmark-pdf"></i> Ficha PDF
+                        </a>
+                        <a href="/cotizacion" class="btn btn-outline-dark flex-fill">Cotizar mi sistema</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- DETAILS -->
+<!-- ========================================================= -->
+
+<section class="pb-5">
+    <div class="container">
+        <div class="row g-4">
+
+            <!-- WHAT'S INCLUDED -->
+            <div class="col-lg-5">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="fw-semibold mb-3">Qué incluye</h5>
+                        <ul class="list-unstyled mb-0">
+                            <li class="d-flex align-items-center gap-2 border-bottom py-2" th:each="item : ${items}">
+                                <button type="button" class="btn p-0 border-0" th:if="${not #lists.isEmpty(item.productImageUrls)}"
+                                        th:data-gallery-product="${item.productId}" th:aria-label="'Ver fotos de ' + ${item.productName}">
+                                    <img class="include-thumb" th:src="${item.productImageUrls[0]}" alt="" loading="lazy">
+                                </button>
+                                <span class="include-thumb d-inline-flex align-items-center justify-content-center text-secondary"
+                                      th:if="${#lists.isEmpty(item.productImageUrls)}"><i class="bi bi-box"></i></span>
+                                <span class="flex-grow-1 small">
+                                    <strong th:text="${item.quantity} + '×'">1×</strong>
+                                    <span th:text="${item.productName}">Producto</span>
+                                </span>
+                                <span class="small text-muted text-nowrap" th:text="${item.specLabel}">-</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WHAT IT CAN POWER + EXPANSION -->
+            <div class="col-lg-7">
+                <div class="bg-light rounded p-3">
+                    <h5 class="fw-semibold mb-3">
+                        <i class="bi bi-lightning-charge-fill text-success"></i>
+                        Qué puede alimentar
+                    </h5>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="bi bi-moon-stars-fill text-primary"></i>
+                                <strong class="small">Durante la noche</strong>
+                            </div>
+                            <p class="small text-secondary mb-2">
+                                La batería sostiene hasta
+                                <strong th:text="${capacity.nightBudgetKwh} + ' kWh'">-</strong>
+                                sin sol.
+                            </p>
+                            <div th:if="${not #lists.isEmpty(capacity.nightAppliances)}">
+                                <span class="badge bg-white text-dark border me-1 mb-1"
+                                      th:each="appliance : ${capacity.nightAppliances}" th:text="${appliance}">Aparato</span>
+                            </div>
+                            <p class="small text-muted mb-0" th:if="${#lists.isEmpty(capacity.nightAppliances)}">
+                                Ningún aparato de nuestro catálogo cabe cómodamente por sí solo.
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="bi bi-sun-fill text-warning"></i>
+                                <strong class="small">Durante el día</strong>
+                            </div>
+                            <p class="small text-secondary mb-2" th:if="${capacity.daySurplusKwh > 0}">
+                                Los paneles generan
+                                <strong th:text="${capacity.dayBudgetKwh} + ' kWh'">-</strong>
+                                al día; después de recargar la batería, sobran
+                                <strong th:text="${capacity.daySurplusKwh} + ' kWh'">-</strong>
+                                para aparatos extra de uso diurno.
+                            </p>
+                            <p class="small text-secondary mb-2" th:if="${capacity.daySurplusKwh <= 0}">
+                                Los paneles generan
+                                <strong th:text="${capacity.dayBudgetKwh} + ' kWh'">-</strong>
+                                al día — justo lo necesario para recargar la batería, sin excedente para aparatos extra.
+                            </p>
+                            <div th:if="${not #lists.isEmpty(capacity.dayAppliances)}">
+                                <span class="badge bg-white text-dark border me-1 mb-1"
+                                      th:each="appliance : ${capacity.dayAppliances}" th:text="${appliance}">Aparato</span>
+                            </div>
+                            <p class="small text-muted mb-0" th:if="${#lists.isEmpty(capacity.dayAppliances)}">
+                                Ningún aparato extra de nuestro catálogo cabe en el excedente diurno.
+                            </p>
+                        </div>
+                    </div>
+                    <p class="small text-muted mt-3 mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Carga simultánea máxima:
+                        <strong th:text="${capacity.estimatedMaxContinuousKw} + ' kW'">-</strong>
+                        (asumiendo 6 horas de sol pico y 1 día de autonomía).
+                    </p>
+                </div>
+
+                <!-- EXPANSION (labels only; exact numbers live in the admin) -->
+                <th:block th:with="exp=${compatibility?.expansion}">
+                <div class="border rounded p-3 mt-3" th:if="${exp != null}">
+                    <h6 class="fw-semibold mb-2">
+                        <i class="bi bi-arrows-angle-expand text-success"></i>
+                        ¿Se puede ampliar?
+                        <span class="badge ms-1"
+                              th:classappend="${exp.level.name() == 'EXPANDABLE'} ? 'bg-success' : (${exp.level.name() == 'LIMITED'} ? 'bg-warning text-dark' : 'bg-secondary')"
+                              th:text="${exp.label}">Ampliable</span>
+                    </h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li th:if="${exp.panels != null}">
+                            <strong>Paneles:</strong> <span th:text="${exp.panels.label}">-</span>
+                        </li>
+                        <li th:if="${exp.batteries != null}">
+                            <strong>Baterías:</strong> <span th:text="${exp.batteries.label}">-</span>
+                        </li>
+                        <li>
+                            <strong>Potencia:</strong> fija; para conectar más aparatos a la vez se necesita un kit mayor.
+                        </li>
+                    </ul>
+                </div>
+                </th:block>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- FULL-SCREEN VIEWER -->
+<!-- ========================================================= -->
+
+<div class="modal fade lightbox" id="lightbox" tabindex="-1" aria-label="Fotos del kit" aria-hidden="true"
+     th:if="${not #lists.isEmpty(gallery)}">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header border-0 text-white">
+                <span class="small" id="lightbox-counter"></span>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="lightbox-stage" id="lightbox-stage">
+                <img id="lightbox-img" src="" alt="">
+                <button type="button" class="gallery-nav prev" id="lightbox-prev" aria-label="Foto anterior">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button type="button" class="gallery-nav next" id="lightbox-next" aria-label="Foto siguiente">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+            <div class="text-center text-white-50 small py-2" id="lightbox-caption"></div>
+        </div>
+    </div>
+</div>
+
+</th:block>
+
+
+<!-- ========================================================= -->
+<!-- FOOTER -->
+<!-- ========================================================= -->
+
+<footer class="footer bg-dark text-white-50 py-4 mt-5">
+    <div class="container text-center">
+        <small>© 2026 Baja Solar Supply. Todos los derechos reservados.</small>
+    </div>
+</footer>
+
+
+<!-- Bootstrap JS -->
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
+</script>
+
+<script th:src="@{/js/region.js}"></script>
+<script th:src="@{/js/account.js}"></script>
+<script th:src="@{/js/cart.js}"></script>
+<th:block th:if="${kit != null}">
+<script th:inline="javascript">
+    window.KIT_GALLERY = {
+        collageSlide: /*[[${collageSlide}]]*/ false,
+        kitName: /*[[${kit.name}]]*/ '',
+        photos: /*[[${gallery}]]*/ []
+    };
+</script>
+<script th:src="@{/js/kit-gallery.js}"></script>
+</th:block>
+
+</body>
+</html>

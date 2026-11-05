@@ -1,5 +1,6 @@
 package com.endel.demobox.service.catalog;
 
+import com.endel.demobox.model.catalog.PhotoUrls;
 import com.endel.demobox.exception.InvalidKitCompositionException;
 import com.endel.demobox.exception.ResourceNotFoundException;
 import com.endel.demobox.model.catalog.AluminumStructure;
@@ -13,6 +14,8 @@ import com.endel.demobox.model.catalog.Product;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.dto.catalog.KitDto;
 import com.endel.demobox.model.dto.catalog.KitItemDto;
+import com.endel.demobox.model.dto.catalog.KitPhotoDto;
+import com.endel.demobox.model.dto.catalog.KitCollageTileDto;
 import com.endel.demobox.repository.catalog.KitRepository;
 import com.endel.demobox.repository.catalog.ProductRepository;
 import com.endel.demobox.model.dto.WiringSettingsDto;
@@ -23,6 +26,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Locale;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -140,7 +145,7 @@ public class KitService {
         kit.setDescription(dto.getDescription());
         kit.setActive(dto.isActive());
         kit.setPriceOverride(dto.getPriceOverride());
-        kit.setImageUrl(dto.getImageUrl());
+        kit.setPhotos(PhotoUrls.resolve(dto.getImageUrls(), dto.getImageUrl()));
 
         kit.getItems().clear();
         for (KitLine line : lines) {
@@ -159,7 +164,8 @@ public class KitService {
         dto.setDescription(kit.getDescription());
         dto.setActive(kit.isActive());
         dto.setPriceOverride(kit.getPriceOverride());
-        dto.setImageUrl(kit.getImageUrl());
+        dto.setImageUrls(kit.getPhotos());
+        dto.setImageUrl(kit.getPhotos().isEmpty() ? null : kit.getPhotos().get(0));
 
         BigDecimal computedPrice = BigDecimal.ZERO;
         double totalPanelArrayKwp = 0;
@@ -180,6 +186,7 @@ public class KitService {
             itemDto.setProductName(product.getName());
             itemDto.setUnitPrice(product.getPrice());
             itemDto.setQuantity(quantity);
+            itemDto.setProductImageUrls(product.getPhotos());
 
             if (product instanceof SolarPanel panel) {
                 totalPanelArrayKwp += panel.getWattage() * quantity / 1000.0;
@@ -219,8 +226,68 @@ public class KitService {
         dto.setUsableBatteryCapacityKwh(round(usableBatteryCapacityKwh));
         dto.setTotalInverterPowerKw(round(totalInverterPowerKw));
         dto.setItems(itemDtos);
+        dto.setSlug(slug(kit.getName()));
+        dto.setCollage(collage(itemDtos));
 
         return dto;
+    }
+
+    // ---- Photos ----
+
+    /** Display order of a kit's parts: what defines the system first, small extras last. */
+    private static final List<String> TYPE_ORDER = List.of("INVERTER", "CHARGE_CONTROLLER", "PANEL", "BATTERY", "STRUCTURE", "CABLE", "OTHER");
+    /** Parts that make a recognizable collage; cables and structures look like clutter as thumbnails. */
+    private static final List<String> COLLAGE_TYPES = List.of("INVERTER", "CHARGE_CONTROLLER", "PANEL", "BATTERY");
+    static final int COLLAGE_TILES = 4;
+
+    private static int typeRank(KitItemDto item) {
+        int rank = TYPE_ORDER.indexOf(item.getProductType());
+        return rank < 0 ? TYPE_ORDER.size() : rank;
+    }
+
+    /** The kit's items in display order (inverter, controller, panels, batteries, structure, cables). */
+    public static List<KitItemDto> itemsInDisplayOrder(KitDto kit) {
+        return kit.getItems().stream().sorted(Comparator.comparingInt(KitService::typeRank)).toList();
+    }
+
+    private static List<KitCollageTileDto> collage(List<KitItemDto> items) {
+        return items.stream()
+                .filter(i -> COLLAGE_TYPES.contains(i.getProductType()) && !i.getProductImageUrls().isEmpty())
+                .sorted(Comparator.comparingInt(KitService::typeRank))
+                .limit(COLLAGE_TILES)
+                .map(i -> new KitCollageTileDto(i.getProductImageUrls().get(0), i.getProductName(), i.getQuantity()))
+                .toList();
+    }
+
+    /** Every photo for the kit page: the kit's own, then each product's, in display order. */
+    public static List<KitPhotoDto> gallery(KitDto kit) {
+        List<KitPhotoDto> photos = new ArrayList<>();
+        for (String url : kit.getImageUrls() == null ? List.<String>of() : kit.getImageUrls()) {
+            photos.add(new KitPhotoDto(url, kit.getName(), null));
+        }
+        for (KitItemDto item : itemsInDisplayOrder(kit)) {
+            String caption = item.getProductName() + " · " + item.getQuantity() + (item.getQuantity() == 1 ? " pieza" : " piezas");
+            for (String url : item.getProductImageUrls()) {
+                photos.add(new KitPhotoDto(url, caption, item.getProductId()));
+            }
+        }
+        return photos;
+    }
+
+    /** "Kit Cabaña 3 kW" -> "kit-cabana-3-kw". */
+    public static String slug(String name) {
+        String plain = Normalizer.normalize(name == null ? "" : name, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        String slug = plain.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
+        return slug.isEmpty() ? "kit" : slug;
+    }
+
+    /** For the public kit page: inactive kits are hidden like missing ones. */
+    public KitDto getActiveById(Long id) {
+        KitDto kit = getById(id);
+        if (!kit.isActive()) {
+            throw new ResourceNotFoundException("Kit not found: " + id);
+        }
+        return kit;
     }
 
     private double round(double value) {

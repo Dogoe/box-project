@@ -87,6 +87,7 @@
             label: 'Paneles Solares',
             endpoint: '/api/catalog/panels',
             columns: [
+                { key: 'imageUrl', label: '', type: 'thumb' },
                 { key: 'sku', label: 'SKU' },
                 { key: 'name', label: 'Nombre' },
                 { key: 'wattage', label: 'Potencia', suffix: ' W' },
@@ -102,7 +103,7 @@
                 { key: 'description', label: 'Descripción', type: 'textarea' },
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
-                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'imageUrls', label: 'Fotos', type: 'images', folder: 'products' },
                 { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'wattage', label: 'Potencia (W)', type: 'number', required: true },
                 { key: 'technology', label: 'Tecnología', type: 'select', required: true,
@@ -117,6 +118,7 @@
             label: 'Baterías',
             endpoint: '/api/catalog/batteries',
             columns: [
+                { key: 'imageUrl', label: '', type: 'thumb' },
                 { key: 'sku', label: 'SKU' },
                 { key: 'name', label: 'Nombre' },
                 { key: 'voltage', label: 'Voltaje', suffix: ' V' },
@@ -136,7 +138,7 @@
                 { key: 'description', label: 'Descripción', type: 'textarea' },
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
-                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'imageUrls', label: 'Fotos', type: 'images', folder: 'products' },
                 { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'capacityAh', label: 'Capacidad (Ah)', type: 'number', step: '0.1', required: true },
                 { key: 'voltage', label: 'Voltaje nominal (V)', type: 'number', step: '0.1', required: true },
@@ -150,6 +152,7 @@
             label: 'Inversores',
             endpoint: '/api/catalog/inverters',
             columns: [
+                { key: 'imageUrl', label: '', type: 'thumb' },
                 { key: 'sku', label: 'SKU' },
                 { key: 'name', label: 'Nombre' },
                 { key: 'ratedPowerKw', label: 'Potencia', suffix: ' kW' },
@@ -171,7 +174,7 @@
                 { key: 'description', label: 'Descripción', type: 'textarea' },
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
-                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'imageUrls', label: 'Fotos', type: 'images', folder: 'products' },
                 { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'ratedPowerKw', label: 'Potencia nominal (kW)', type: 'number', step: '0.1', required: true },
                 { key: 'surgePowerKw', label: 'Potencia pico (kW)', type: 'number', step: '0.1', required: true },
@@ -194,6 +197,7 @@
             label: 'Controladores MPPT',
             endpoint: '/api/catalog/charge-controllers',
             columns: [
+                { key: 'imageUrl', label: '', type: 'thumb' },
                 { key: 'sku', label: 'SKU' },
                 { key: 'name', label: 'Nombre' },
                 { key: 'supportedBatteryVoltages', label: 'Batería', format: (item) => (item.supportedBatteryVoltages || []).join('/') + ' V' },
@@ -212,7 +216,7 @@
                 { key: 'description', label: 'Descripción', type: 'textarea' },
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
-                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'imageUrls', label: 'Fotos', type: 'images', folder: 'products' },
                 { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'supportedBatteryVoltages', label: 'Voltajes de batería que admite', type: 'checkboxes',
                     options: [12, 24, 48], defaultValue: [12, 24, 48] },
@@ -230,6 +234,7 @@
             label: 'Estructura de Aluminio',
             endpoint: '/api/catalog/structures',
             columns: [
+                { key: 'imageUrl', label: '', type: 'thumb' },
                 { key: 'sku', label: 'SKU' },
                 { key: 'name', label: 'Nombre' },
                 { key: 'price', label: 'Precio', prefix: '$' },
@@ -244,7 +249,7 @@
                 { key: 'description', label: 'Descripción', type: 'textarea' },
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
-                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'imageUrls', label: 'Fotos', type: 'images', folder: 'products' },
                 { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
@@ -253,6 +258,7 @@
             label: 'Cables de Conexión',
             endpoint: '/api/catalog/cables',
             columns: [
+                { key: 'imageUrl', label: '', type: 'thumb' },
                 { key: 'sku', label: 'SKU' },
                 { key: 'name', label: 'Nombre' },
                 { key: 'gauge', label: 'Calibre', labels: WIRE_GAUGE_LABELS },
@@ -269,7 +275,7 @@
                 { key: 'description', label: 'Descripción', type: 'textarea' },
                 { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
                 { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
-                { key: 'imageUrl', label: 'URL de imagen', type: 'text' },
+                { key: 'imageUrls', label: 'Fotos', type: 'images', folder: 'products' },
                 { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'gauge', label: 'Calibre', type: 'select', required: true, options: WIRE_GAUGES },
                 { key: 'lengthMeters', label: 'Longitud (m)', type: 'number', step: '0.1', required: true },
@@ -317,6 +323,11 @@
         }
         if (value === null || value === undefined) {
             return '';
+        }
+        if (column.type === 'thumb') {
+            return /^https?:\/\//i.test(value)
+                ? '<img src="' + escapeAttr(value) + '" alt="" loading="lazy" class="rounded border" style="width: 40px; height: 40px; object-fit: contain; background: #fff;">'
+                : '';
         }
         if (column.type === 'link') {
             // Only http(s) links; the API enforces the same, this just guards old/odd data.
@@ -395,6 +406,9 @@
             return '<div class="form-check"><input type="checkbox" class="form-check-input" id="' + id + '"' +
                 (val ? ' checked' : '') + '></div>';
         }
+        if (field.type === 'images') {
+            return photoManagerHtml(id, field.folder);
+        }
         if (field.type === 'checkboxes') {
             const selected = (Array.isArray(val) ? val : []).map(String);
             return '<div id="' + id + '">' + field.options.map((opt) =>
@@ -407,6 +421,165 @@
         const step = field.step ? ' step="' + field.step + '"' : '';
         const placeholder = field.placeholder ? ' placeholder="' + field.placeholder + '"' : '';
         return '<input type="' + field.type + '" class="form-control" id="' + id + '" value="' + escapeAttr(val) + '"' + step + placeholder + ' ' + requiredAttr + '>';
+    }
+
+    // ---- Photo lists (uploaded to Cloudflare R2, or pasted links); the first photo is the main one ----
+
+    const MAX_PHOTOS = 8;
+    const photoLists = new Map();
+
+    function photoManagerHtml(id, folder) {
+        return '<div class="photo-manager" id="' + id + '" data-folder="' + folder + '">' +
+            '<div class="d-flex flex-wrap gap-2 photo-list"></div>' +
+            '<div class="d-flex flex-wrap gap-2 mt-2 align-items-center">' +
+            '<button type="button" class="btn btn-sm btn-outline-secondary photo-upload-btn"><i class="bi bi-upload"></i> Subir fotos</button>' +
+            '<div class="input-group input-group-sm" style="max-width: 380px;">' +
+            // type="text": a half-typed link must not block the form's Guardar (we validate it ourselves).
+            '<input type="text" inputmode="url" class="form-control photo-link-input" placeholder="o pega un link https://...">' +
+            '<button type="button" class="btn btn-outline-secondary photo-link-add">Agregar</button></div>' +
+            '</div>' +
+            '<input type="file" class="d-none photo-file-input" accept="image/jpeg,image/png,image/webp" multiple>' +
+            '<div class="form-text">La primera es la principal. Máximo ' + MAX_PHOTOS + ' fotos (JPG, PNG o WebP).</div>' +
+            '<div class="small text-danger photo-error d-none"></div>' +
+            '</div>';
+    }
+
+    /** The photos to save; a valid link left in the box without pressing "Agregar" is included too. */
+    function photoManagerValue(id) {
+        const photos = (photoLists.get(id) || []).slice();
+        const pending = document.querySelector('#' + id + ' .photo-link-input');
+        const url = pending ? pending.value.trim() : '';
+        if (/^https?:\/\/\S+$/i.test(url) && !photos.includes(url) && photos.length < MAX_PHOTOS) {
+            photos.push(url);
+        }
+        return photos;
+    }
+
+    function photoUploadInProgress() {
+        return document.querySelector('.photo-manager[data-busy]') !== null;
+    }
+
+    function initPhotoManager(id, urls) {
+        const root = document.getElementById(id);
+        const listEl = root.querySelector('.photo-list');
+        const errorEl = root.querySelector('.photo-error');
+        const fileInput = root.querySelector('.photo-file-input');
+        const uploadBtn = root.querySelector('.photo-upload-btn');
+        const linkInput = root.querySelector('.photo-link-input');
+        photoLists.set(id, (urls || []).slice());
+
+        const showError = (message) => {
+            errorEl.textContent = message || '';
+            errorEl.classList.toggle('d-none', !message);
+        };
+        const tileButton = (action, icon, title) =>
+            '<button type="button" class="btn btn-light btn-sm py-0 px-1 border" data-action="' + action + '" title="' + title + '" aria-label="' + title + '">' +
+            '<i class="bi ' + icon + '"></i></button>';
+
+        function render(pending) {
+            const photos = photoLists.get(id);
+            listEl.innerHTML = photos.map((url, index) =>
+                '<div class="photo-tile border rounded p-1 text-center bg-white" data-index="' + index + '" style="width: 112px;">' +
+                '<img src="' + escapeAttr(url) + '" alt="" style="width: 100px; height: 80px; object-fit: contain;">' +
+                (index === 0 ? '<div class="small fw-semibold text-success">Principal</div>'
+                    : '<div class="small"><a href="#" data-action="main">Hacer principal</a></div>') +
+                '<div class="d-flex justify-content-center gap-1 mt-1">' +
+                (index > 0 ? tileButton('left', 'bi-arrow-left', 'Mover a la izquierda') : '') +
+                (index < photos.length - 1 ? tileButton('right', 'bi-arrow-right', 'Mover a la derecha') : '') +
+                tileButton('remove', 'bi-x-lg', 'Quitar foto') +
+                '</div></div>'
+            ).join('') + (pending
+                ? '<div class="border rounded d-flex align-items-center justify-content-center text-muted small" style="width: 112px; height: 132px;">' +
+                  '<span class="spinner-border spinner-border-sm me-1"></span>' + pending + '</div>'
+                : '');
+            listEl.querySelectorAll('.photo-tile img').forEach((img) => {
+                img.onerror = () => img.replaceWith(Object.assign(document.createElement('div'), {
+                    className: 'small text-danger d-flex align-items-center justify-content-center',
+                    style: 'width: 100px; height: 80px;',
+                    textContent: 'No carga'
+                }));
+            });
+            uploadBtn.disabled = Boolean(pending) || photos.length >= MAX_PHOTOS;
+        }
+
+        listEl.addEventListener('click', (event) => {
+            const target = event.target.closest('[data-action]');
+            if (!target) {
+                return;
+            }
+            event.preventDefault();
+            const photos = photoLists.get(id);
+            const index = Number(target.closest('.photo-tile').dataset.index);
+            const move = (from, to) => photos.splice(to, 0, photos.splice(from, 1)[0]);
+            if (target.dataset.action === 'remove') {
+                photos.splice(index, 1);
+            } else if (target.dataset.action === 'left') {
+                move(index, index - 1);
+            } else if (target.dataset.action === 'right') {
+                move(index, index + 1);
+            } else if (target.dataset.action === 'main') {
+                move(index, 0);
+            }
+            showError('');
+            render();
+        });
+
+        root.querySelector('.photo-link-add').addEventListener('click', () => {
+            const url = linkInput.value.trim();
+            const photos = photoLists.get(id);
+            if (!/^https?:\/\/\S+$/i.test(url)) {
+                showError('El link debe empezar con http:// o https://');
+            } else if (photos.length >= MAX_PHOTOS) {
+                showError('Máximo ' + MAX_PHOTOS + ' fotos; quita alguna.');
+            } else if (photos.includes(url)) {
+                showError('Esa foto ya está en la lista.');
+            } else {
+                photos.push(url);
+                linkInput.value = '';
+                showError('');
+                render();
+            }
+        });
+        linkInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                root.querySelector('.photo-link-add').click();
+            }
+        });
+
+        uploadBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', async () => {
+            const photos = photoLists.get(id);
+            const files = Array.from(fileInput.files).slice(0, MAX_PHOTOS - photos.length);
+            const skipped = fileInput.files.length - files.length;
+            fileInput.value = '';
+            showError('');
+            const errors = [];
+            root.dataset.busy = '1';
+            for (let i = 0; i < files.length; i++) {
+                render('Subiendo ' + (i + 1) + ' de ' + files.length);
+                try {
+                    const form = new FormData();
+                    form.append('file', files[i]);
+                    form.append('folder', root.dataset.folder);
+                    const response = await authFetch('/api/admin/images', { method: 'POST', body: form });
+                    if (!response.ok) {
+                        throw new Error(await errorMessage(response, 'No se pudo subir la foto.'));
+                    }
+                    photos.push((await response.json()).url);
+                } catch (err) {
+                    errors.push(files[i].name + ': ' + (err.message || 'No se pudo subir.'));
+                }
+            }
+            delete root.dataset.busy;
+            if (skipped > 0) {
+                errors.push(skipped + ' foto(s) no se subieron: el máximo es ' + MAX_PHOTOS + '.');
+            }
+            render();
+            showError(errors.join(' '));
+        });
+
+        render();
     }
 
     function escapeAttr(text) {
@@ -423,6 +596,8 @@
             '</div>'
         ).join('');
         wireFieldDependencies(config);
+        config.fields.filter((f) => f.type === 'images').forEach((field) =>
+            initPhotoManager('field-' + field.key, item ? item[field.key] : []));
     }
 
     function isFieldEnabled(field) {
@@ -448,6 +623,8 @@
             const input = document.getElementById('field-' + field.key);
             if (!isFieldEnabled(field)) {
                 data[field.key] = null;
+            } else if (field.type === 'images') {
+                data[field.key] = photoManagerValue('field-' + field.key);
             } else if (field.type === 'checkboxes') {
                 data[field.key] = Array.from(input.querySelectorAll('input:checked')).map((box) => Number(box.value));
             } else if (field.type === 'checkbox') {
@@ -656,7 +833,7 @@
         showEntityTable();
         listAlert.classList.add('d-none');
         entityTitle.textContent = 'Kits';
-        tableHead.innerHTML = '<tr><th>Nombre</th><th>Costo / Venta / Ganancia</th><th># Ítems</th><th>Ampliación</th><th>Activo</th><th></th></tr>';
+        tableHead.innerHTML = '<tr><th></th><th>Nombre</th><th>Costo / Venta / Ganancia</th><th># Ítems</th><th>Ampliación</th><th>Activo</th><th></th></tr>';
 
         try {
             await loadAllProducts();
@@ -669,7 +846,9 @@
                 const margin = (kit.sellPrice - kit.computedPrice).toFixed(2);
                 const priceCell = 'Costo: $' + kit.computedPrice + ' · Venta: $' + kit.sellPrice + ' · Ganancia: $' + margin;
                 const report = compatibilityById[kit.id];
-                return '<tr><td>' + kit.name + '</td><td>' + priceCell + '</td><td>' + kit.items.length + '</td>' +
+                // Same picture the shop shows: the kit's own photo, else the first collage photo.
+                const cover = kit.imageUrl || (kit.collage && kit.collage[0] && kit.collage[0].imageUrl);
+                return '<tr><td>' + formatValue({ cover: cover }, { key: 'cover', type: 'thumb' }) + '</td><td>' + escapeHtml(kit.name) + '</td><td>' + priceCell + '</td><td>' + kit.items.length + '</td>' +
                     '<td>' + expansionBadgeHtml(report && report.expansion) + '</td>' +
                     '<td>' + (kit.active ? 'Sí' : 'No') + '</td>' + actionButtonsHtml(kit.id) + '</tr>';
             }).join('');
@@ -705,8 +884,8 @@
             '<textarea class="form-control" id="kit-description">' + (kit && kit.description ? kit.description : '') + '</textarea></div>' +
             '<div class="mb-3"><label class="form-label">Precio manual (opcional; si se deja vacío se calcula sumando sus productos)</label>' +
             '<input type="number" step="0.01" class="form-control" id="kit-price-override" value="' + (kit && kit.priceOverride != null ? kit.priceOverride : '') + '"></div>' +
-            '<div class="mb-3"><label class="form-label">URL de imagen (opcional)</label>' +
-            '<input type="text" class="form-control" id="kit-image-url" value="' + (kit && kit.imageUrl ? kit.imageUrl : '') + '"></div>' +
+            '<div class="mb-3"><label class="form-label">Fotos del kit (opcional; sin fotos se arma un collage con las de sus productos)</label>' +
+            photoManagerHtml('kit-photos', 'kits') + '</div>' +
             '<div class="form-check mb-3"><input type="checkbox" class="form-check-input" id="kit-active"' + (!kit || kit.active ? ' checked' : '') + '>' +
             '<label class="form-check-label" for="kit-active">Activo</label></div>' +
             '<label class="form-label">Productos incluidos</label>' +
@@ -715,6 +894,7 @@
             '<i class="bi bi-plus-lg"></i> Agregar producto</button>' +
             '<div id="kit-compat-panel" class="mt-3"></div>';
 
+        initPhotoManager('kit-photos', kit ? kit.imageUrls : []);
         const itemsContainer = document.getElementById('kit-items-container');
         itemsContainer.addEventListener('change', scheduleCompatibilityCheck);
         itemsContainer.addEventListener('input', scheduleCompatibilityCheck);
@@ -733,14 +913,13 @@
     function collectKitFormData() {
         const items = collectKitItems();
         const priceOverrideInput = document.getElementById('kit-price-override').value;
-        const imageUrlInput = document.getElementById('kit-image-url').value;
 
         return {
             name: document.getElementById('kit-name').value,
             description: document.getElementById('kit-description').value,
             active: document.getElementById('kit-active').checked,
             priceOverride: priceOverrideInput === '' ? null : Number(priceOverrideInput),
-            imageUrl: imageUrlInput === '' ? null : imageUrlInput,
+            imageUrls: photoManagerValue('kit-photos'),
             items: items
         };
     }
@@ -1129,6 +1308,11 @@
 
     modalFormEl.addEventListener('submit', async (event) => {
         event.preventDefault();
+        if (photoUploadInProgress()) {
+            modalErrorEl.textContent = 'Espera a que terminen de subir las fotos.';
+            modalErrorEl.classList.remove('d-none');
+            return;
+        }
 
         const data = currentEntity === 'kits' ? collectKitFormData() : collectGenericFormData(ENTITY_CONFIGS[currentEntity]);
         const url = editingId ? currentEndpoint() + '/' + editingId : currentEndpoint();

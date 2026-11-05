@@ -30,6 +30,13 @@ app:
     # (Gmail: the same Gmail address; Brevo: a verified sender or domain).
     from: ${MAIL_FROM:Baja Solar Supply <CAMBIAR@gmail.com>}
 
+  # Product/kit photos (Cloudflare R2) are configured in application.yml from these env vars:
+  #   R2_ENDPOINT          https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+  #   R2_BUCKET            box-app-images
+  #   R2_ACCESS_KEY_ID     from the R2 API token  (secret: env var only)
+  #   R2_SECRET_ACCESS_KEY from the R2 API token  (secret: env var only)
+  #   R2_PUBLIC_URL        https://pub-xxxx.r2.dev for now, later https://imagenes.<tu-dominio>
+
 server:
   # The rate limits count attempts per client IP. Behind a hosting proxy / load balancer every
   # request would otherwise look like it comes from the proxy, so read the real IP from its

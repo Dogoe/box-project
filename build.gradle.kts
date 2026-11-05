@@ -40,6 +40,16 @@ dependencies {
     runtimeOnly ("io.jsonwebtoken:jjwt-jackson:0.12.6")  // for JSON processing with Jackson
     // Pure-Java HTML -> PDF rendering for downloadable quotes/kit spec sheets.
     implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.108")
+    // Product/kit photos go to Cloudflare R2 through its S3-compatible API. The JDK's own HTTP
+    // client is enough for occasional admin uploads, so the Netty/Apache clients are left out.
+    implementation(platform("software.amazon.awssdk:bom:2.31.50"))
+    implementation("software.amazon.awssdk:s3") {
+        exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
+        exclude(group = "software.amazon.awssdk", module = "apache-client")
+    }
+    implementation("software.amazon.awssdk:url-connection-client")
+    // Lets ImageIO read WebP uploads (common for photos saved from the web).
+    runtimeOnly("com.twelvemonkeys.imageio:imageio-webp:3.12.0")
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
     // Auto-restarts the app on recompile when run locally (IDE or ./gradlew bootRun).

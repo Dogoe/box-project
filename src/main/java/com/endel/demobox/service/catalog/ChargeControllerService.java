@@ -1,5 +1,6 @@
 package com.endel.demobox.service.catalog;
 
+import com.endel.demobox.model.catalog.PhotoUrls;
 import com.endel.demobox.exception.BadRequestException;
 import com.endel.demobox.exception.ResourceNotFoundException;
 import com.endel.demobox.model.catalog.ChargeController;
@@ -60,7 +61,7 @@ public class ChargeControllerService {
         controller.setDescription(dto.getDescription());
         controller.setPrice(dto.getPrice());
         controller.setStockQuantity(dto.getStockQuantity());
-        controller.setImageUrl(dto.getImageUrl());
+        controller.setPhotos(PhotoUrls.resolve(dto.getImageUrls(), dto.getImageUrl()));
         controller.setReferenceUrl(dto.getReferenceUrl());
         controller.setActive(dto.isActive());
         // Mutate the managed collection rather than replacing it, so Hibernate tracks the change.
@@ -83,7 +84,8 @@ public class ChargeControllerService {
         dto.setDescription(controller.getDescription());
         dto.setPrice(controller.getPrice());
         dto.setStockQuantity(controller.getStockQuantity());
-        dto.setImageUrl(controller.getImageUrl());
+        dto.setImageUrls(controller.getPhotos());
+        dto.setImageUrl(controller.getPhotos().isEmpty() ? null : controller.getPhotos().get(0));
         dto.setReferenceUrl(controller.getReferenceUrl());
         dto.setActive(controller.isActive());
         dto.setSupportedBatteryVoltages(new TreeSet<>(controller.getSupportedBatteryVoltages()));

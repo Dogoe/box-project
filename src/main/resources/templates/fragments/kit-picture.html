@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  The kit's picture: its own main photo, otherwise a collage of its main parts' photos, otherwise
+  an icon. Fills its container; give the container a height.
+-->
+<th:block th:fragment="picture(kit)">
+    <img th:if="${kit.imageUrl != null}" th:src="${kit.imageUrl}" th:alt="${kit.name}"
+         loading="lazy" class="kit-picture-photo">
+
+    <div th:if="${kit.imageUrl == null and not #lists.isEmpty(kit.collage)}"
+         class="kit-collage" th:classappend="'tiles-' + ${#lists.size(kit.collage)}"
+         role="img" th:aria-label="${kit.name}">
+        <div class="kit-collage-tile" th:each="tile : ${kit.collage}">
+            <img th:src="${tile.imageUrl}" th:alt="${tile.productName}" loading="lazy">
+            <span class="kit-collage-qty" th:if="${tile.quantity > 1}" th:text="'×' + ${tile.quantity}">×6</span>
+        </div>
+    </div>
+
+    <div th:if="${kit.imageUrl == null and #lists.isEmpty(kit.collage)}" class="kit-picture-empty">
+        <i class="bi bi-box-seam"></i>
+    </div>
+</th:block>
+
+</body>
+</html>

@@ -1,5 +1,6 @@
 package com.endel.demobox.service.catalog;
 
+import com.endel.demobox.model.catalog.PhotoUrls;
 import com.endel.demobox.exception.ResourceNotFoundException;
 import com.endel.demobox.model.catalog.ConnectionCable;
 import com.endel.demobox.model.dto.catalog.ConnectionCableDto;
@@ -59,7 +60,7 @@ public class ConnectionCableService {
         cable.setDescription(dto.getDescription());
         cable.setPrice(dto.getPrice());
         cable.setStockQuantity(dto.getStockQuantity());
-        cable.setImageUrl(dto.getImageUrl());
+        cable.setPhotos(PhotoUrls.resolve(dto.getImageUrls(), dto.getImageUrl()));
         cable.setReferenceUrl(dto.getReferenceUrl());
         cable.setActive(dto.isActive());
         cable.setLengthMeters(dto.getLengthMeters());
@@ -75,7 +76,8 @@ public class ConnectionCableService {
         dto.setDescription(cable.getDescription());
         dto.setPrice(cable.getPrice());
         dto.setStockQuantity(cable.getStockQuantity());
-        dto.setImageUrl(cable.getImageUrl());
+        dto.setImageUrls(cable.getPhotos());
+        dto.setImageUrl(cable.getPhotos().isEmpty() ? null : cable.getPhotos().get(0));
         dto.setReferenceUrl(cable.getReferenceUrl());
         dto.setActive(cable.isActive());
         dto.setLengthMeters(cable.getLengthMeters());

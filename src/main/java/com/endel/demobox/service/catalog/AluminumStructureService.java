@@ -1,5 +1,6 @@
 package com.endel.demobox.service.catalog;
 
+import com.endel.demobox.model.catalog.PhotoUrls;
 import com.endel.demobox.exception.ResourceNotFoundException;
 import com.endel.demobox.model.catalog.AluminumStructure;
 import com.endel.demobox.model.dto.catalog.AluminumStructureDto;
@@ -59,7 +60,7 @@ public class AluminumStructureService {
         structure.setDescription(dto.getDescription());
         structure.setPrice(dto.getPrice());
         structure.setStockQuantity(dto.getStockQuantity());
-        structure.setImageUrl(dto.getImageUrl());
+        structure.setPhotos(PhotoUrls.resolve(dto.getImageUrls(), dto.getImageUrl()));
         structure.setReferenceUrl(dto.getReferenceUrl());
         structure.setActive(dto.isActive());
     }
@@ -73,7 +74,8 @@ public class AluminumStructureService {
         dto.setDescription(structure.getDescription());
         dto.setPrice(structure.getPrice());
         dto.setStockQuantity(structure.getStockQuantity());
-        dto.setImageUrl(structure.getImageUrl());
+        dto.setImageUrls(structure.getPhotos());
+        dto.setImageUrl(structure.getPhotos().isEmpty() ? null : structure.getPhotos().get(0));
         dto.setReferenceUrl(structure.getReferenceUrl());
         dto.setActive(structure.isActive());
         return dto;

@@ -132,7 +132,14 @@
                         </thead>
                         <tbody>
                         <tr th:each="item : ${order.items}">
-                            <td th:text="${item.kitName}">Kit</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <img th:if="${pictureByKitId[item.kitId] != null}" th:src="${pictureByKitId[item.kitId]}" alt=""
+                                         loading="lazy" class="rounded border flex-shrink-0"
+                                         style="width: 40px; height: 40px; object-fit: contain; background: #fff;">
+                                    <span th:text="${item.kitName}">Kit</span>
+                                </div>
+                            </td>
                             <td class="text-center" th:text="${item.quantity}">1</td>
                             <td class="text-end" th:text="'$' + ${#numbers.formatDecimal(item.unitPriceMxn, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
                             <td class="text-end" th:text="'$' + ${#numbers.formatDecimal(item.lineTotalMxn, 1, 'COMMA', 2, 'POINT')}">$0.00</td>

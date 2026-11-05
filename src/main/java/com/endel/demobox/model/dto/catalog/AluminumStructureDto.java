@@ -7,6 +7,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 public class AluminumStructureDto {
@@ -29,7 +30,11 @@ public class AluminumStructureDto {
     @PositiveOrZero
     private Integer stockQuantity;
 
+    /** Main photo: the first of {@link #imageUrls}. Still accepted alone from older clients. */
     private String imageUrl;
+
+    /** Ordered photos (max 8), the first is the main one. Null when the client only sends {@link #imageUrl}. */
+    private List<String> imageUrls;
 
     @Pattern(regexp = "^(https?://\\S+)?$", message = "La URL de referencia debe empezar con http:// o https://")
     private String referenceUrl;

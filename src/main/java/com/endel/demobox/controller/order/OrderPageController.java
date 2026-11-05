@@ -13,6 +13,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,7 +38,8 @@ public class OrderPageController {
                         "id", kit.getId(),
                         "name", kit.getName(),
                         "sellPrice", kit.getSellPrice(),
-                        "imageUrl", kit.getImageUrl() == null ? "" : kit.getImageUrl()))
+                        "imageUrl", kit.getCoverImageUrl() == null ? "" : kit.getCoverImageUrl(),
+                        "url", "/kits/" + kit.getId() + "/" + kit.getSlug()))
                 .toList();
         model.addAttribute("cartKits", kits);
         model.addAttribute("serviceCity", OrderService.SERVICE_CITY);
@@ -54,6 +56,14 @@ public class OrderPageController {
         }
         StoreSettingsDto settings = storeSettingsService.getCurrent();
         model.addAttribute("order", order.get());
+        // Order lines keep a snapshot of the kit; show the kit's current picture when it still exists.
+        Map<Long, String> pictureByKitId = new HashMap<>();
+        kitService.findAll().forEach(kit -> {
+            if (kit.getCoverImageUrl() != null) {
+                pictureByKitId.put(kit.getId(), kit.getCoverImageUrl());
+            }
+        });
+        model.addAttribute("pictureByKitId", pictureByKitId);
         model.addAttribute("paymentInstructions", settings.getPaymentInstructions());
         model.addAttribute("whatsappUrl", WhatsAppLinks.customerToStore(order.get(), settings.getWhatsappNumber()));
         model.addAttribute("whatsappQuestionUrl", WhatsAppLinks.customerQuestion(order.get(), settings.getWhatsappNumber()));
