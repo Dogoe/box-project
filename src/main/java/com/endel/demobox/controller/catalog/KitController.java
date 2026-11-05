@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/catalog/kits")
@@ -27,6 +28,11 @@ public class KitController {
     @GetMapping("/{id}")
     public KitDto getById(@PathVariable Long id) {
         return service.getById(id);
+    }
+
+    @GetMapping("/compatibility")
+    public Map<Long, KitCompatibilityReportDto> compatibilityOfAllKits() {
+        return service.compatibilityOfAllKits();
     }
 
     @PostMapping("/validate")

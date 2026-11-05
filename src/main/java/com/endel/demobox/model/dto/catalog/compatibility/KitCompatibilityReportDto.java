@@ -13,6 +13,8 @@ public class KitCompatibilityReportDto {
     /** e.g. "2 cadenas de 3 paneles en serie - ~110 V"; null when not applicable. */
     private String panelArray;
     private List<WiringSegmentDto> wiring = new ArrayList<>();
+    /** Null when the kit has errors or lacks the data to work it out. */
+    private KitExpansionDto expansion;
 
     public CompatibilitySeverity getStatus() {
         return checks.stream()

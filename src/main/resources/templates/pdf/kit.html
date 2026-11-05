@@ -124,35 +124,25 @@
     </p>
 </div>
 
-<div th:if="${compatibility != null and (compatibility.batteryBank != null or compatibility.panelArray != null or not #lists.isEmpty(compatibility.wiring))}">
-    <h2>Configuracion y cableado recomendado</h2>
-    <p th:if="${compatibility.batteryBank != null}">
-        <strong>Banco de baterias:</strong> <span th:text="${compatibility.batteryBank}">-</span>
-    </p>
-    <p th:if="${compatibility.panelArray != null}">
-        <strong>Paneles:</strong> <span th:text="${compatibility.panelArray}">-</span>
-    </p>
-    <table th:if="${not #lists.isEmpty(compatibility.wiring)}">
-        <thead>
-        <tr>
-            <th>Tramo</th>
-            <th>Corriente</th>
-            <th>Calibre minimo</th>
-            <th>Caida de voltaje</th>
-            <th>Proteccion</th>
-        </tr>
-        </thead>
+<div th:with="exp=${compatibility?.expansion}" th:if="${compatibility?.expansion != null}">
+    <h2>¿Se puede ampliar?</h2>
+    <p><strong th:text="${exp.label}">Ampliable</strong></p>
+    <table>
         <tbody>
-        <tr th:each="w : ${compatibility.wiring}">
-            <td th:text="${w.segment}">-</td>
-            <td th:text="${w.operatingCurrentA} + ' A'">-</td>
-            <td th:text="${w.gaugeLabel != null} ? ${w.gaugeLabel} + ' (' + ${w.lengthMeters} + ' m)' : 'Requiere revision'">-</td>
-            <td th:text="${w.gaugeLabel != null} ? ${w.voltageDropPercent} + ' %' : '-'">-</td>
-            <td th:text="${w.fuseA != null} ? ${w.fuseA} + ' A' : '-'">-</td>
+        <tr th:if="${exp.panels != null}">
+            <td>Paneles</td>
+            <td th:text="${exp.panels.label}">-</td>
+        </tr>
+        <tr th:if="${exp.batteries != null}">
+            <td>Baterias</td>
+            <td th:text="${exp.batteries.label}">-</td>
+        </tr>
+        <tr>
+            <td>Potencia</td>
+            <td>Fija; para conectar mas aparatos a la vez se necesita un kit mayor.</td>
         </tr>
         </tbody>
     </table>
-    <p class="meta">Cable de cobre, caida de voltaje maxima 3 %. Orientativo, sujeto a validacion tecnica en sitio.</p>
 </div>
 
 <p class="footer">Baja Solar Supply - Ficha generada automaticamente, sujeta a disponibilidad de inventario.</p>
