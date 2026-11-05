@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Tu pedido</title>
+</head>
+<body style="margin:0;padding:24px;background:#f4f5f7;font-family:Helvetica,Arial,sans-serif;color:#212529;">
+<div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:8px;padding:24px;">
+    <h2 style="margin:0 0 4px 0;color:#198754;">Baja Solar Supply</h2>
+
+    <th:block th:switch="${event}">
+        <p th:case="'CREATED'" style="font-size:16px;">
+            Hola <span th:text="${order.customerName}">Cliente</span>, recibimos tu pedido. Te contactaremos para coordinar el pago en efectivo y la entrega.
+        </p>
+        <p th:case="'PAID'" style="font-size:16px;">
+            Hola <span th:text="${order.customerName}">Cliente</span>, recibimos tu pago. Estamos preparando tu entrega.
+        </p>
+        <p th:case="'DELIVERED'" style="font-size:16px;">
+            Hola <span th:text="${order.customerName}">Cliente</span>, tu pedido fue entregado. ¡Gracias por tu compra!
+        </p>
+        <p th:case="'CANCELLED'" style="font-size:16px;">
+            Hola <span th:text="${order.customerName}">Cliente</span>, tu pedido fue cancelado. Si tienes dudas, con gusto te ayudamos.
+        </p>
+    </th:block>
+
+    <p style="margin:16px 0;">
+        Folio <strong style="font-size:18px;" th:text="${order.folio}">BSS-XXXXXXXX</strong>
+        · <span th:text="${order.statusLabel}">Pendiente</span>
+    </p>
+
+    <div th:if="${event == 'CREATED'}" style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:12px;margin-bottom:16px;">
+        <strong>Cómo pagar</strong>
+        <p style="margin:6px 0 0 0;white-space:pre-line;" th:text="${paymentInstructions}">Pago en efectivo.</p>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr th:each="item : ${order.items}">
+            <td style="padding:6px 0;border-bottom:1px solid #e9ecef;" th:text="${item.quantity} + ' × ' + ${item.kitName}">1 × Kit</td>
+            <td style="padding:6px 0;border-bottom:1px solid #e9ecef;text-align:right;"
+                th:text="'$' + ${#numbers.formatDecimal(item.lineTotalMxn, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+        </tr>
+        <tr>
+            <td style="padding:8px 0;font-weight:bold;">Total</td>
+            <td style="padding:8px 0;font-weight:bold;text-align:right;"
+                th:text="'$' + ${#numbers.formatDecimal(order.totalMxn, 1, 'COMMA', 2, 'POINT')} + ' MXN'">$0.00 MXN</td>
+        </tr>
+    </table>
+
+    <p style="font-size:14px;margin:16px 0 4px 0;"><strong>Entrega:</strong> <span th:text="${order.fullAddress}">Dirección</span></p>
+
+    <p style="margin:24px 0 0 0;">
+        <a th:href="${orderUrl}" style="background:#198754;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:6px;display:inline-block;">
+            Ver mi pedido
+        </a>
+    </p>
+</div>
+<p style="text-align:center;color:#adb5bd;font-size:12px;">Baja Solar Supply · Ensenada, B.C.</p>
+</body>
+</html>

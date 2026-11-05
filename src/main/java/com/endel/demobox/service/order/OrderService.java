@@ -15,6 +15,7 @@ import com.endel.demobox.repository.order.CustomerOrderRepository;
 import com.endel.demobox.service.ExchangeRateService;
 import com.endel.demobox.service.PhoneNumbers;
 import com.endel.demobox.service.catalog.KitService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,11 +43,14 @@ public class OrderService {
     private final CustomerOrderRepository orderRepository;
     private final KitService kitService;
     private final ExchangeRateService exchangeRateService;
+    private final ApplicationEventPublisher events;
 
-    public OrderService(CustomerOrderRepository orderRepository, KitService kitService, ExchangeRateService exchangeRateService) {
+    public OrderService(CustomerOrderRepository orderRepository, KitService kitService, ExchangeRateService exchangeRateService,
+                        ApplicationEventPublisher events) {
         this.orderRepository = orderRepository;
         this.kitService = kitService;
         this.exchangeRateService = exchangeRateService;
+        this.events = events;
     }
 
     @Transactional
@@ -98,7 +102,9 @@ public class OrderService {
         order.setNotes(blankToNull(request.getNotes()));
         order.setTotalMxn(total);
         order.setUsdToMxnRate(exchangeRateService.getCurrentRate().getUsdToMxnRate());
-        return orderRepository.save(order);
+        CustomerOrder saved = orderRepository.save(order);
+        events.publishEvent(new OrderEvent(saved.getId(), OrderEvent.Type.CREATED));
+        return saved;
     }
 
     public Optional<OrderDto> findByFolio(String folio) {
@@ -122,7 +128,7 @@ public class OrderService {
         requireStatus(order, "confirmar el pago", OrderStatus.PENDING);
         markPaid(order, amountMxn, note, admin);
         order.setStatus(OrderStatus.PAID);
-        return toDto(orderRepository.save(order));
+        return saveAndPublish(order, OrderEvent.Type.PAID);
     }
 
     @Transactional
@@ -130,7 +136,7 @@ public class OrderService {
         CustomerOrder order = findEntity(id);
         requireStatus(order, "marcar como entregado", OrderStatus.PAID);
         markDelivered(order, admin);
-        return toDto(orderRepository.save(order));
+        return saveAndPublish(order, OrderEvent.Type.DELIVERED);
     }
 
     /** Cash on delivery: payment and delivery confirmed in one step. */
@@ -140,7 +146,7 @@ public class OrderService {
         requireStatus(order, "cobrar y entregar", OrderStatus.PENDING);
         markPaid(order, amountMxn, note, admin);
         markDelivered(order, admin);
-        return toDto(orderRepository.save(order));
+        return saveAndPublish(order, OrderEvent.Type.DELIVERED);
     }
 
     @Transactional
@@ -151,7 +157,13 @@ public class OrderService {
         order.setCancelledAt(LocalDateTime.now());
         order.setCancelledBy(admin);
         order.setCancelReason(reason.trim());
-        return toDto(orderRepository.save(order));
+        return saveAndPublish(order, OrderEvent.Type.CANCELLED);
+    }
+
+    private OrderDto saveAndPublish(CustomerOrder order, OrderEvent.Type type) {
+        CustomerOrder saved = orderRepository.save(order);
+        events.publishEvent(new OrderEvent(saved.getId(), type));
+        return toDto(saved);
     }
 
     private void markPaid(CustomerOrder order, BigDecimal amountMxn, String note, String admin) {

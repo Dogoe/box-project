@@ -1,0 +1,31 @@
+# Production overrides. Activate with SPRING_PROFILES_ACTIVE=prod.
+#
+# Keep secrets OUT of this file (it's committed to git): pass them as environment variables.
+# Each ${VAR:default} below reads the env var VAR and falls back to the default after the colon.
+
+spring:
+  mail:
+    # Gmail (with an App Password):  smtp.gmail.com, port 587
+    # Brevo:                         smtp-relay.brevo.com, port 587
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    # Gmail: your full Gmail address.  Brevo: the "SMTP login" shown in Brevo (not your email).
+    username: ${MAIL_USERNAME:CAMBIAR@gmail.com}
+    # Gmail: the 16-character App Password.  Brevo: the SMTP key.  Set it ONLY as an env var.
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+app:
+  # Your public site address, used for links inside the emails.
+  public-base-url: ${PUBLIC_BASE_URL:https://CAMBIAR-tu-dominio.com}
+  mail:
+    enabled: ${MAIL_ENABLED:true}
+    # Must be an address your SMTP account is allowed to send from
+    # (Gmail: the same Gmail address; Brevo: a verified sender or domain).
+    from: ${MAIL_FROM:Baja Solar Supply <CAMBIAR@gmail.com>}

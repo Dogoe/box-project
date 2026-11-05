@@ -28,6 +28,8 @@ public class StoreSettingsService {
                 : PhoneNumbers.normalizeMexican(dto.getWhatsappNumber())
                         .orElseThrow(() -> new BadRequestException("El número de WhatsApp debe tener 10 dígitos."));
         settings.setWhatsappNumber(whatsapp);
+        settings.setNotificationEmail(dto.getNotificationEmail() == null || dto.getNotificationEmail().isBlank()
+                ? null : dto.getNotificationEmail().trim());
         settings.setPaymentInstructions(dto.getPaymentInstructions().trim());
         return toDto(repository.save(settings));
     }
@@ -45,6 +47,7 @@ public class StoreSettingsService {
     private StoreSettingsDto toDto(StoreSettings settings) {
         StoreSettingsDto dto = new StoreSettingsDto();
         dto.setWhatsappNumber(settings.getWhatsappNumber());
+        dto.setNotificationEmail(settings.getNotificationEmail());
         dto.setPaymentInstructions(settings.getPaymentInstructions());
         dto.setUpdatedAt(settings.getUpdatedAt());
         return dto;

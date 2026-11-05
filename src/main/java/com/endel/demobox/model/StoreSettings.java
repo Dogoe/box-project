@@ -25,6 +25,10 @@ public class StoreSettings {
     @Column(length = 10)
     private String whatsappNumber;
 
+    /** Where new-order alerts are emailed; empty means no store email. */
+    @Column(length = 200)
+    private String notificationEmail;
+
     /** Shown to the customer after checkout. */
     @Column(nullable = false, length = 1000)
     private String paymentInstructions;

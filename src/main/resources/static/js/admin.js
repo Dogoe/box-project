@@ -707,6 +707,7 @@
             const response = await authFetch('/api/settings/store');
             const data = await response.json();
             document.getElementById('store-whatsapp-input').value = data.whatsappNumber || '';
+            document.getElementById('store-email-input').value = data.notificationEmail || '';
             document.getElementById('store-instructions-input').value = data.paymentInstructions || '';
         } catch (err) {
             storeError.textContent = 'No se pudo cargar la configuración de pedidos.';
@@ -736,6 +737,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 whatsappNumber: document.getElementById('store-whatsapp-input').value.trim() || null,
+                notificationEmail: document.getElementById('store-email-input').value.trim() || null,
                 paymentInstructions: document.getElementById('store-instructions-input').value
             })
         });
