@@ -42,7 +42,7 @@
                     ? '<img src="' + escapeHtml(kit.imageUrl) + '" alt="" loading="lazy" class="rounded border flex-shrink-0" ' +
                       'style="width: 48px; height: 48px; object-fit: contain; background: #fff;">'
                     : '') +
-                '<a class="fw-semibold text-dark text-decoration-none" href="' + escapeHtml(kit.url) + '">' + escapeHtml(kit.name) + '</a>' +
+                '<a class="fw-semibold text-body text-decoration-none" href="' + escapeHtml(kit.url) + '">' + escapeHtml(kit.name) + '</a>' +
                 '</div></td>' +
                 '<td class="text-end small" data-price-mxn="' + kit.sellPrice + '"></td>' +
                 '<td><input type="number" class="form-control form-control-sm cart-qty" min="1" max="' + cart.maxUnitsPerKit +

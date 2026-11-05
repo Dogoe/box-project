@@ -7,81 +7,21 @@
 
     <title>Cotizador Solar | Baja Solar Supply</title>
 
-    <!-- Bootstrap 5.3.8 -->
-    <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-            rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
-    <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <th:block th:replace="~{fragments/layout :: commonHead}"></th:block>
 </head>
 
-<body>
+<body class="storefront">
 
-<!-- ========================================================= -->
-<!-- NAVBAR -->
-<!-- ========================================================= -->
-
-<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
-    <div class="container">
-
-        <a class="navbar-brand fw-bold fs-3" href="/home">
-            Baja Solar<span>Supply</span>
-        </a>
-
-        <button
-                class="navbar-toggler"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#mainNavbar">
-
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="mainNavbar">
-
-            <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-
-                <li class="nav-item">
-                    <a class="nav-link" href="/home">Inicio</a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link active" href="/cotizacion">Cotizador</a>
-                </li>
-
-            </ul>
-
-            <div class="d-flex align-items-center gap-3">
-                <a href="/cuenta" class="btn btn-sm btn-outline-dark" aria-label="Mi cuenta">
-                    <i class="bi bi-person"></i> <span data-account-label>Entrar</span>
-                </a>
-
-                <a href="/carrito" class="btn btn-sm btn-outline-success position-relative" aria-label="Carrito">
-                    <i class="bi bi-cart3"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success d-none" data-cart-count>0</span>
-                </a>
-
-                <div class="btn-group btn-group-sm" role="group" aria-label="Región">
-                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="es">MX</button>
-                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="en">US</button>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</nav>
+<th:block th:replace="~{fragments/layout :: header('cotizacion', false)}"></th:block>
 
 
 <!-- ========================================================= -->
 <!-- HEADER -->
 <!-- ========================================================= -->
 
-<section class="py-5 bg-light border-bottom">
+<section class="py-5 bg-body-tertiary border-bottom">
     <div class="container text-center">
-        <span class="badge bg-success mb-2">COTIZACIÓN RÁPIDA</span>
+        <span class="badge badge-outline mb-2">COTIZACIÓN RÁPIDA</span>
         <h1 class="fw-bold">Encuentra tu sistema solar ideal</h1>
         <p class="lead text-secondary mb-0">
             Cuéntanos qué quieres alimentar y te recomendamos la batería,
@@ -109,17 +49,17 @@
 
                     <div class="btn-group w-100 flex-wrap mt-3" role="group">
                         <input type="radio" class="btn-check" name="systemType" id="systemTypeOffGrid" value="OFF_GRID" checked>
-                        <label class="btn btn-outline-dark" for="systemTypeOffGrid">
+                        <label class="btn btn-ghost" for="systemTypeOffGrid">
                             Fuera de la red (Off-Grid)
                         </label>
 
                         <input type="radio" class="btn-check" name="systemType" id="systemTypeHybrid" value="HYBRID">
-                        <label class="btn btn-outline-dark" for="systemTypeHybrid">
+                        <label class="btn btn-ghost" for="systemTypeHybrid">
                             Híbrido (red + batería)
                         </label>
 
                         <input type="radio" class="btn-check" name="systemType" id="systemTypeOnGrid" value="ON_GRID">
-                        <label class="btn btn-outline-dark" for="systemTypeOnGrid">
+                        <label class="btn btn-ghost" for="systemTypeOnGrid">
                             Conectado a la red (On-Grid)
                         </label>
                     </div>
@@ -156,7 +96,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">3. ¿Qué aparatos quieres alimentar?</h5>
-                        <button type="button" id="add-appliance-btn" class="btn btn-sm btn-success">
+                        <button type="button" id="add-appliance-btn" class="btn btn-sm btn-accent">
                             <i class="bi bi-plus-lg"></i> Agregar aparato
                         </button>
                     </div>
@@ -180,7 +120,7 @@
             </div>
 
             <div class="d-grid">
-                <button type="submit" id="submit-btn" class="btn btn-success btn-lg">
+                <button type="submit" id="submit-btn" class="btn btn-accent btn-lg">
                     Calcular mi sistema
                 </button>
             </div>
@@ -214,22 +154,22 @@
                     </div>
                     <div class="col-12">
                         <div class="text-muted small">Arreglo de paneles solares</div>
-                        <div class="fs-3 fw-bold text-success" id="result-panels">-</div>
+                        <div class="fs-3 fw-bold" id="result-panels">-</div>
                     </div>
                 </div>
 
                 <div class="text-center mt-4">
-                    <a href="/kits" class="btn btn-outline-dark">
+                    <a href="/kits" class="btn btn-ghost">
                         Ver productos que coinciden
                     </a>
-                    <button type="button" id="download-pdf-btn" class="btn btn-outline-secondary">
+                    <button type="button" id="download-pdf-btn" class="btn btn-ghost">
                         <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
                     </button>
                 </div>
 
-                <div id="kit-suggestion" class="card mt-4 bg-light d-none">
+                <div id="kit-suggestion" class="card mt-4 bg-body-tertiary d-none">
                     <div class="card-body">
-                        <span class="badge bg-success mb-2">KIT SUGERIDO</span>
+                        <span class="badge badge-outline mb-2">KIT SUGERIDO</span>
                         <h5 class="mb-1" id="kit-suggestion-name">-</h5>
                         <p class="text-secondary small mb-2" id="kit-suggestion-description"></p>
 
@@ -263,8 +203,8 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <strong class="fs-5" id="kit-suggestion-price">-</strong>
                             <div class="d-flex gap-2">
-                                <a href="/kits" class="btn btn-outline-dark btn-sm">Ver kit</a>
-                                <button type="button" class="btn btn-success btn-sm" id="kit-suggestion-add">
+                                <a href="/kits" class="btn btn-ghost btn-sm">Ver kit</a>
+                                <button type="button" class="btn btn-accent btn-sm" id="kit-suggestion-add">
                                     <i class="bi bi-cart-plus"></i> Agregar al carrito
                                 </button>
                             </div>
@@ -315,25 +255,10 @@
 </template>
 
 
-<!-- ========================================================= -->
-<!-- FOOTER -->
-<!-- ========================================================= -->
-
-<footer class="footer bg-dark text-white-50 py-4 mt-5">
-    <div class="container text-center">
-        <small>© 2026 Baja Solar Supply. Todos los derechos reservados.</small>
-    </div>
-</footer>
+<th:block th:replace="~{fragments/layout :: footer}"></th:block>
 
 
-<!-- Bootstrap JS -->
-<script
-        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
-</script>
-
-<script th:src="@{/js/region.js}"></script>
-<script th:src="@{/js/account.js}"></script>
-<script th:src="@{/js/cart.js}"></script>
+<th:block th:replace="~{fragments/layout :: commonScripts}"></th:block>
 <script th:src="@{/js/cotizacion.js}"></script>
 
 </body>

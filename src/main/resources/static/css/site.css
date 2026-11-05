@@ -1,0 +1,263 @@
+/*
+ * Shared look for the store (and the admin): typography, buttons, menu, top bar, footer and
+ * surfaces. Colors come from the theme sheets (theme-dark.css / theme-light.css) as --bss-* variables.
+ */
+
+body {
+    font-family: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bss-bg);
+    color: var(--bss-text);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ===== Typography (store only; the admin keeps normal case so tables read easily) ===== */
+
+.storefront h1,
+.storefront h2,
+.storefront h3,
+.storefront h4,
+.storefront h5,
+.storefront h6,
+.storefront .display-1,
+.storefront .display-2,
+.storefront .display-3,
+.storefront .display-4 {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+.storefront h1,
+.storefront .display-1,
+.storefront .display-2,
+.storefront .display-3,
+.storefront .display-4 {
+    letter-spacing: 0.08em;
+}
+
+.storefront .btn {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border-radius: 2px;
+}
+
+.storefront .btn-sm {
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+}
+
+.storefront .btn-lg {
+    font-size: 0.95rem;
+    padding: 0.85rem 1.75rem;
+}
+
+.storefront .breadcrumb {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.75rem;
+}
+
+/* ===== Buttons: filled (main action) and outline ("ghost"), both following the theme ===== */
+
+.btn-accent {
+    --bs-btn-color: var(--bss-accent-contrast);
+    --bs-btn-bg: var(--bss-accent);
+    --bs-btn-border-color: var(--bss-accent);
+    --bs-btn-hover-color: var(--bss-accent);
+    --bs-btn-hover-bg: transparent;
+    --bs-btn-hover-border-color: var(--bss-accent);
+    --bs-btn-active-color: var(--bss-accent);
+    --bs-btn-active-bg: transparent;
+    --bs-btn-active-border-color: var(--bss-accent);
+    --bs-btn-disabled-color: var(--bss-accent-contrast);
+    --bs-btn-disabled-bg: var(--bss-accent);
+    --bs-btn-disabled-border-color: var(--bss-accent);
+    --bs-btn-focus-shadow-rgb: var(--bs-body-color-rgb);
+}
+
+.btn-ghost {
+    --bs-btn-color: var(--bss-text);
+    --bs-btn-bg: transparent;
+    --bs-btn-border-color: var(--bss-border);
+    --bs-btn-hover-color: var(--bss-accent-contrast);
+    --bs-btn-hover-bg: var(--bss-accent);
+    --bs-btn-hover-border-color: var(--bss-accent);
+    --bs-btn-active-color: var(--bss-accent-contrast);
+    --bs-btn-active-bg: var(--bss-accent);
+    --bs-btn-active-border-color: var(--bss-accent);
+    --bs-btn-disabled-color: var(--bss-muted);
+    --bs-btn-disabled-bg: transparent;
+    --bs-btn-disabled-border-color: var(--bss-border);
+    --bs-btn-focus-shadow-rgb: var(--bs-body-color-rgb);
+}
+
+.storefront .btn-ghost {
+    --bs-btn-border-color: var(--bss-text);
+}
+
+.badge-outline {
+    color: var(--bss-text);
+    background: transparent;
+    border: 1px solid var(--bss-text);
+    border-radius: 2px;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+}
+
+.storefront .form-check-input:checked {
+    background-color: var(--bss-accent);
+    border-color: var(--bss-accent);
+}
+
+.storefront .form-control:focus,
+.storefront .form-select:focus,
+.storefront .form-check-input:focus {
+    border-color: var(--bss-text);
+    box-shadow: 0 0 0 0.2rem var(--bs-focus-ring-color);
+}
+
+/* ===== Surfaces ===== */
+
+.card {
+    --bs-card-bg: var(--bss-surface);
+    --bs-card-border-color: var(--bss-border);
+}
+
+.modal {
+    --bs-modal-bg: var(--bss-surface);
+}
+
+.storefront .card,
+.storefront .form-control,
+.storefront .form-select,
+.storefront .rounded {
+    border-radius: 4px;
+}
+
+/* ===== Top bar ===== */
+
+.top-bar {
+    background: var(--bss-topbar-bg);
+    color: var(--bss-topbar-text);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 8px 0;
+}
+
+.top-bar i {
+    margin-right: 6px;
+}
+
+/* ===== Menu ===== */
+
+.site-nav {
+    background: var(--bss-nav-bg);
+    border-bottom: 1px solid var(--bss-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.navbar-brand,
+.footer-brand {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: var(--bss-text);
+}
+
+.navbar-brand span,
+.footer-brand span {
+    font-weight: 300;
+    margin-left: 0.25em;
+}
+
+.site-nav .nav-link {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--bss-muted);
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+}
+
+.site-nav .nav-link:hover,
+.site-nav .nav-link:focus,
+.site-nav .nav-link.active {
+    color: var(--bss-text);
+}
+
+.site-nav .nav-link.active {
+    box-shadow: inset 0 -2px 0 var(--bss-text);
+}
+
+.cart-count-badge {
+    background: var(--bss-accent);
+    color: var(--bss-accent-contrast);
+}
+
+.theme-toggle {
+    width: 34px;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* ===== Footer (dark in both themes) ===== */
+
+.footer {
+    background: var(--bss-footer-bg);
+    color: #a3a3a3;
+    border-top: 1px solid var(--bss-border);
+}
+
+.footer .footer-brand {
+    font-size: 1.4rem;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.footer h6 {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+
+.footer ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer ul li {
+    margin-bottom: 8px;
+}
+
+.footer ul li a,
+.footer-social a {
+    color: #a3a3a3;
+    text-decoration: none;
+}
+
+.footer ul li a:hover,
+.footer-social a:hover {
+    color: #ffffff;
+}
+
+.footer-social a {
+    font-size: 1.2rem;
+}
+
+.footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 20px 0;
+    text-align: center;
+    color: #8a8a8a;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+}

@@ -7,226 +7,50 @@
 
     <title>Baja Solar Supply | Energía Solar</title>
 
-    <!-- Bootstrap 5.3.8 -->
-    <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-            rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
-    <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <th:block th:replace="~{fragments/layout :: commonHead}"></th:block>
 
     <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/home.css}">
     <link rel="stylesheet" th:href="@{/css/kits.css}">
 </head>
 
-<body>
+<body class="storefront">
+
+<th:block th:replace="~{fragments/layout :: header('home', true)}"></th:block>
+
 
 <!-- ========================================================= -->
-<!-- TOP BAR -->
+<!-- HERO: full-screen photo, big title, outline buttons -->
 <!-- ========================================================= -->
 
-<div class="top-bar">
-    <div class="container d-flex justify-content-between align-items-center">
-        <span>
-            <i class="bi bi-lightning-charge-fill"></i>
-            Energía limpia para una vida independiente
-        </span>
-
-        <div class="d-none d-md-flex gap-4">
-            <span>Envío gratis en pedidos seleccionados</span>
-            <span>Soporte técnico</span>
+<section class="hero-full on-photo" style="background-image: url('/images/home/hero-panels.jpg');">
+    <div class="container hero-full-content">
+        <span class="eyebrow">Energía solar de nueva generación</span>
+        <h1 class="hero-title">Tu energía.<br>Tu libertad.</h1>
+        <p class="hero-lead">
+            Descubre soluciones solares inteligentes para tu hogar,
+            vehículo, aventura y proyectos off-grid.
+        </p>
+        <div class="d-flex flex-wrap gap-3 mt-4">
+            <a href="/kits" class="btn btn-on-photo-solid btn-lg">Comprar ahora</a>
+            <a href="#soluciones" class="btn btn-on-photo btn-lg">Explorar soluciones</a>
+        </div>
+        <div class="hero-stats">
+            <div>
+                <strong>10+</strong>
+                <span>años de experiencia</span>
+            </div>
+            <div>
+                <strong>50K+</strong>
+                <span>sistemas instalados</span>
+            </div>
+            <div>
+                <strong>24/7</strong>
+                <span>soporte</span>
+            </div>
         </div>
     </div>
-</div>
-
-
-<!-- ========================================================= -->
-<!-- NAVBAR -->
-<!-- ========================================================= -->
-
-<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
-    <div class="container">
-
-        <a class="navbar-brand fw-bold fs-3" href="/">
-            Baja Solar<span>Supply</span>
-        </a>
-
-        <button
-                class="navbar-toggler"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#mainNavbar">
-
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="mainNavbar">
-
-            <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-
-                <li class="nav-item">
-                    <a class="nav-link active" href="/">Inicio</a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link text-success fw-semibold" href="/cotizacion">
-                        <i class="bi bi-calculator"></i> Cotizador
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="/kits">Kits</a>
-                </li>
-
-            </ul>
-
-            <div class="d-flex align-items-center gap-3">
-
-                <a href="/cuenta" class="btn btn-sm btn-outline-dark" aria-label="Mi cuenta">
-                    <i class="bi bi-person"></i> <span data-account-label>Entrar</span>
-                </a>
-
-                <a href="/carrito" class="btn btn-sm btn-outline-success position-relative" aria-label="Carrito">
-                    <i class="bi bi-cart3"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success d-none" data-cart-count>0</span>
-                </a>
-
-                <div class="btn-group btn-group-sm" role="group" aria-label="Región">
-                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="es">MX</button>
-                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="en">US</button>
-                </div>
-
-                <button class="btn btn-link text-dark p-0">
-                    <i class="bi bi-search fs-5"></i>
-                </button>
-
-                <button class="btn btn-link text-dark p-0">
-                    <i class="bi bi-person fs-5"></i>
-                </button>
-
-                <button class="btn btn-link text-dark p-0 position-relative">
-                    <i class="bi bi-cart3 fs-5"></i>
-
-                    <span class="cart-badge">0</span>
-                </button>
-
-            </div>
-
-        </div>
-    </div>
-</nav>
-
-
-<!-- ========================================================= -->
-<!-- HERO -->
-<!-- ========================================================= -->
-
-<section class="hero">
-
-    <div class="container">
-
-        <div class="row align-items-center min-vh-75">
-
-            <div class="col-lg-6">
-
-                <span class="hero-label">
-                    ENERGÍA SOLAR DE NUEVA GENERACIÓN
-                </span>
-
-                <h1 class="display-3 fw-bold mt-3">
-                    Tu energía.
-                    <br>
-                    <span>Tu libertad.</span>
-                </h1>
-
-                <p class="lead mt-4 text-secondary">
-                    Descubre soluciones solares inteligentes para tu hogar,
-                    vehículo, aventura y proyectos off-grid.
-                </p>
-
-                <div class="d-flex flex-wrap gap-3 mt-4">
-
-                    <a href="/kits"
-                       class="btn btn-solar btn-lg px-4">
-
-                        Comprar ahora
-                        <i class="bi bi-arrow-right ms-2"></i>
-
-                    </a>
-
-                    <a href="#soluciones"
-                       class="btn btn-outline-dark btn-lg px-4">
-
-                        Explorar soluciones
-
-                    </a>
-
-                </div>
-
-                <div class="row mt-5">
-
-                    <div class="col-4">
-                        <strong class="fs-4">10+</strong>
-                        <small class="d-block text-muted">
-                            años de experiencia
-                        </small>
-                    </div>
-
-                    <div class="col-4">
-                        <strong class="fs-4">50K+</strong>
-                        <small class="d-block text-muted">
-                            sistemas instalados
-                        </small>
-                    </div>
-
-                    <div class="col-4">
-                        <strong class="fs-4">24/7</strong>
-                        <small class="d-block text-muted">
-                            soporte
-                        </small>
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="col-lg-6 mt-5 mt-lg-0">
-
-                <div class="hero-image">
-
-                    <div class="hero-image-content">
-
-                        <span class="badge bg-success mb-3">
-                            SOLUCIÓN COMPLETA
-                        </span>
-
-                        <h2 class="fw-bold">
-                            Sistema Solar
-                            <br>
-                            Off-Grid
-                        </h2>
-
-                        <p>
-                            Paneles + batería + inversor
-                        </p>
-
-                        <a href="#" class="btn btn-light">
-                            Ver sistema
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
+    <a href="#kits" class="hero-scroll" aria-label="Ver kits"><i class="bi bi-chevron-down"></i></a>
 </section>
 
 
@@ -234,80 +58,45 @@
 <!-- KITS -->
 <!-- ========================================================= -->
 
-<section id="kits" class="py-5">
-
+<section id="kits" class="home-section">
     <div class="container">
-
-        <div class="text-center mb-5">
-
-            <span class="section-label">
-                SOLUCIONES COMPLETAS
-            </span>
-
-            <h2 class="fw-bold mt-2">
-                Kits solares
-            </h2>
-
-            <a href="/kits" class="link-dark fw-semibold d-inline-block mt-2">
-                Ver todos los kits
-                <i class="bi bi-arrow-right"></i>
-            </a>
-
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-5">
+            <div>
+                <span class="eyebrow">Soluciones completas</span>
+                <h2 class="section-title">Kits solares</h2>
+            </div>
+            <a href="/kits" class="btn btn-ghost">Ver todos los kits</a>
         </div>
 
         <div class="row g-4" th:if="${not #lists.isEmpty(kits)}">
-
-            <div class="col-md-6 col-lg-3" th:each="kit : ${kits}">
-
-                <div class="product-card">
-
-                    <a class="product-image kit-picture d-block" th:href="@{/kits/{id}/{slug}(id=${kit.id},slug=${kit.slug})}"
-                       th:aria-label="'Ver ' + ${kit.name}">
+            <div class="col-sm-6 col-lg-3" th:each="kit : ${kits}">
+                <div class="card h-100 kit-card overflow-hidden"
+                     th:with="kitUrl=@{/kits/{id}/{slug}(id=${kit.id},slug=${kit.slug})}">
+                    <a th:href="${kitUrl}" class="kit-picture d-block border-bottom" th:aria-label="'Ver ' + ${kit.name}">
                         <th:block th:replace="~{fragments/kit-picture :: picture(${kit})}"></th:block>
                     </a>
-
-                    <div class="p-3">
-
-                        <small class="text-muted">
-                            KIT SOLAR
-                        </small>
-
-                        <h5 class="mt-2">
-                            <a class="text-dark text-decoration-none" th:href="@{/kits/{id}/{slug}(id=${kit.id},slug=${kit.slug})}"
-                               th:text="${kit.name}">Kit</a>
+                    <div class="card-body d-flex flex-column">
+                        <small class="text-secondary eyebrow-sm">Kit solar</small>
+                        <h5 class="fw-bold mt-1 mb-1">
+                            <a th:href="${kitUrl}" class="text-body text-decoration-none" th:text="${kit.name}">Kit</a>
                         </h5>
-
-                        <p class="small text-secondary" th:text="${kit.description}">Descripción</p>
-
-                        <div class="d-flex justify-content-between align-items-center">
-
-                            <strong class="fs-5"
-                                    th:data-price-mxn="${kit.sellPrice}">
-                                $0.00
-                            </strong>
-
-                            <button type="button" class="btn btn-dark btn-sm rounded-circle"
-                                    th:data-add-to-cart="${kit.id}" data-icon-only
+                        <p class="small text-secondary mb-3 text-truncate-2" th:text="${kit.description}">Descripción</p>
+                        <div class="mt-auto d-flex justify-content-between align-items-center gap-2">
+                            <strong class="fs-5" th:data-price-mxn="${kit.sellPrice}">$0.00</strong>
+                            <button type="button" class="btn btn-accent btn-sm px-3" th:data-add-to-cart="${kit.id}" data-icon-only
                                     title="Agregar al carrito" aria-label="Agregar al carrito">
                                 <i class="bi bi-cart-plus"></i>
                             </button>
-
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
 
         <div class="text-center text-secondary py-5" th:if="${#lists.isEmpty(kits)}">
             Aún no hay kits publicados.
         </div>
-
     </div>
-
 </section>
 
 
@@ -315,156 +104,53 @@
 <!-- PROMO -->
 <!-- ========================================================= -->
 
-<section class="promo-section">
-
+<section class="home-section promo-band">
     <div class="container">
-
-        <div class="promo-card">
-
-            <div class="row align-items-center">
-
-                <div class="col-lg-7">
-
-                    <span class="badge bg-warning text-dark mb-3">
-                        OFERTA ESPECIAL
-                    </span>
-
-                    <h2 class="display-6 fw-bold">
-                        Prepárate para vivir
-                        <br>
-                        con energía independiente.
-                    </h2>
-
-                    <p class="lead text-white-50">
-                        Ahorra en sistemas solares seleccionados
-                        durante tiempo limitado.
-                    </p>
-
-                    <a href="#" class="btn btn-light btn-lg mt-2">
-                        Ver ofertas
-                        <i class="bi bi-arrow-right ms-2"></i>
-                    </a>
-
-                </div>
-
-                <div class="col-lg-5 text-center mt-4 mt-lg-0">
-
-                    <div class="promo-icon">
-                        <i class="bi bi-sun-fill"></i>
-                    </div>
-
-                </div>
-
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <span class="badge badge-outline mb-3">Oferta especial</span>
+                <h2 class="section-title display-6">
+                    Prepárate para vivir<br>con energía independiente.
+                </h2>
+                <p class="lead text-secondary mb-0">
+                    Ahorra en sistemas solares seleccionados
+                    durante tiempo limitado.
+                </p>
             </div>
-
+            <div class="col-lg-4 text-lg-end">
+                <a href="/kits" class="btn btn-accent btn-lg">Ver ofertas</a>
+            </div>
         </div>
-
     </div>
-
 </section>
 
 
 <!-- ========================================================= -->
-<!-- SOLUCIONES -->
+<!-- SOLUCIONES: full-width photo panels -->
 <!-- ========================================================= -->
 
-<section id="soluciones" class="py-5">
-
-    <div class="container">
-
-        <div class="text-center mb-5">
-
-            <span class="section-label">
-                SOLUCIONES
-            </span>
-
-            <h2 class="fw-bold mt-2">
-                Energía para cada aventura
-            </h2>
-
+<section id="soluciones">
+    <div class="photo-panel on-photo" style="background-image: url('/images/home/solution-rv.jpg');">
+        <div class="container">
+            <span class="eyebrow">RV &amp; camping</span>
+            <h2 class="panel-title">Lleva tu energía<br>donde quieras.</h2>
+            <a href="/kits" class="btn btn-on-photo mt-3">Explorar</a>
         </div>
-
-        <div class="row g-4">
-
-            <div class="col-md-4">
-
-                <div class="solution-card solution-rv">
-
-                    <div>
-
-                        <span class="badge bg-light text-dark">
-                            RV & CAMPING
-                        </span>
-
-                        <h3 class="fw-bold mt-3">
-                            Lleva tu energía
-                            donde quieras.
-                        </h3>
-
-                        <a href="#" class="btn btn-light mt-2">
-                            Explorar
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="col-md-4">
-
-                <div class="solution-card solution-home">
-
-                    <div>
-
-                        <span class="badge bg-light text-dark">
-                            HOGAR
-                        </span>
-
-                        <h3 class="fw-bold mt-3">
-                            Energía de respaldo
-                            para tu hogar.
-                        </h3>
-
-                        <a href="#" class="btn btn-light mt-2">
-                            Explorar
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="col-md-4">
-
-                <div class="solution-card solution-offgrid">
-
-                    <div>
-
-                        <span class="badge bg-light text-dark">
-                            OFF-GRID
-                        </span>
-
-                        <h3 class="fw-bold mt-3">
-                            Independencia
-                            energética.
-                        </h3>
-
-                        <a href="#" class="btn btn-light mt-2">
-                            Explorar
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
     </div>
-
+    <div class="photo-panel on-photo" style="background-image: url('/images/home/solution-home.jpg');">
+        <div class="container">
+            <span class="eyebrow">Hogar</span>
+            <h2 class="panel-title">Energía de respaldo<br>para tu hogar.</h2>
+            <a href="/kits" class="btn btn-on-photo mt-3">Explorar</a>
+        </div>
+    </div>
+    <div class="photo-panel on-photo" style="background-image: url('/images/home/solution-offgrid.jpg');">
+        <div class="container">
+            <span class="eyebrow">Off-grid</span>
+            <h2 class="panel-title">Independencia<br>energética.</h2>
+            <a href="/kits" class="btn btn-on-photo mt-3">Explorar</a>
+        </div>
+    </div>
 </section>
 
 
@@ -472,72 +158,31 @@
 <!-- BENEFITS -->
 <!-- ========================================================= -->
 
-<section class="py-5 border-top">
-
+<section class="home-section">
     <div class="container">
-
-        <div class="row text-center g-4">
-
-            <div class="col-md-3">
-
-                <i class="bi bi-truck benefit-icon"></i>
-
-                <h5 class="mt-3">
-                    Envío confiable
-                </h5>
-
-                <p class="text-secondary small">
-                    Recibe tus productos de forma segura.
-                </p>
-
+        <div class="row g-4">
+            <div class="col-6 col-md-3 benefit">
+                <i class="bi bi-truck"></i>
+                <h5>Envío confiable</h5>
+                <p class="text-secondary small mb-0">Recibe tus productos de forma segura.</p>
             </div>
-
-            <div class="col-md-3">
-
-                <i class="bi bi-shield-check benefit-icon"></i>
-
-                <h5 class="mt-3">
-                    Productos confiables
-                </h5>
-
-                <p class="text-secondary small">
-                    Tecnología diseñada para durar.
-                </p>
-
+            <div class="col-6 col-md-3 benefit">
+                <i class="bi bi-shield-check"></i>
+                <h5>Productos confiables</h5>
+                <p class="text-secondary small mb-0">Tecnología diseñada para durar.</p>
             </div>
-
-            <div class="col-md-3">
-
-                <i class="bi bi-headset benefit-icon"></i>
-
-                <h5 class="mt-3">
-                    Soporte experto
-                </h5>
-
-                <p class="text-secondary small">
-                    Estamos aquí para ayudarte.
-                </p>
-
+            <div class="col-6 col-md-3 benefit">
+                <i class="bi bi-headset"></i>
+                <h5>Soporte experto</h5>
+                <p class="text-secondary small mb-0">Estamos aquí para ayudarte.</p>
             </div>
-
-            <div class="col-md-3">
-
-                <i class="bi bi-recycle benefit-icon"></i>
-
-                <h5 class="mt-3">
-                    Energía limpia
-                </h5>
-
-                <p class="text-secondary small">
-                    Una alternativa más sostenible.
-                </p>
-
+            <div class="col-6 col-md-3 benefit">
+                <i class="bi bi-recycle"></i>
+                <h5>Energía limpia</h5>
+                <p class="text-secondary small mb-0">Una alternativa más sostenible.</p>
             </div>
-
         </div>
-
     </div>
-
 </section>
 
 
@@ -545,164 +190,30 @@
 <!-- NEWSLETTER -->
 <!-- ========================================================= -->
 
-<section class="newsletter py-5">
-
-    <div class="container">
-
-        <div class="row justify-content-center">
-
-            <div class="col-lg-7 text-center">
-
-                <i class="bi bi-envelope-paper fs-1"></i>
-
-                <h2 class="fw-bold mt-3">
-                    Únete a nuestra comunidad
-                </h2>
-
-                <p class="text-secondary">
-                    Recibe novedades, ofertas y consejos sobre energía solar.
-                </p>
-
-                <form class="row g-2 mt-4">
-
-                    <div class="col">
-
-                        <input
-                                type="email"
-                                class="form-control form-control-lg"
-                                placeholder="Tu correo electrónico">
-
-                    </div>
-
-                    <div class="col-auto">
-
-                        <button class="btn btn-dark btn-lg">
-                            Suscribirme
-                        </button>
-
-                    </div>
-
-                </form>
-
-            </div>
-
+<section class="home-section newsletter">
+    <div class="container" style="max-width: 720px;">
+        <div class="text-center">
+            <span class="eyebrow">Comunidad</span>
+            <h2 class="section-title">Únete a nuestra comunidad</h2>
+            <p class="text-secondary">Recibe novedades, ofertas y consejos sobre energía solar.</p>
         </div>
-
+        <form class="row g-2 mt-4">
+            <div class="col-sm">
+                <input type="email" class="form-control form-control-lg" placeholder="Tu correo electrónico"
+                       aria-label="Tu correo electrónico">
+            </div>
+            <div class="col-sm-auto d-grid">
+                <button class="btn btn-accent btn-lg">Suscribirme</button>
+            </div>
+        </form>
     </div>
-
 </section>
 
 
-<!-- ========================================================= -->
-<!-- FOOTER -->
-<!-- ========================================================= -->
-
-<footer class="footer">
-
-    <div class="container">
-
-        <div class="row g-4 py-5">
-
-            <div class="col-lg-4">
-
-                <a class="footer-brand" href="/">
-                    Baja Solar<span>Supply</span>
-                </a>
-
-                <p class="text-white-50 mt-3">
-                    Soluciones de energía solar para construir
-                    un futuro más independiente y sostenible.
-                </p>
-
-                <div class="d-flex gap-3 mt-4">
-
-                    <a href="#">
-                        <i class="bi bi-facebook"></i>
-                    </a>
-
-                    <a href="#">
-                        <i class="bi bi-instagram"></i>
-                    </a>
-
-                    <a href="#">
-                        <i class="bi bi-youtube"></i>
-                    </a>
-
-                </div>
-
-            </div>
-
-            <div class="col-6 col-lg-2">
-
-                <h6>Productos</h6>
-
-                <ul>
-                    <li><a href="/kits">Kits</a></li>
-                    <li><a href="/cotizacion">Cotizador</a></li>
-                </ul>
-
-            </div>
-
-            <div class="col-6 col-lg-2">
-
-                <h6>Soluciones</h6>
-
-                <ul>
-                    <li><a href="#">Hogar</a></li>
-                    <li><a href="#">RV</a></li>
-                    <li><a href="#">Camping</a></li>
-                    <li><a href="#">Off-grid</a></li>
-                </ul>
-
-            </div>
-
-            <div class="col-6 col-lg-2">
-
-                <h6>Ayuda</h6>
-
-                <ul>
-                    <li><a href="#">Contacto</a></li>
-                    <li><a href="#">FAQ</a></li>
-                    <li><a href="#">Garantía</a></li>
-                    <li><a href="#">Soporte</a></li>
-                </ul>
-
-            </div>
-
-            <div class="col-6 col-lg-2">
-
-                <h6>Empresa</h6>
-
-                <ul>
-                    <li><a href="#">Nosotros</a></li>
-                    <li><a href="#">Blog</a></li>
-                    <li><a href="#">Proyectos</a></li>
-                    <li><a href="#">Privacidad</a></li>
-                </ul>
-
-            </div>
-
-        </div>
-
-        <div class="footer-bottom">
-            <small>
-                © 2026 Baja Solar Supply. Todos los derechos reservados.
-            </small>
-        </div>
-
-    </div>
-
-</footer>
+<th:block th:replace="~{fragments/layout :: footer}"></th:block>
 
 
-<!-- Bootstrap JS -->
-<script
-        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
-</script>
-
-<script th:src="@{/js/region.js}"></script>
-<script th:src="@{/js/account.js}"></script>
-<script th:src="@{/js/cart.js}"></script>
+<th:block th:replace="~{fragments/layout :: commonScripts}"></th:block>
 
 </body>
 </html>

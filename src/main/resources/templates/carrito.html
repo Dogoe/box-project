@@ -7,87 +7,21 @@
 
     <title>Carrito | Baja Solar Supply</title>
 
-    <!-- Bootstrap 5.3.8 -->
-    <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-            rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
-    <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <th:block th:replace="~{fragments/layout :: commonHead}"></th:block>
 </head>
 
-<body>
+<body class="storefront">
 
-<!-- ========================================================= -->
-<!-- NAVBAR -->
-<!-- ========================================================= -->
-
-<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
-    <div class="container">
-
-        <a class="navbar-brand fw-bold fs-3" href="/home">
-            Baja Solar<span>Supply</span>
-        </a>
-
-        <button
-                class="navbar-toggler"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#mainNavbar">
-
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="mainNavbar">
-
-            <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-
-                <li class="nav-item">
-                    <a class="nav-link" href="/home">Inicio</a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link text-success fw-semibold" href="/cotizacion">
-                        <i class="bi bi-calculator"></i> Cotizador
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="/kits">Kits</a>
-                </li>
-
-            </ul>
-
-            <div class="d-flex align-items-center gap-3">
-                <a href="/cuenta" class="btn btn-sm btn-outline-dark" aria-label="Mi cuenta">
-                    <i class="bi bi-person"></i> <span data-account-label>Entrar</span>
-                </a>
-
-                <a href="/carrito" class="btn btn-sm btn-outline-success position-relative" aria-label="Carrito">
-                    <i class="bi bi-cart3"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success d-none" data-cart-count>0</span>
-                </a>
-
-                <div class="btn-group btn-group-sm" role="group" aria-label="Región">
-                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="es">MX</button>
-                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="en">US</button>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</nav>
+<th:block th:replace="~{fragments/layout :: header('', false)}"></th:block>
 
 
 <section class="py-5">
     <div class="container" style="max-width: 1000px;">
-        <h1 class="fw-bold mb-4"><i class="bi bi-cart3 text-success"></i> Tu carrito</h1>
+        <h1 class="fw-bold mb-4"><i class="bi bi-cart3"></i> Tu carrito</h1>
 
         <div id="cart-empty" class="text-center text-secondary py-5 d-none">
             <p class="mb-3">Tu carrito está vacío.</p>
-            <a href="/kits" class="btn btn-success">Ver kits</a>
+            <a href="/kits" class="btn btn-accent">Ver kits</a>
         </div>
 
         <div id="cart-removed-notice" class="alert alert-warning d-none" role="alert">
@@ -147,15 +81,15 @@
                             </div>
 
                             <!-- El correo ya tiene cuenta: entrar sin salir del carrito -->
-                            <div id="email-login-box" class="border rounded p-2 mb-2 bg-light d-none">
+                            <div id="email-login-box" class="border rounded p-2 mb-2 bg-body-tertiary d-none">
                                 <p class="small mb-2">
-                                    <i class="bi bi-person-circle text-success"></i>
+                                    <i class="bi bi-person-circle"></i>
                                     Ya tienes cuenta con este correo. Entra para guardar el pedido en tu cuenta y llenar tus datos.
                                 </p>
                                 <div class="input-group input-group-sm mb-1">
                                     <input type="password" class="form-control" id="inline-login-password" placeholder="Contraseña"
                                            autocomplete="current-password" aria-label="Contraseña">
-                                    <button type="button" class="btn btn-success" id="inline-login-btn">Entrar</button>
+                                    <button type="button" class="btn btn-accent" id="inline-login-btn">Entrar</button>
                                 </div>
                                 <div id="inline-login-alert" class="small text-danger d-none"></div>
                                 <div class="small">
@@ -165,7 +99,7 @@
                             </div>
 
                             <!-- Correo nuevo: ofrecer crear cuenta con los mismos datos -->
-                            <div id="email-register-box" class="border rounded p-2 mb-2 bg-light d-none">
+                            <div id="email-register-box" class="border rounded p-2 mb-2 bg-body-tertiary d-none">
                                 <div class="form-check small">
                                     <input class="form-check-input" type="checkbox" id="create-account">
                                     <label class="form-check-label" for="create-account">
@@ -217,7 +151,7 @@
                                 <label class="form-label small" for="notes">Notas (opcional)</label>
                                 <textarea class="form-control" id="notes" rows="2" maxlength="1000"></textarea>
                             </div>
-                            <button type="submit" class="btn btn-success w-100" id="checkout-submit">
+                            <button type="submit" class="btn btn-accent w-100" id="checkout-submit">
                                 Hacer pedido
                             </button>
                         </form>
@@ -228,25 +162,10 @@
     </div>
 </section>
 
-<!-- ========================================================= -->
-<!-- FOOTER -->
-<!-- ========================================================= -->
-
-<footer class="footer bg-dark text-white-50 py-4 mt-5">
-    <div class="container text-center">
-        <small>© 2026 Baja Solar Supply. Todos los derechos reservados.</small>
-    </div>
-</footer>
+<th:block th:replace="~{fragments/layout :: footer}"></th:block>
 
 
-<!-- Bootstrap JS -->
-<script
-        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
-</script>
-
-<script th:src="@{/js/region.js}"></script>
-<script th:src="@{/js/account.js}"></script>
-<script th:src="@{/js/cart.js}"></script>
+<th:block th:replace="~{fragments/layout :: commonScripts}"></th:block>
 <script th:inline="javascript">
     window.CART_KITS = /*[[${cartKits}]]*/ [];
 </script>

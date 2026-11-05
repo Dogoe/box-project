@@ -798,7 +798,7 @@
               ).join('') + '</tbody></table>'
             : '';
 
-        return '<div class="border rounded p-3 bg-light">' +
+        return '<div class="border rounded p-3 bg-body-tertiary">' +
             '<h6 class="fw-semibold mb-2"><i class="bi bi-plug"></i> Revisión de compatibilidad</h6>' +
             (summary ? '<div class="small mb-2">' + summary + '</div>' : '') +
             checks + expansionHtml(report.expansion) + wiring +
@@ -1188,7 +1188,7 @@
 
     function orderActionsHtml(order) {
         if (order.status === 'PENDING') {
-            return '<div class="border rounded p-3 bg-light">' +
+            return '<div class="border rounded p-3 bg-body-tertiary">' +
                 '<h6 class="fw-semibold">Registrar pago en efectivo</h6>' +
                 '<div class="row g-2 align-items-end">' +
                 '<div class="col-md-4"><label class="form-label small" for="order-amount">Monto recibido (MXN)</label>' +
