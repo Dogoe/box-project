@@ -4,7 +4,10 @@ import com.endel.demobox.model.catalog.Kit;
 import com.endel.demobox.model.catalog.KitItem;
 import com.endel.demobox.model.catalog.PanelTechnology;
 import com.endel.demobox.model.catalog.SolarPanel;
+import com.endel.demobox.model.dto.StoreSettingsDto;
 import com.endel.demobox.repository.catalog.KitRepository;
+import com.endel.demobox.service.StoreSettingsService;
+import com.endel.demobox.service.order.OrderService;
 import com.endel.demobox.repository.catalog.ProductRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +24,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -45,6 +49,12 @@ class OrderControllerTest {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private StoreSettingsService storeSettingsService;
+
+    @Autowired
+    private OrderService orderService;
 
     private Long kitId;
 
@@ -99,6 +109,35 @@ class OrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(folio)))
                 .andExpect(content().string(containsString("Order API Kit")));
+    }
+
+    @Test
+    void orderPageShowsTheWhatsAppButtonOnlyWhenTheStoreNumberIsSet() throws Exception {
+        String folio = placeOrder();
+        mockMvc.perform(get("/pedido/" + folio))
+                .andExpect(content().string(not(containsString("whatsapp-order-btn"))));
+
+        StoreSettingsDto settings = storeSettingsService.getCurrent();
+        settings.setWhatsappNumber("646 123 4567");
+        storeSettingsService.update(settings);
+
+        mockMvc.perform(get("/pedido/" + folio))
+                .andExpect(content().string(containsString("id=\"whatsapp-order-btn\"")))
+                .andExpect(content().string(containsString("https://wa.me/526461234567?text=")));
+
+        // Once paid, the customer can still reach the store about the order.
+        Long orderId = orderService.findByFolio(folio).orElseThrow().getId();
+        orderService.confirmPayment(orderId, new BigDecimal("5000"), null, "admin");
+        mockMvc.perform(get("/pedido/" + folio))
+                .andExpect(content().string(not(containsString("whatsapp-order-btn"))))
+                .andExpect(content().string(containsString("id=\"whatsapp-question-btn\"")));
+    }
+
+    private String placeOrder() throws Exception {
+        String body = mockMvc.perform(post("/api/orders").contentType(MediaType.APPLICATION_JSON).content(orderJson("6461234567")))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return (String) objectMapper.readValue(body, Map.class).get("folio");
     }
 
     @Test

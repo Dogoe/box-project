@@ -29,6 +29,7 @@
     const storeError = document.getElementById('store-error');
     const storeSuccess = document.getElementById('store-success');
     const ordersFilter = document.getElementById('orders-filter');
+    const ordersWhatsappWarning = document.getElementById('orders-whatsapp-warning');
     const pendingOrdersBadge = document.getElementById('pending-orders-badge');
     const orderModalEl = document.getElementById('order-modal');
     const orderModal = new bootstrap.Modal(orderModalEl);
@@ -246,6 +247,7 @@
         entityTableWrapper.classList.remove('d-none');
         settingsPanel.classList.add('d-none');
         ordersFilter.classList.add('d-none');
+        ordersWhatsappWarning.classList.add('d-none');
     }
 
     function showSettingsPanel() {
@@ -253,6 +255,7 @@
         entityTableWrapper.classList.add('d-none');
         settingsPanel.classList.remove('d-none');
         ordersFilter.classList.add('d-none');
+        ordersWhatsappWarning.classList.add('d-none');
     }
 
     function showOrdersTable() {
@@ -857,6 +860,10 @@
         entityTitle.textContent = 'Pedidos';
         ordersFilter.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.status === ordersStatusFilter));
         tableHead.innerHTML = '<tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Kits</th><th class="text-end">Total</th><th>Estado</th><th></th></tr>';
+        authFetch('/api/settings/store')
+            .then((r) => r.json())
+            .then((store) => ordersWhatsappWarning.classList.toggle('d-none', Boolean(store.whatsappNumber)))
+            .catch(() => ordersWhatsappWarning.classList.add('d-none'));
 
         try {
             const url = '/api/admin/orders' + (ordersStatusFilter ? '?status=' + ordersStatusFilter : '');
@@ -881,6 +888,11 @@
         }
         refreshPendingBadge();
     }
+
+    document.getElementById('orders-whatsapp-settings-link').addEventListener('click', (event) => {
+        event.preventDefault();
+        document.querySelector('.entity-tab[data-entity="settings"]').click();
+    });
 
     ordersFilter.querySelectorAll('button').forEach((btn) => {
         btn.addEventListener('click', () => {

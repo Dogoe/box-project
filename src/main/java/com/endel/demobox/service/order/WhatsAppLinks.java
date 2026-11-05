@@ -28,6 +28,15 @@ public final class WhatsAppLinks {
         return "https://wa.me/52" + storeNumber + "?text=" + URLEncoder.encode(message, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
+    /** Customer -> store follow-up after the order is no longer pending; null when no store number is configured. */
+    public static String customerQuestion(OrderDto order, String storeNumber) {
+        if (storeNumber == null || storeNumber.isBlank()) {
+            return null;
+        }
+        String message = "Hola, tengo una duda sobre mi pedido " + order.getFolio() + ".";
+        return "https://wa.me/52" + storeNumber + "?text=" + URLEncoder.encode(message, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
     static String money(BigDecimal amount) {
         NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
         format.setMinimumFractionDigits(2);

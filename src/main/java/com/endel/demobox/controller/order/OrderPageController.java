@@ -56,6 +56,7 @@ public class OrderPageController {
         model.addAttribute("order", order.get());
         model.addAttribute("paymentInstructions", settings.getPaymentInstructions());
         model.addAttribute("whatsappUrl", WhatsAppLinks.customerToStore(order.get(), settings.getWhatsappNumber()));
+        model.addAttribute("whatsappQuestionUrl", WhatsAppLinks.customerQuestion(order.get(), settings.getWhatsappNumber()));
         return "pedido";
     }
 }
