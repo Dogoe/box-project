@@ -88,9 +88,15 @@
     border-color: var(--bss-text);
 }
 
-.kit-card .stretched-link-area {
-    color: inherit;
-    text-decoration: none;
+/* The whole card opens the kit (the name's link is a Bootstrap stretched-link); its buttons sit
+   above that link so "add to cart" still only adds. */
+.kit-card {
+    cursor: pointer;
+}
+
+.kit-card .btn {
+    position: relative;
+    z-index: 2;
 }
 
 /* Kit page gallery */
