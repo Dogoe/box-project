@@ -261,3 +261,41 @@ body {
     font-size: 0.78rem;
     letter-spacing: 0.08em;
 }
+
+/* ===== Admin: compact settings tab ===== */
+.settings-compact .card-body {
+    padding: 0.85rem 1rem;
+}
+.settings-compact .card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+.settings-compact p,
+.settings-compact .form-text {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    margin-bottom: 0.6rem;
+}
+.settings-compact .form-text {
+    margin-top: 0.2rem;
+}
+.settings-compact .form-label {
+    font-size: 0.8rem;
+    margin-bottom: 0.2rem;
+}
+.settings-compact .alert {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem;
+    margin-bottom: 0.6rem;
+}
+.settings-compact .catalog-review-table {
+    max-height: 360px;
+    overflow-y: auto;
+    font-size: 0.82rem;
+}
+.settings-compact .catalog-review-table thead th {
+    position: sticky;
+    top: 0;
+    background: var(--bs-body-bg);
+}

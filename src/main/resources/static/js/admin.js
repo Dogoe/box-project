@@ -1292,6 +1292,219 @@
         loadOrders();
     }
 
+    // ---- Catalog export / import (Configuración) ----
+
+    const catalogAlert = document.getElementById('catalog-alert');
+    const catalogFileInput = document.getElementById('catalog-file-input');
+    const catalogReviewBtn = document.getElementById('catalog-review-btn');
+    const catalogImportBtn = document.getElementById('catalog-import-btn');
+    const catalogImportLabel = document.getElementById('catalog-import-label');
+    const catalogReview = document.getElementById('catalog-review');
+    const catalogSummary = document.getElementById('catalog-summary');
+    const catalogReviewBody = document.getElementById('catalog-review-body');
+    let catalogFileText = null;
+
+    const CATALOG_ACTIONS = {
+        CREATE: { label: 'Nuevo', badge: 'bg-success' },
+        UPDATE: { label: 'Se actualiza', badge: 'bg-primary' },
+        UNCHANGED: { label: 'Sin cambios', badge: 'bg-secondary' },
+        ERROR: { label: 'Error', badge: 'bg-danger' }
+    };
+
+    // Same shape as an exported file; the field guide is CATALOGO-JSON.md in the project.
+    const CATALOG_EXAMPLE = {
+        format: 'baja-solar-catalog',
+        version: 1,
+        products: [
+            {
+                type: 'SOLAR_PANEL', sku: 'PNL-550-MONO', name: 'Panel solar 550 W monocristalino', brand: 'Marca',
+                description: 'Panel de 144 celdas.', price: 2450.00, stockQuantity: 10,
+                imageUrls: ['https://ejemplo.com/fotos/panel-550.jpg'], referenceUrl: 'https://ejemplo.com/panel-550',
+                active: true, wattage: 550, technology: 'MONOCRYSTALLINE', efficiencyPercent: 21.3, voc: 49.6, isc: 14.0
+            },
+            {
+                type: 'BATTERY', sku: 'BAT-24V-100AH', name: 'Batería LiFePO4 24 V 100 Ah', price: 8900.00, stockQuantity: 4,
+                capacityAh: 100, voltage: 24, chemistry: 'LIFEPO4', cycleLife: 6000
+            },
+            {
+                type: 'INVERTER', sku: 'INV-HIB-3KW', name: 'Inversor híbrido 3 kW 24 V', price: 9800.00, stockQuantity: 2,
+                ratedPowerKw: 3, surgePowerKw: 6, inverterType: 'HYBRID', builtInCharger: true, mpptChannels: 1,
+                maxInputVoltage: 500, batteryVoltage: 24, mpptMinVoltage: 60, mpptMaxChargeCurrentA: 100,
+                mpptMaxInputCurrentA: 22, maxPvInputPowerW: 4000
+            }
+        ],
+        kits: [
+            {
+                name: 'Kit Cabaña 3 kW', description: 'Para una cabaña con refrigerador, luces y TV.', active: true,
+                items: [
+                    { sku: 'PNL-550-MONO', quantity: 4 },
+                    { sku: 'BAT-24V-100AH', quantity: 1 },
+                    { sku: 'INV-HIB-3KW', quantity: 1 }
+                ]
+            }
+        ]
+    };
+
+    function showCatalogAlert(kind, html) {
+        catalogAlert.className = 'alert alert-' + kind;
+        catalogAlert.innerHTML = html;
+    }
+
+    function downloadFile(filename, blob) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    document.getElementById('catalog-export-btn').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        catalogAlert.classList.add('d-none');
+        try {
+            const response = await authFetch('/api/admin/catalog/export');
+            if (!response.ok) {
+                showCatalogAlert('danger', escapeHtml(await errorMessage(response, 'No se pudo descargar el catálogo.')));
+                return;
+            }
+            const match = /filename="([^"]+)"/.exec(response.headers.get('Content-Disposition') || '');
+            downloadFile(match ? match[1] : 'catalogo.json', await response.blob());
+        } catch (err) {
+            showCatalogAlert('danger', 'No se pudo descargar el catálogo.');
+        } finally {
+            button.disabled = false;
+        }
+    });
+
+    document.getElementById('catalog-example-btn').addEventListener('click', () => {
+        downloadFile('catalogo-ejemplo.json',
+            new Blob([JSON.stringify(CATALOG_EXAMPLE, null, 2)], { type: 'application/json' }));
+    });
+
+    function resetCatalogReview() {
+        catalogFileText = null;
+        catalogAlert.classList.add('d-none');
+        catalogReview.classList.add('d-none');
+        catalogImportBtn.classList.add('d-none');
+        catalogReviewBody.innerHTML = '';
+    }
+
+    catalogFileInput.addEventListener('change', () => {
+        resetCatalogReview();
+        catalogReviewBtn.disabled = catalogFileInput.files.length === 0;
+    });
+
+    async function sendCatalog(dryRun) {
+        const response = await authFetch('/api/admin/catalog/import?dryRun=' + dryRun, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: catalogFileText
+        });
+        if (!response.ok) {
+            showCatalogAlert('danger', escapeHtml(await errorMessage(response, 'No se pudo leer el archivo.')));
+            return null;
+        }
+        return response.json();
+    }
+
+    function countsText(summary, noun) {
+        const parts = [];
+        if (summary.created) parts.push(summary.created + ' nuevo' + (summary.created === 1 ? '' : 's'));
+        if (summary.updated) parts.push(summary.updated + ' se actualiza' + (summary.updated === 1 ? '' : 'n'));
+        if (summary.unchanged) parts.push(summary.unchanged + ' sin cambios');
+        if (summary.errors) parts.push(summary.errors + ' con error');
+        return '<strong>' + noun + ':</strong> ' + (parts.length ? parts.join(' · ') : 'ninguno');
+    }
+
+    function renderCatalogResult(result) {
+        const changes = result.products.created + result.products.updated + result.kits.created + result.kits.updated;
+        catalogSummary.innerHTML = '<div class="small">' + countsText(result.products, 'Productos') + '<br>' +
+            countsText(result.kits, 'Kits') + '</div>';
+
+        catalogReviewBody.innerHTML = result.rows.map((row) => {
+            const action = CATALOG_ACTIONS[row.action] || CATALOG_ACTIONS.ERROR;
+            const errors = row.errors.length
+                ? '<ul class="mb-0 ps-3 text-danger">' + row.errors.map((e) => '<li>' + escapeHtml(e) + '</li>').join('') + '</ul>'
+                : '';
+            return '<tr' + (row.action === 'ERROR' ? ' class="table-danger"' : '') + '>' +
+                '<td class="text-secondary">' + row.position + '</td>' +
+                '<td class="text-nowrap">' + escapeHtml(row.typeLabel || '—') + '</td>' +
+                '<td><code>' + escapeHtml(row.key || '—') + '</code></td>' +
+                '<td>' + escapeHtml(row.name || '') + errors + '</td>' +
+                '<td><span class="badge ' + action.badge + '">' + action.label + '</span></td>' +
+                '</tr>';
+        }).join('');
+        catalogReview.classList.toggle('d-none', result.rows.length === 0);
+
+        const fileErrors = result.fileErrors.length
+            ? '<ul class="mb-0 ps-3">' + result.fileErrors.map((e) => '<li>' + escapeHtml(e) + '</li>').join('') + '</ul>'
+            : '';
+        if (result.saved) {
+            showCatalogAlert('success', '<i class="bi bi-check-circle"></i> Listo, se guardaron ' + changes + ' cambio' +
+                (changes === 1 ? '' : 's') + '.');
+        } else if (result.errorCount > 0) {
+            showCatalogAlert('warning', '<strong>No se guardó nada.</strong> Corrige ' +
+                (result.errorCount === 1 ? 'el error marcado' : 'los ' + result.errorCount + ' errores marcados') +
+                ' en el archivo y vuelve a revisarlo.' + fileErrors);
+        } else if (changes === 0) {
+            showCatalogAlert('info', 'El archivo no trae cambios: todo está igual que en la tienda.');
+        } else {
+            showCatalogAlert('info', 'Revisa el resumen. Aún no se ha guardado nada.');
+        }
+
+        const canImport = result.dryRun && result.errorCount === 0 && changes > 0;
+        catalogImportBtn.classList.toggle('d-none', !canImport);
+        catalogImportLabel.textContent = 'Importar ' + changes + ' cambio' + (changes === 1 ? '' : 's');
+    }
+
+    catalogReviewBtn.addEventListener('click', async () => {
+        const file = catalogFileInput.files[0];
+        if (!file) {
+            return;
+        }
+        resetCatalogReview();
+        catalogReviewBtn.disabled = true;
+        try {
+            catalogFileText = await file.text();
+            const result = await sendCatalog(true);
+            if (result) {
+                renderCatalogResult(result);
+            }
+        } catch (err) {
+            showCatalogAlert('danger', 'No se pudo revisar el archivo.');
+        } finally {
+            catalogReviewBtn.disabled = false;
+        }
+    });
+
+    catalogImportBtn.addEventListener('click', async () => {
+        if (!catalogFileText) {
+            return;
+        }
+        catalogImportBtn.disabled = true;
+        catalogReviewBtn.disabled = true;
+        try {
+            const result = await sendCatalog(false);
+            if (result) {
+                renderCatalogResult(result);
+                if (result.saved) {
+                    allProducts = [];
+                    catalogFileInput.value = '';
+                    catalogFileText = null;
+                }
+            }
+        } catch (err) {
+            showCatalogAlert('danger', 'Ocurrió un error de conexión. Revisa el archivo de nuevo antes de importar.');
+        } finally {
+            catalogImportBtn.disabled = false;
+            catalogReviewBtn.disabled = catalogFileInput.files.length === 0;
+        }
+    });
+
     // ---- Shared: delete + create/update submit ----
 
     async function deleteItem(id) {
@@ -1354,6 +1567,6 @@
         });
     });
 
-    loadEntity('panels');
+    loadKits();
     refreshPendingBadge();
 })();
