@@ -8,6 +8,11 @@ import com.endel.demobox.model.catalog.ConnectionCable;
 import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.catalog.InverterType;
 import com.endel.demobox.model.catalog.PanelConnector;
+import com.endel.demobox.model.dto.catalog.compatibility.SuggestedItemDto;
+import com.endel.demobox.model.dto.catalog.compatibility.ProtectionCheckDto;
+import com.endel.demobox.model.catalog.FuseClass;
+import com.endel.demobox.model.catalog.ProtectionType;
+import com.endel.demobox.model.catalog.Protection;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.catalog.WireGauge;
 import com.endel.demobox.model.dto.WiringSettingsDto;
@@ -16,6 +21,7 @@ import com.endel.demobox.model.dto.catalog.compatibility.ExpansionLevel;
 import com.endel.demobox.model.dto.catalog.compatibility.KitCompatibilityReportDto;
 import com.endel.demobox.model.dto.catalog.compatibility.WiringSegmentDto;
 import com.endel.demobox.repository.catalog.ConnectionCableRepository;
+import com.endel.demobox.repository.catalog.ProtectionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,13 +42,16 @@ class KitCompatibilityServiceTest {
     private ConnectionCableRepository cableRepository;
     private KitCompatibilityService service;
     private WiringSettingsDto lengths;
+    private ProtectionRepository protectionRepository;
     private long nextId = 1;
 
     @BeforeEach
     void setUp() {
         cableRepository = mock(ConnectionCableRepository.class);
         when(cableRepository.findAll()).thenReturn(List.of());
-        service = new KitCompatibilityService(cableRepository);
+        protectionRepository = mock(ProtectionRepository.class);
+        when(protectionRepository.findAll()).thenReturn(List.of());
+        service = new KitCompatibilityService(cableRepository, new KitProtectionPlanner(protectionRepository));
         lengths = new WiringSettingsDto();
         lengths.setBatteryToInverterMeters(2.0);
         lengths.setPvToInverterMeters(10.0);
@@ -125,6 +134,148 @@ class KitCompatibilityServiceTest {
 
     private static WiringSegmentDto segment(KitCompatibilityReportDto report, String prefix) {
         return report.getWiring().stream().filter(s -> s.getSegment().startsWith(prefix)).findFirst().orElseThrow();
+    }
+
+
+    // ---- Protections ----
+
+    private Protection protection(String name, ProtectionType type, FuseClass fuseClass, double amps, double volts, int poles, int price) {
+        Protection protection = new Protection();
+        protection.setId(nextId++);
+        protection.setSku(name);
+        protection.setName(name);
+        protection.setProtectionType(type);
+        protection.setFuseClass(fuseClass);
+        protection.setRatedCurrentA(amps);
+        protection.setMaxVoltage(volts);
+        protection.setPoles(poles);
+        protection.setPrice(BigDecimal.valueOf(price));
+        protection.setActive(true);
+        return protection;
+    }
+
+    private final Protection mrbf110 = protection("MRBF 110 A 58 V", ProtectionType.FUSE, FuseClass.MRBF, 110, 58, 1, 350);
+    private final Protection mrbf125 = protection("MRBF 125 A 58 V", ProtectionType.FUSE, FuseClass.MRBF, 125, 58, 1, 300);
+    private final Protection anl110 = protection("ANL 110 A 32 V", ProtectionType.FUSE, FuseClass.ANL, 110, 32, 1, 200);
+    private final Protection classT110 = protection("Clase T 110 A", ProtectionType.FUSE, FuseClass.CLASS_T, 110, 125, 1, 1500);
+    private final Protection mrbf175 = protection("MRBF 175 A 58 V", ProtectionType.FUSE, FuseClass.MRBF, 175, 58, 1, 300);
+    private final Protection classT175 = protection("Clase T 175 A", ProtectionType.FUSE, FuseClass.CLASS_T, 175, 125, 1, 1500);
+    private final Protection dcBreaker125 = protection("Breaker DC 125 A 63 V", ProtectionType.DC_BREAKER, null, 125, 63, 1, 700);
+    private final Protection dcBreaker200 = protection("Breaker DC 200 A 63 V", ProtectionType.DC_BREAKER, null, 200, 63, 1, 900);
+    private final Protection pv500 = protection("Desconectador 2P 500 V", ProtectionType.PV_DISCONNECT, null, 32, 500, 2, 450);
+    private final Protection pv150 = protection("Desconectador 2P 150 V", ProtectionType.PV_DISCONNECT, null, 32, 150, 2, 300);
+    private final Protection ac40 = protection("Breaker AC 40 A con caja", ProtectionType.AC_BREAKER, null, 40, 120, 1, 400);
+    private final Protection ac100 = protection("Breaker AC 100 A", ProtectionType.AC_BREAKER, null, 100, 120, 1, 250);
+    private final Protection ac15 = protection("Breaker AC 15 A con caja", ProtectionType.AC_BREAKER, null, 15, 120, 1, 250);
+
+    private void catalogHas(Protection... protections) {
+        when(protectionRepository.findAll()).thenReturn(List.of(protections));
+    }
+
+    /** 3.5 kW / 48 V hybrid, 4 x 12.8 V 100 Ah LiFePO4 in series, 6 x 550 W panels in one string. */
+    private List<KitLine> midSystem(KitLine... extra) {
+        List<KitLine> lines = new java.util.ArrayList<>(List.of(
+                new KitLine(inverter(3.5, 48.0, InverterType.HYBRID), 1),
+                new KitLine(battery(12.8, 100), 4),
+                new KitLine(panel(), 6)));
+        lines.addAll(List.of(extra));
+        return lines;
+    }
+
+    private static ProtectionCheckDto protectionRow(KitCompatibilityReportDto report, String label) {
+        return report.getProtections().stream().filter(p -> p.getLabel().equals(label)).findFirst().orElseThrow();
+    }
+
+    @Test
+    void midSystemNeedsFourProtections_andSuggestsTheCheapestThatQualifies() {
+        catalogHas(mrbf110, mrbf125, anl110, classT110, dcBreaker125, pv500, pv150, ac40, ac100);
+        // Battery run: 3500 / (48 x 0.9) = 81 A -> 101.3 A design -> 110 A fuse -> 2 AWG (115 A).
+        KitCompatibilityReportDto report = service.analyze(midSystem(), lengths);
+
+        assertEquals(List.of("Fusible principal de batería", "Interruptor / breaker DC de batería",
+                        "Desconectador DC de paneles", "Breaker AC de salida del inversor"),
+                report.getProtections().stream().map(ProtectionCheckDto::getLabel).toList());
+        assertTrue(report.getProtections().stream().noneMatch(ProtectionCheckDto::isCovered));
+
+        // ANL is cheaper but only takes 32 V; the 125 A MRBF is cheaper but more than the 2 AWG cable carries.
+        assertEquals("de 101.3 a 115 A, 57.6 V DC o más", protectionRow(report, "Fusible principal de batería").getRequirement());
+        assertEquals("MRBF 110 A 58 V", protectionRow(report, "Fusible principal de batería").getSuggestion().getName());
+        assertEquals("Breaker DC 125 A 63 V", protectionRow(report, "Interruptor / breaker DC de batería").getSuggestion().getName());
+        // Cold string voltage 6 x 49.5 x 1.25 = 371.3 V: the 150 V disconnect doesn't qualify.
+        assertEquals("17.4 A o más, 371.3 V DC o más, 2 polos", protectionRow(report, "Desconectador DC de paneles").getRequirement());
+        assertEquals("Desconectador 2P 500 V", protectionRow(report, "Desconectador DC de paneles").getSuggestion().getName());
+        // 3500 W / 120 V x 1.25 = 36.5 A -> 40 A (or one size up, 45 A); 100 A would not protect the wiring.
+        assertEquals("de 40 a 45 A, 120 V AC o más", protectionRow(report, "Breaker AC de salida del inversor").getRequirement());
+        assertEquals("Breaker AC 40 A con caja", protectionRow(report, "Breaker AC de salida del inversor").getSuggestion().getName());
+
+        assertEquals(List.of("MRBF 110 A 58 V", "Breaker DC 125 A 63 V", "Desconectador 2P 500 V", "Breaker AC 40 A con caja"),
+                report.getSuggestedItems().stream().map(SuggestedItemDto::getName).toList());
+        assertTrue(hasCheck(report, CompatibilitySeverity.WARNING,
+                "Falta fusible principal de batería (de 101.3 a 115 A, 57.6 V DC o más). Sugerencia: MRBF 110 A 58 V."), report.getChecks().toString());
+    }
+
+    @Test
+    void aProtectionThatDoesNotQualifyIsExplainedAndTheRightOneCoversIt() {
+        catalogHas(mrbf110, anl110, dcBreaker125, pv500, ac40);
+        KitCompatibilityReportDto withAnl = service.analyze(midSystem(new KitLine(anl110, 1)), lengths);
+        ProtectionCheckDto fuse = protectionRow(withAnl, "Fusible principal de batería");
+        assertFalse(fuse.isCovered());
+        assertEquals("ANL 110 A 32 V: aguanta 32 V y se necesitan 57.6 V o más", fuse.getProblem());
+        assertTrue(hasCheck(withAnl, CompatibilitySeverity.WARNING, "1 × ANL 110 A 32 V no corresponde a ninguna protección"),
+                withAnl.getChecks().toString());
+
+        KitCompatibilityReportDto complete = service.analyze(midSystem(new KitLine(mrbf110, 1), new KitLine(dcBreaker125, 1),
+                new KitLine(pv500, 1), new KitLine(ac40, 1)), lengths);
+        assertTrue(complete.getProtections().stream().allMatch(ProtectionCheckDto::isCovered), complete.getProtections().toString());
+        assertEquals("1 × MRBF 110 A 58 V", protectionRow(complete, "Fusible principal de batería").getCoveredBy());
+        assertTrue(complete.getSuggestedItems().isEmpty());
+        assertFalse(hasCheck(complete, CompatibilitySeverity.WARNING, "Falta"), complete.getChecks().toString());
+    }
+
+    @Test
+    void lithiumBatteriesInParallelNeedAClassTFuse() {
+        catalogHas(mrbf175, classT175, dcBreaker200);
+        // 3000 / (24 x 0.9) = 138.9 A -> 173.6 A design -> 175 A fuse -> 2/0 (175 A). 4 x 12.8 V on 24 V = 2S x 2P.
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverter(3.0, 24.0, InverterType.HYBRID), 1),
+                new KitLine(battery(12.8, 100), 4)), lengths);
+
+        ProtectionCheckDto fuse = protectionRow(report, "Fusible principal de batería");
+        assertEquals("de 173.6 a 175 A, 28.8 V DC o más, Clase T", fuse.getRequirement());
+        assertEquals("Clase T 175 A", fuse.getSuggestion().getName()); // the cheaper MRBF can't interrupt a parallel lithium bank
+    }
+
+    @Test
+    void aBatteryWithABuiltInBreakerNeedsNoSeparateFuseOrSwitch() {
+        catalogHas(mrbf110, dcBreaker125, pv500, ac40);
+        Battery rack = battery(51.2, 100);
+        rack.setIntegratedBreakerA(110.0);
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverter(3.5, 48.0, InverterType.HYBRID), 1), new KitLine(rack, 1)), lengths);
+
+        assertEquals("Breaker integrado de la batería (110 A)", protectionRow(report, "Fusible principal de batería").getCoveredBy());
+        assertTrue(protectionRow(report, "Desconexión de batería").isCovered());
+        assertFalse(report.getProtections().stream().anyMatch(p -> p.getLabel().startsWith("Interruptor")));
+        assertFalse(report.getSuggestedItems().stream().anyMatch(i -> i.getName().contains("MRBF") || i.getName().contains("Breaker DC")));
+
+        // A 125 A breaker is more than the 2 AWG cable (115 A) carries: the cable still needs its own fuse.
+        rack.setIntegratedBreakerA(125.0);
+        KitCompatibilityReportDto bigBreaker = service.analyze(List.of(
+                new KitLine(inverter(3.5, 48.0, InverterType.HYBRID), 1), new KitLine(rack, 1)), lengths);
+        assertFalse(protectionRow(bigBreaker, "Fusible principal de batería").isCovered());
+        assertTrue(protectionRow(bigBreaker, "Desconexión de batería").isCovered());
+    }
+
+    @Test
+    void smallInverterGetsASmallAcBreaker_andAnEmptyCatalogSaysToAddOne() {
+        catalogHas(ac15);
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverter(1.0, 12.0, InverterType.OFF_GRID), 1),
+                new KitLine(battery(12.8, 100), 1)), lengths);
+        // 1000 W / 120 V x 1.25 = 10.4 A -> 15 A breaker.
+        assertEquals("Breaker AC 15 A con caja", protectionRow(report, "Breaker AC de salida del inversor").getSuggestion().getName());
+        assertTrue(hasCheck(report, CompatibilitySeverity.WARNING,
+                "No hay en tu catálogo una protección que cumpla; dala de alta en Protecciones."), report.getChecks().toString());
     }
 
     @Test

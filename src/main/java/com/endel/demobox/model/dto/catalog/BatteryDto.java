@@ -56,6 +56,9 @@ public class BatteryDto {
     /** Optional, lithium only: the BMS's continuous discharge limit (A). Empty = capacity in amps (1C). */
     @Positive(message = "La corriente del BMS debe ser mayor que 0")
     private Double bmsMaxDischargeA;
+    /** Optional: output breaker built into the battery (A); then no separate main fuse/switch is needed. */
+    @Positive(message = "El breaker integrado debe ser mayor que 0")
+    private Double integratedBreakerA;
 
     // Read-only, derived from capacityAh/voltage/chemistry.
     private double capacityKwh;

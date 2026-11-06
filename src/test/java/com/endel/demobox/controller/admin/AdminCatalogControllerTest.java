@@ -225,7 +225,7 @@ class AdminCatalogControllerTest {
         assertThat(errorsOf(result)).containsExactly(
                 "T-NO-AH: Falta «capacityAh».",
                 "T-CHEM: «chemistry»: «NUCLEAR» no es válido; usa uno de: LIFEPO4, LITHIUM_ION, LEAD_ACID, GEL, AGM.",
-                "T-TYPE: El tipo «PANEL» no existe; usa uno de: SOLAR_PANEL, BATTERY, INVERTER, CHARGE_CONTROLLER, CABLE, STRUCTURE.",
+                "T-TYPE: El tipo «PANEL» no existe; usa uno de: SOLAR_PANEL, BATTERY, INVERTER, CHARGE_CONTROLLER, CABLE, STRUCTURE, PROTECTION.",
                 "T-TYPO: Campos desconocidos para panel solar: «potencia».",
                 "T-OK: El SKU «T-OK» está repetido en el archivo (también en el producto 1).",
                 "TEST Kit roto: Producto 1 del kit: no existe un producto con SKU «T-NO-EXISTE» (ni en el archivo ni en la tienda).",
@@ -257,6 +257,43 @@ class AdminCatalogControllerTest {
         assertThat(errorsOf(saved)).isEmpty();
         assertThat(((com.endel.demobox.model.catalog.SolarPanel) productRepository.findBySku("T-PNL-50-SAE").orElseThrow())
                 .getConnector().name()).isEqualTo("SAE");
+    }
+
+    @Test
+    void protectionsImportExportAndAFuseNeedsItsClass() throws Exception {
+        JsonNode result = importFile("""
+                { "products": [
+                    { "type": "PROTECTION", "sku": "T-FUS-110", "name": "MRBF 110 A", "price": 350,
+                      "protectionType": "FUSE", "fuseClass": "MRBF", "ratedCurrentA": 110, "maxVoltage": 58 },
+                    { "type": "PROTECTION", "sku": "T-PV-500", "name": "Desconectador 2P 500 V", "price": 450,
+                      "protectionType": "PV_DISCONNECT", "ratedCurrentA": 32, "maxVoltage": 500, "poles": 2 },
+                    { "type": "PROTECTION", "sku": "T-FUS-NOCLASS", "name": "Fusible sin clase", "price": 1,
+                      "protectionType": "FUSE", "ratedCurrentA": 10, "maxVoltage": 32 } ] }
+                """, true);
+        assertThat(errorsOf(result)).containsExactly(
+                "T-FUS-NOCLASS: Elige la clase del fusible (MRBF, ANL, Clase T, gPV u otro).");
+
+        JsonNode saved = importFile("""
+                { "products": [
+                    { "type": "PROTECTION", "sku": "T-FUS-110", "name": "MRBF 110 A", "price": 350,
+                      "protectionType": "FUSE", "fuseClass": "MRBF", "ratedCurrentA": 110, "maxVoltage": 58 },
+                    { "type": "PROTECTION", "sku": "T-PV-500", "name": "Desconectador 2P 500 V", "price": 450,
+                      "protectionType": "PV_DISCONNECT", "fuseClass": "MRBF", "ratedCurrentA": 32, "maxVoltage": 500, "poles": 2 } ] }
+                """, false);
+        assertThat(errorsOf(saved)).isEmpty();
+
+        JsonNode exported = testPart(export());
+        JsonNode fuse = exported.get("products").get(0);
+        assertThat(fuse.get("type").asText()).isEqualTo("PROTECTION");
+        assertThat(fuse.has("specLabel")).as("computed label isn't exported").isFalse();
+        JsonNode disconnect = exported.get("products").get(1);
+        assertThat(disconnect.has("fuseClass")).as("only fuses keep a fuse class").isFalse();
+        assertThat(disconnect.get("poles").asInt()).isEqualTo(2);
+
+        mockMvc.perform(get("/api/catalog/protections")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/catalog/protections").header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.sku=='T-FUS-110')].specLabel").value("110 A · 58 V DC · MRBF"));
     }
 
     @Test

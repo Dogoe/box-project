@@ -11,6 +11,7 @@ import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.catalog.Kit;
 import com.endel.demobox.model.catalog.KitItem;
 import com.endel.demobox.model.catalog.Product;
+import com.endel.demobox.model.catalog.Protection;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.dto.catalog.KitDto;
 import com.endel.demobox.model.dto.catalog.KitItemDto;
@@ -210,6 +211,9 @@ public class KitService {
                 itemDto.setSpecLabel(formatNumber(controller.getMaxChargeCurrentA()) + " A MPPT");
             } else if (product instanceof AluminumStructure) {
                 itemDto.setProductType("STRUCTURE");
+            } else if (product instanceof Protection protection) {
+                itemDto.setProductType("PROTECTION");
+                itemDto.setSpecLabel(protection.getSpecLabel());
             } else {
                 itemDto.setProductType("OTHER");
             }
@@ -235,7 +239,8 @@ public class KitService {
     // ---- Photos ----
 
     /** Display order of a kit's parts: what defines the system first, small extras last. */
-    private static final List<String> TYPE_ORDER = List.of("INVERTER", "CHARGE_CONTROLLER", "PANEL", "BATTERY", "STRUCTURE", "CABLE", "OTHER");
+    private static final List<String> TYPE_ORDER = List.of("INVERTER", "CHARGE_CONTROLLER", "PANEL", "BATTERY", "STRUCTURE", "CABLE",
+            "PROTECTION", "OTHER");
     /** Parts that make a recognizable collage; cables and structures look like clutter as thumbnails. */
     private static final List<String> COLLAGE_TYPES = List.of("INVERTER", "CHARGE_CONTROLLER", "PANEL", "BATTERY");
     static final int COLLAGE_TILES = 4;

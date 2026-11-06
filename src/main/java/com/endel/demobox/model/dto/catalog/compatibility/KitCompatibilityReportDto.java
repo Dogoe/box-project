@@ -17,6 +17,22 @@ public class KitCompatibilityReportDto {
     private List<WiringSegmentDto> wiring = new ArrayList<>();
     /** Null when the kit has errors or lacks the data to work it out. */
     private KitExpansionDto expansion;
+    /** Fuses, breakers and disconnects the kit needs, and whether it includes them. */
+    private List<ProtectionCheckDto> protections = new ArrayList<>();
+    /** Cables and protections the kit is missing, ready to add (merged by product). */
+    private List<SuggestedItemDto> suggestedItems = new ArrayList<>();
+
+    /** Adds a suggestion, summing quantities when the same product is already suggested. */
+    public void suggest(SuggestedItemDto item) {
+        for (SuggestedItemDto existing : suggestedItems) {
+            if (existing.getProductId().equals(item.getProductId())) {
+                existing.setQuantity(existing.getQuantity() + item.getQuantity());
+                existing.setReason(existing.getReason() + "; " + item.getReason());
+                return;
+            }
+        }
+        suggestedItems.add(item);
+    }
 
     public CompatibilitySeverity getStatus() {
         return checks.stream()

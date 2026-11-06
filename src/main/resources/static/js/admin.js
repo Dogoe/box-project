@@ -81,6 +81,20 @@
         { value: 'AWG_4_0', label: '4/0 AWG' }
     ];
     const WIRE_GAUGE_LABELS = Object.fromEntries(WIRE_GAUGES.map((g) => [g.value, g.label]));
+    const PROTECTION_TYPES = [
+        { value: 'FUSE', label: 'Fusible' },
+        { value: 'DC_BREAKER', label: 'Breaker / interruptor DC de batería' },
+        { value: 'PV_DISCONNECT', label: 'Desconectador DC de paneles' },
+        { value: 'AC_BREAKER', label: 'Breaker AC (con caja)' }
+    ];
+    const PROTECTION_TYPE_LABELS = Object.fromEntries(PROTECTION_TYPES.map((t) => [t.value, t.label]));
+    const FUSE_CLASSES = [
+        { value: 'MRBF', label: 'MRBF' },
+        { value: 'ANL', label: 'ANL' },
+        { value: 'CLASS_T', label: 'Clase T' },
+        { value: 'GPV', label: 'gPV (de paneles)' },
+        { value: 'OTHER', label: 'Otro' }
+    ];
 
     const ENTITY_CONFIGS = {
         panels: {
@@ -150,6 +164,8 @@
                 { key: 'cycleLife', label: 'Ciclos de vida', type: 'number' },
                 { key: 'bmsMaxDischargeA', label: 'Corriente máx. de descarga del BMS (A) · opcional, solo litio', type: 'number', step: '0.1',
                     help: 'La que dice la ficha de la batería. Si la dejas vacía se supone su capacidad en amperes (100 Ah → 100 A) y la revisión de kits te avisa.' },
+                { key: 'integratedBreakerA', label: 'Breaker de salida integrado (A) · opcional', type: 'number', step: '0.1',
+                    help: 'Si la batería trae su propio breaker (las tipo rack), el kit no necesita fusible ni interruptor aparte para ella.' },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
         },
@@ -284,6 +300,40 @@
                 { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'gauge', label: 'Calibre', type: 'select', required: true, options: WIRE_GAUGES },
                 { key: 'lengthMeters', label: 'Longitud (m)', type: 'number', step: '0.1', required: true },
+                { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
+            ]
+        },
+        protections: {
+            label: 'Protecciones',
+            endpoint: '/api/catalog/protections',
+            columns: [
+                { key: 'imageUrl', label: '', type: 'thumb' },
+                { key: 'sku', label: 'SKU' },
+                { key: 'name', label: 'Nombre' },
+                { key: 'protectionType', label: 'Tipo', labels: PROTECTION_TYPE_LABELS },
+                { key: 'specLabel', label: 'Capacidad' },
+                { key: 'price', label: 'Precio', prefix: '$' },
+                { key: 'stockQuantity', label: 'Stock' },
+                { key: 'referenceUrl', label: 'Ref.', type: 'link' },
+                { key: 'active', label: 'Activo', type: 'boolean' }
+            ],
+            fields: [
+                { key: 'sku', label: 'SKU', type: 'text', required: true },
+                { key: 'name', label: 'Nombre', type: 'text', required: true },
+                { key: 'brand', label: 'Marca', type: 'text' },
+                { key: 'description', label: 'Descripción', type: 'textarea' },
+                { key: 'price', label: 'Precio', type: 'number', step: '0.01', required: true },
+                { key: 'stockQuantity', label: 'Stock', type: 'number', required: true, defaultValue: 0 },
+                { key: 'imageUrls', label: 'Fotos', type: 'images', folder: 'products' },
+                { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
+                { key: 'protectionType', label: 'Tipo', type: 'select', required: true, options: PROTECTION_TYPES, defaultValue: 'FUSE' },
+                { key: 'fuseClass', label: 'Clase de fusible (solo fusibles)', type: 'select', options: FUSE_CLASSES, defaultValue: 'MRBF',
+                    help: 'Clase T para bancos de litio grandes o en paralelo; MRBF hasta 58 V; ANL solo 12/24 V (32 V); gPV para cadenas de paneles.' },
+                { key: 'ratedCurrentA', label: 'Corriente nominal (A)', type: 'number', step: '0.1', required: true },
+                { key: 'maxVoltage', label: 'Voltaje máximo (V; DC, o AC en breakers AC)', type: 'number', step: '0.1', required: true,
+                    help: 'Lo que dice la pieza: p. ej. 58 V DC un MRBF, 500 V DC un desconectador, 120 V AC un breaker AC.' },
+                { key: 'poles', label: 'Polos', type: 'number', defaultValue: 1,
+                    help: 'El desconectador de paneles necesita 2 (corta positivo y negativo).' },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
         }
@@ -715,15 +765,16 @@
     // ---- Kits (own logic: nested items referencing existing products) ----
 
     async function loadAllProducts() {
-        const [panels, batteries, inverters, controllers, structures, cables] = await Promise.all([
+        const [panels, batteries, inverters, controllers, structures, cables, protections] = await Promise.all([
             authFetch('/api/catalog/panels').then((r) => r.json()),
             authFetch('/api/catalog/batteries').then((r) => r.json()),
             authFetch('/api/catalog/inverters').then((r) => r.json()),
             authFetch('/api/catalog/charge-controllers').then((r) => r.json()),
             authFetch('/api/catalog/structures').then((r) => r.json()),
-            authFetch('/api/catalog/cables').then((r) => r.json())
+            authFetch('/api/catalog/cables').then((r) => r.json()),
+            authFetch('/api/catalog/protections').then((r) => r.json())
         ]);
-        allProducts = panels.concat(batteries, inverters, controllers, structures, cables).map((p) => ({
+        allProducts = panels.concat(batteries, inverters, controllers, structures, cables, protections).map((p) => ({
             id: p.id,
             label: p.sku + ' — ' + p.name + ' ($' + p.price + ')'
         }));
@@ -802,9 +853,65 @@
         if (requestId !== compatibilityRequestId) {
             return;
         }
-        panel.innerHTML = response.ok
-            ? compatibilityHtml(await response.json())
-            : '<p class="small text-muted mb-0">No se pudo revisar la compatibilidad.</p>';
+        if (!response.ok) {
+            panel.innerHTML = '<p class="small text-muted mb-0">No se pudo revisar la compatibilidad.</p>';
+            return;
+        }
+        const report = await response.json();
+        panel.innerHTML = compatibilityHtml(report);
+        const addButton = document.getElementById('kit-add-suggested-btn');
+        if (addButton) {
+            addButton.addEventListener('click', () => addSuggestedItems(report.suggestedItems));
+        }
+    }
+
+    /** Puts the review's missing cables and protections into the kit form (not saved until "Guardar"). */
+    function addSuggestedItems(suggestions) {
+        const container = document.getElementById('kit-items-container');
+        if (!container || !suggestions || suggestions.length === 0) {
+            return;
+        }
+        suggestions.forEach((suggestion) => {
+            const existing = Array.from(container.querySelectorAll('.kit-item-row'))
+                .find((row) => Number(row.querySelector('.kit-item-product').value) === suggestion.productId);
+            if (existing) {
+                const qty = existing.querySelector('.kit-item-qty');
+                qty.value = Number(qty.value || 0) + suggestion.quantity;
+            } else {
+                container.insertAdjacentHTML('beforeend', kitItemRowHtml({ productId: suggestion.productId, quantity: suggestion.quantity }));
+            }
+        });
+        wireKitItemRemoveButtons();
+        runCompatibilityCheck();
+    }
+
+    function protectionsHtml(protections) {
+        if (!protections || protections.length === 0) {
+            return '';
+        }
+        return '<h6 class="fw-semibold mt-3 mb-1"><i class="bi bi-shield-check"></i> Protecciones</h6>' +
+            '<table class="table table-sm small mb-0"><thead><tr><th>Protección</th><th>Requisito</th><th>Cant.</th><th>En el kit</th></tr></thead><tbody>' +
+            protections.map((p) => {
+                const status = p.covered
+                    ? '<i class="bi bi-check-circle-fill text-success me-1"></i>' + escapeHtml(p.coveredBy || 'Sí')
+                    : '<i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>Falta' +
+                      (p.problem ? '<div class="text-secondary">' + escapeHtml(p.problem) + '</div>' : '') +
+                      (p.suggestion
+                          ? '<div class="text-secondary">Sugerencia: ' + escapeHtml(p.suggestion.name) + ' ($' + p.suggestion.unitPrice + ')</div>'
+                          : '<div class="text-secondary">No hay una en tu catálogo que cumpla; dala de alta en Protecciones.</div>');
+                return '<tr><td>' + escapeHtml(p.label) + '</td><td>' + escapeHtml(p.requirement) + '</td><td>' + p.quantity + '</td><td>' + status + '</td></tr>';
+            }).join('') + '</tbody></table>';
+    }
+
+    function suggestedItemsHtml(items) {
+        if (!items || items.length === 0) {
+            return '';
+        }
+        const total = items.reduce((sum, i) => sum + Number(i.unitPrice) * i.quantity, 0);
+        return '<div class="d-flex flex-wrap align-items-center gap-2 mt-3">' +
+            '<button type="button" class="btn btn-sm btn-success" id="kit-add-suggested-btn"><i class="bi bi-magic"></i> Agregar sugeridos</button>' +
+            '<span class="small text-secondary">' + items.map((i) => i.quantity + ' × ' + escapeHtml(i.name)).join(' · ') +
+            ' — suma $' + total.toFixed(2) + ' al costo</span></div>';
     }
 
     function compatibilityHtml(report) {
@@ -836,7 +943,8 @@
         return '<div class="border rounded p-3 bg-body-tertiary">' +
             '<h6 class="fw-semibold mb-2"><i class="bi bi-plug"></i> Revisión de compatibilidad</h6>' +
             (summary ? '<div class="small mb-2">' + summary + '</div>' : '') +
-            checks + expansionHtml(report.expansion) + wiring +
+            checks + expansionHtml(report.expansion) + wiring + protectionsHtml(report.protections) +
+            suggestedItemsHtml(report.suggestedItems) +
             '</div>';
     }
 
@@ -1384,6 +1492,10 @@
                 ratedPowerKw: 3, surgePowerKw: 6, inverterType: 'HYBRID', builtInCharger: true, mpptChannels: 1,
                 maxInputVoltage: 500, batteryVoltage: 24, mpptMinVoltage: 60, mpptMaxChargeCurrentA: 100,
                 mpptMaxInputCurrentA: 22, maxPvInputPowerW: 4000
+            },
+            {
+                type: 'PROTECTION', sku: 'FUS-MRBF-110', name: 'Fusible MRBF 110 A 58 V con base', price: 350.00, stockQuantity: 5,
+                protectionType: 'FUSE', fuseClass: 'MRBF', ratedCurrentA: 110, maxVoltage: 58
             }
         ],
         kits: [

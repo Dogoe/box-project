@@ -44,6 +44,14 @@ public class Battery extends Product {
     @Column(name = "bms_max_discharge_a")
     private Double bmsMaxDischargeA;
 
+    /**
+     * Rating of the output breaker built into the battery (rack batteries usually have one), in amps.
+     * When set, the kit doesn't need a separate main fuse and battery switch for it.
+     */
+    @Positive
+    @Column(name = "integrated_breaker_a")
+    private Double integratedBreakerA;
+
     public double getCapacityKwh() {
         return capacityAh == null ? 0 : capacityAh * voltage / 1000.0;
     }

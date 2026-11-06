@@ -32,7 +32,7 @@ En el admin, en **Configuración → Catálogo: exportar / importar**, puedes:
 
 | Campo | Obligatorio | Qué es |
 |---|---|---|
-| `type` | sí | `SOLAR_PANEL`, `BATTERY`, `INVERTER`, `CHARGE_CONTROLLER`, `CABLE` o `STRUCTURE` |
+| `type` | sí | `SOLAR_PANEL`, `BATTERY`, `INVERTER`, `CHARGE_CONTROLLER`, `CABLE`, `STRUCTURE` o `PROTECTION` |
 | `sku` | sí | Tu código único del producto, p. ej. `PNL-550-MONO` |
 | `name` | sí | Nombre que ve el cliente |
 | `brand` | no | Marca |
@@ -65,6 +65,7 @@ Los números van sin comillas (`550`, `21.3`); los textos, con comillas (`"Jinko
 | `chemistry` | no | `LIFEPO4` (si no viene), `LITHIUM_ION`, `LEAD_ACID`, `GEL` o `AGM` |
 | `cycleLife` | no | Ciclos de vida |
 | `bmsMaxDischargeA` | no | Solo litio: corriente máxima continua de descarga de su BMS (A), de la ficha. Sin ella se supone su capacidad en amperes (100 Ah → 100 A) |
+| `integratedBreakerA` | no | Breaker de salida que ya trae la batería (A), p. ej. las tipo rack. Con él el kit no pide fusible ni interruptor aparte para esa batería |
 
 Los kWh y la profundidad de descarga se calculan solos. La corriente máxima es la del BMS si la capturas.
 
@@ -108,6 +109,36 @@ Con `builtInCharger: false`, los campos `mppt…`, `maxInputVoltage` y `maxPvInp
 ### Estructura de aluminio: `"type": "STRUCTURE"`
 
 Solo los campos comunes.
+
+### Protección: `"type": "PROTECTION"`
+
+Fusibles, breakers y desconectadores. Se agregan al kit como cualquier producto (cuentan en su costo) y la revisión del kit dice cuáles necesita.
+
+| Campo | Obligatorio | Qué es |
+|---|---|---|
+| `protectionType` | sí | `FUSE` (fusible), `DC_BREAKER` (breaker o interruptor DC de batería), `PV_DISCONNECT` (desconectador DC de paneles) o `AC_BREAKER` (breaker AC de salida, con caja) |
+| `fuseClass` | solo fusibles | `MRBF`, `ANL`, `CLASS_T`, `GPV` (fusible de cadena de paneles) u `OTHER` |
+| `ratedCurrentA` | sí | Corriente nominal (A) |
+| `maxVoltage` | sí | Voltaje máximo que aguanta: DC en fusibles, breakers DC y desconectadores; AC en breakers AC |
+| `poles` | no | Polos (si no viene: 1). El desconectador de paneles necesita 2 |
+
+Ejemplo:
+
+```json
+{ "type": "PROTECTION", "sku": "FUS-MRBF-110", "name": "Fusible MRBF 110 A 58 V con base", "price": 350,
+  "protectionType": "FUSE", "fuseClass": "MRBF", "ratedCurrentA": 110, "maxVoltage": 58 }
+```
+
+Qué pide la revisión del kit:
+
+- **Fusible principal de batería**: entre la corriente de diseño del tramo batería–inversor y lo que aguanta su cable, con voltaje de al menos 1.2 × el del banco (14.4 / 28.8 / 57.6 V). **Clase T** si es litio con baterías en paralelo o más de 300 A.
+- **Interruptor / breaker DC de batería**: al menos la corriente de diseño de ese tramo.
+- **Protección controlador – batería** (solo con controlador aparte): fusible o breaker DC, como el fusible principal.
+- **Desconectador DC de paneles**: 2 polos, al menos el voltaje de la cadena en frío y 1.25 × su corriente.
+- **Fusible por cadena** (`GPV`, solo con 3 o más cadenas en paralelo).
+- **Breaker AC de salida**: potencia del inversor ÷ 120 V × 1.25, al tamaño comercial siguiente (o uno más).
+
+Una batería con `integratedBreakerA` cubre el interruptor, y también el fusible si es una sola cadena de baterías y su breaker no pasa de lo que aguanta el cable.
 
 ### Kits
 

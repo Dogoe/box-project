@@ -6,6 +6,7 @@ import com.endel.demobox.model.catalog.ConnectionCable;
 import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.catalog.InverterType;
 import com.endel.demobox.model.catalog.Product;
+import com.endel.demobox.model.catalog.Protection;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.catalog.WireGauge;
 import com.endel.demobox.model.dto.WiringSettingsDto;
@@ -14,6 +15,7 @@ import com.endel.demobox.model.dto.catalog.compatibility.ExpansionAspectDto;
 import com.endel.demobox.model.dto.catalog.compatibility.ExpansionLevel;
 import com.endel.demobox.model.dto.catalog.compatibility.KitCompatibilityReportDto;
 import com.endel.demobox.model.dto.catalog.compatibility.KitExpansionDto;
+import com.endel.demobox.model.dto.catalog.compatibility.SuggestedItemDto;
 import com.endel.demobox.model.dto.catalog.compatibility.WiringSegmentDto;
 import com.endel.demobox.repository.catalog.ConnectionCableRepository;
 import org.springframework.stereotype.Service;
@@ -61,9 +63,11 @@ public class KitCompatibilityService {
             225, 250, 300, 350, 400, 450, 500};
 
     private final ConnectionCableRepository cableRepository;
+    private final KitProtectionPlanner protectionPlanner;
 
-    public KitCompatibilityService(ConnectionCableRepository cableRepository) {
+    public KitCompatibilityService(ConnectionCableRepository cableRepository, KitProtectionPlanner protectionPlanner) {
         this.cableRepository = cableRepository;
+        this.protectionPlanner = protectionPlanner;
     }
 
     public KitCompatibilityReportDto analyze(List<KitLine> lines, WiringSettingsDto lengths) {
@@ -97,17 +101,32 @@ public class KitCompatibilityService {
         PvArray pv = charger == null ? null : analyzePanels(report, panels, charger);
 
         List<WiringSegmentDto> segments = new ArrayList<>();
+        WiringSegmentDto batteryRun = null;
+        WiringSegmentDto controllerRun = null;
+        WiringSegmentDto pvRun = null;
         if (bank != null) {
-            segments.add(batteryToInverterSegment(report, inverter, charger, bank, lengths.getBatteryToInverterMeters()));
+            batteryRun = batteryToInverterSegment(report, inverter, charger, bank, lengths.getBatteryToInverterMeters());
+            segments.add(batteryRun);
             if (charger != null && !charger.builtIn()) {
-                segments.add(controllerToBatterySegment(report, charger, lengths.getControllerToBatteryMeters()));
+                controllerRun = controllerToBatterySegment(report, charger, lengths.getControllerToBatteryMeters());
+                segments.add(controllerRun);
             }
         }
         if (pv != null) {
-            segments.add(pvSegment(report, pv, charger, lengths.getPvToInverterMeters()));
+            pvRun = pvSegment(report, pv, charger, lengths.getPvToInverterMeters());
+            segments.add(pvRun);
         }
         report.setWiring(segments);
         checkKitCables(report, cables, segments);
+
+        double busVolts = inverter.getBatteryVoltage() == null ? 0 : inverter.getBatteryVoltage();
+        protectionPlanner.plan(report, new KitProtectionPlanner.Input(busVolts,
+                batteryRun, bank == null ? null : bank.battery(), bank == null ? 0 : bank.parallel(),
+                controllerRun,
+                pvRun, pv == null ? 0 : pv.strings(), pv == null ? 0 : pv.stringsPerChannel(), pv == null ? 0 : pv.channels(),
+                pv == null ? 0 : pv.series() * pv.panel().getVoc() * PV_COLD_VOC_FACTOR,
+                pv == null ? 0 : pv.panelIscA(),
+                inverter.getRatedPowerKw()), ofType(lines, Protection.class));
 
         if (report.getStatus() != CompatibilitySeverity.ERROR) {
             report.setExpansion(expansion(inverter, charger, !panels.isEmpty(), !batteries.isEmpty(), pv, bank));
@@ -676,19 +695,24 @@ public class KitCompatibilityService {
                 report.ok(String.format(Locale.US, "%s: el kit incluye cable suficiente (%s m de %s o más grueso).",
                         segment.getSegment(), fmt(needed), segment.getGaugeLabel()));
             } else {
+                Optional<ConnectionCable> suggestion = suggestCable(segment.getGauge());
                 report.warn(String.format(Locale.US,
                         "%s: se necesitan %s m de cable %s o más grueso (positivo y negativo) y el kit cubre %s m.%s",
                         segment.getSegment(), fmt(needed), segment.getGaugeLabel(), fmt(covered),
-                        suggestCable(segment.getGauge()).map(s -> " Sugerencia: " + s + ".").orElse("")));
+                        suggestion.map(c -> " Sugerencia: " + c.getSku() + " – " + c.getName() + " (" + c.getGauge().getLabel()
+                                + ", " + fmt(c.getLengthMeters()) + " m).").orElse("")));
+                double missingMeters = needed - covered;
+                suggestion.filter(c -> c.getLengthMeters() > 0).ifPresent(c -> report.suggest(new SuggestedItemDto(
+                        c.getId(), c.getSku(), c.getName(), (int) Math.ceil(missingMeters / c.getLengthMeters() - 1e-9),
+                        c.getPrice(), segment.getSegment())));
             }
         }
     }
 
-    private Optional<String> suggestCable(WireGauge required) {
+    private Optional<ConnectionCable> suggestCable(WireGauge required) {
         return cableRepository.findAll().stream()
                 .filter(c -> c.isActive() && c.getGauge() != null && c.getGauge().isAtLeast(required))
-                .min(Comparator.comparing(ConnectionCable::getGauge).thenComparing(ConnectionCable::getPrice))
-                .map(c -> c.getSku() + " – " + c.getName() + " (" + c.getGauge().getLabel() + ", " + fmt(c.getLengthMeters()) + " m)");
+                .min(Comparator.comparing(ConnectionCable::getGauge).thenComparing(ConnectionCable::getPrice));
     }
 
     // ---- Helpers ----

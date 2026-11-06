@@ -10,6 +10,7 @@ import com.endel.demobox.model.catalog.ConnectionCable;
 import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.catalog.Kit;
 import com.endel.demobox.model.catalog.Product;
+import com.endel.demobox.model.catalog.Protection;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.dto.catalog.AluminumStructureDto;
 import com.endel.demobox.model.dto.catalog.BatteryDto;
@@ -18,6 +19,7 @@ import com.endel.demobox.model.dto.catalog.ConnectionCableDto;
 import com.endel.demobox.model.dto.catalog.InverterDto;
 import com.endel.demobox.model.dto.catalog.KitDto;
 import com.endel.demobox.model.dto.catalog.KitItemDto;
+import com.endel.demobox.model.dto.catalog.ProtectionDto;
 import com.endel.demobox.model.dto.catalog.SolarPanelDto;
 import com.endel.demobox.model.dto.catalog.transfer.CatalogImportResultDto;
 import com.endel.demobox.model.dto.catalog.transfer.CatalogImportResultDto.Action;
@@ -92,7 +94,8 @@ public class CatalogTransferService {
                                   SolarPanelService solarPanelService, BatteryService batteryService,
                                   InverterService inverterService, ChargeControllerService chargeControllerService,
                                   ConnectionCableService connectionCableService,
-                                  AluminumStructureService aluminumStructureService) {
+                                  AluminumStructureService aluminumStructureService,
+                                  ProtectionService protectionService) {
         this.objectMapper = objectMapper;
         // Exact decimals for prices; the numbers are only converted when mapped onto each DTO field.
         this.reader = objectMapper.reader().with(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
@@ -120,6 +123,9 @@ public class CatalogTransferService {
         register(new ProductType<>("STRUCTURE", "Estructura", AluminumStructureDto.class, AluminumStructure.class,
                 aluminumStructureService::findAll, aluminumStructureService::getById, aluminumStructureService::create,
                 aluminumStructureService::update, Set.of()));
+        register(new ProductType<>("PROTECTION", "Protección", ProtectionDto.class, Protection.class,
+                protectionService::findAll, protectionService::getById, protectionService::create,
+                protectionService::update, Set.of("specLabel")));
     }
 
     private void register(ProductType<?> type) {
