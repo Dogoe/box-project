@@ -56,7 +56,9 @@ public class KitCompatibilityService {
     // PV strings need their own fuse once 3+ are paralleled on one input (Isc x 1.56).
     static final int MIN_PARALLEL_STRINGS_NEEDING_FUSE = 3;
     static final double PV_STRING_FUSE_FACTOR = 1.56;
-    static final int[] STANDARD_FUSES_A = {10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 500};
+    // Standard fuse and breaker ratings (NEC 240.6), plus 10 A for small DC circuits.
+    static final int[] STANDARD_FUSES_A = {10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200,
+            225, 250, 300, 350, 400, 450, 500};
 
     private final ConnectionCableRepository cableRepository;
 
@@ -516,10 +518,19 @@ public class KitCompatibilityService {
                 chargeA = charger.chargeCurrentA();
             }
         }
-        double operatingA = Math.max(dischargeA, chargeA);
+        // A lithium bank can't deliver more than its BMS allows (it cuts off), so the cable only has to
+        // carry that. Lead-acid has no such limit and delivers whatever the inverter pulls.
+        Battery battery = bank.battery();
+        boolean limitedByBms = battery.getChemistry().hasBms() && bank.maxDischargeA() > 0 && dischargeA > bank.maxDischargeA();
+        double cableDischargeA = limitedByBms ? bank.maxDischargeA() : dischargeA;
+        double operatingA = Math.max(cableDischargeA, chargeA);
 
         WiringSegmentDto segment = sizeSegment(report, "Batería – inversor", operatingA, busVolts, lengthMeters);
         segment.setFuseNote("Fusible o breaker DC entre batería e inversor");
+        if (limitedByBms && cableDischargeA >= chargeA) {
+            segment.setCurrentNote(String.format(Locale.US, "Limitada por el BMS del banco (%s A; el inversor podría pedir %s A)",
+                    fmt(bank.maxDischargeA()), fmt(dischargeA)));
+        }
 
         if (operatingA > HIGH_CURRENT_WARNING_A && busVolts < 48) {
             // Only suggest voltages above the current one: a 12 V system can go to 24 or 48 V, a 24 V one only to 48 V.
@@ -529,8 +540,15 @@ public class KitCompatibilityService {
         }
         if (bank.maxDischargeA() > 0 && dischargeA > bank.maxDischargeA()) {
             report.warn(String.format(Locale.US,
-                    "El banco entrega máx. ~%s A continuos y el inversor puede pedir %s A; agrega baterías en paralelo o usa un inversor menor.",
-                    fmt(bank.maxDischargeA()), fmt(dischargeA)));
+                    "El banco entrega máx. ~%s A continuos y el inversor puede pedir %s A; agrega baterías en paralelo o usa un inversor menor.%s",
+                    fmt(bank.maxDischargeA()), fmt(dischargeA),
+                    limitedByBms ? " El cable batería–inversor se calculó con esos " + fmt(bank.maxDischargeA()) + " A, porque el BMS corta antes." : ""));
+            if (battery.isBmsCurrentAssumed()) {
+                report.warn(String.format(Locale.US,
+                        "La batería %s no tiene capturada la corriente máxima de su BMS; se supuso %s A (igual a su capacidad en Ah). "
+                                + "Revisa su ficha: si su BMS permite más, el fusible se botará antes de que el cable se caliente.",
+                        battery.getName(), fmt(battery.getMaxDischargeCurrentA())));
+            }
         }
         return segment;
     }
@@ -545,7 +563,9 @@ public class KitCompatibilityService {
     private WiringSegmentDto pvSegment(KitCompatibilityReportDto report, PvArray pv, SolarCharger charger, double lengthMeters) {
         double operatingA = pv.panelIscA() * pv.stringsPerChannel();
         String name = charger.builtIn() ? "Paneles – inversor (MPPT)" : "Paneles – controlador MPPT";
-        WiringSegmentDto segment = sizeSegment(report, name, operatingA, pv.stringVmp(), lengthMeters);
+        // Panels can briefly exceed their rated Isc in strong sun, so PV wiring uses Isc x 1.56 (NEC 690.8)
+        // instead of the 1.25 used for the other runs.
+        WiringSegmentDto segment = sizeSegment(report, name, operatingA, pv.stringVmp(), lengthMeters, PV_STRING_FUSE_FACTOR);
         segment.setConnector(pv.panel().getConnector().getLabel());
         if (pv.stringsPerChannel() >= MIN_PARALLEL_STRINGS_NEEDING_FUSE) {
             segment.setFuseA(standardFuse(pv.panelIscA() * PV_STRING_FUSE_FACTOR));
@@ -558,16 +578,24 @@ public class KitCompatibilityService {
     }
 
     private WiringSegmentDto sizeSegment(KitCompatibilityReportDto report, String name, double operatingA, double volts, double lengthMeters) {
-        double designA = operatingA * CURRENT_SAFETY_FACTOR;
+        return sizeSegment(report, name, operatingA, volts, lengthMeters, CURRENT_SAFETY_FACTOR);
+    }
+
+    private WiringSegmentDto sizeSegment(KitCompatibilityReportDto report, String name, double operatingA, double volts,
+                                         double lengthMeters, double designFactor) {
+        double designA = operatingA * designFactor;
         WiringSegmentDto segment = new WiringSegmentDto();
         segment.setSegment(name);
         segment.setOperatingCurrentA(round1(operatingA));
         segment.setDesignCurrentA(round1(designA));
         segment.setLengthMeters(lengthMeters);
 
+        // The fuse protects the cable, so the cable must carry at least the fuse's rating.
+        Integer fuseA = standardFuse(designA);
+        double neededAmpacity = fuseA != null ? fuseA : designA;
         for (WireGauge gauge : WireGauge.values()) {
             double drop = voltageDropPercent(gauge, operatingA, volts, lengthMeters);
-            if (gauge.getAmpacityA() >= designA && drop <= MAX_VOLTAGE_DROP_PERCENT) {
+            if (gauge.getAmpacityA() >= neededAmpacity && drop <= MAX_VOLTAGE_DROP_PERCENT) {
                 segment.setGauge(gauge);
                 segment.setGaugeLabel(gauge.getLabel());
                 segment.setVoltageDropPercent(round1(drop));
@@ -579,7 +607,7 @@ public class KitCompatibilityService {
                     "%s: %s A a %s m superan lo que maneja un solo cable 4/0 AWG; usa un banco de mayor voltaje o cables en paralelo.",
                     name, fmt(operatingA), fmt(lengthMeters)));
         }
-        segment.setFuseA(standardFuse(designA));
+        segment.setFuseA(fuseA);
         return segment;
     }
 

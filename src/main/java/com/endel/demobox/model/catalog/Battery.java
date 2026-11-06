@@ -36,6 +36,14 @@ public class Battery extends Product {
 
     private Integer cycleLife;
 
+    /**
+     * Continuous discharge current the battery's BMS allows, from its datasheet (lithium only).
+     * Optional: without it a lithium battery is assumed to deliver its capacity in amps (1C).
+     */
+    @Positive
+    @Column(name = "bms_max_discharge_a")
+    private Double bmsMaxDischargeA;
+
     public double getCapacityKwh() {
         return capacityAh == null ? 0 : capacityAh * voltage / 1000.0;
     }
@@ -45,6 +53,14 @@ public class Battery extends Product {
     }
 
     public double getMaxDischargeCurrentA() {
+        if (chemistry.hasBms() && bmsMaxDischargeA != null) {
+            return bmsMaxDischargeA;
+        }
         return capacityAh == null ? 0 : capacityAh * chemistry.getMaxDischargeCRate();
+    }
+
+    /** True when the current above is the 1C assumption for a lithium battery without its BMS rating. */
+    public boolean isBmsCurrentAssumed() {
+        return chemistry.hasBms() && bmsMaxDischargeA == null;
     }
 }

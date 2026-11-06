@@ -148,6 +148,8 @@
                 { key: 'chemistry', label: 'Química (define la profundidad de descarga)', type: 'select', required: true,
                     options: ['LIFEPO4', 'LITHIUM_ION', 'LEAD_ACID', 'GEL', 'AGM'], defaultValue: 'LIFEPO4' },
                 { key: 'cycleLife', label: 'Ciclos de vida', type: 'number' },
+                { key: 'bmsMaxDischargeA', label: 'Corriente máx. de descarga del BMS (A) · opcional, solo litio', type: 'number', step: '0.1',
+                    help: 'La que dice la ficha de la batería. Si la dejas vacía se supone su capacidad en amperes (100 Ah → 100 A) y la revisión de kits te avisa.' },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
         },
@@ -819,11 +821,12 @@
             : '<p class="small text-muted mb-0">Agrega inversor, baterías y paneles para revisar compatibilidad.</p>';
 
         const wiring = report.wiring.length
-            ? '<table class="table table-sm small mt-3 mb-0"><thead><tr><th>Tramo</th><th>Corriente</th><th>Calibre</th><th>Caída</th><th>Fusible</th></tr></thead><tbody>' +
+            ? '<table class="table table-sm small mt-3 mb-0"><thead><tr><th>Tramo</th><th title="A la potencia nominal del equipo; el arranque (pico) dura segundos y no define el cable">Corriente máx. continua</th><th>Calibre</th><th>Caída</th><th>Fusible</th></tr></thead><tbody>' +
               report.wiring.map((w) =>
                   '<tr><td>' + escapeHtml(w.segment) +
                   (w.connector ? '<div class="text-secondary">Cable con conector ' + escapeHtml(w.connector) + '</div>' : '') + '</td>' +
-                  '<td>' + w.operatingCurrentA + ' A</td>' +
+                  '<td>' + w.operatingCurrentA + ' A' +
+                  (w.currentNote ? '<div class="text-secondary">' + escapeHtml(w.currentNote) + '</div>' : '') + '</td>' +
                   '<td>' + (w.gaugeLabel ? escapeHtml(w.gaugeLabel) : '—') + ' · ' + w.lengthMeters + ' m</td>' +
                   '<td>' + (w.gaugeLabel ? w.voltageDropPercent + ' %' : '—') + '</td>' +
                   '<td>' + (w.fuseA ? w.fuseA + ' A' : '—') + '</td></tr>'
