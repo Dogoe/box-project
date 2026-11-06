@@ -19,7 +19,9 @@ public class KitCompatibilityReportDto {
     private KitExpansionDto expansion;
     /** Fuses, breakers and disconnects the kit needs, and whether it includes them. */
     private List<ProtectionCheckDto> protections = new ArrayList<>();
-    /** Cables and protections the kit is missing, ready to add (merged by product). */
+    /** Cable lugs the kit needs, by gauge and stud size. Informational: never a warning. */
+    private List<TerminalNeedDto> terminals = new ArrayList<>();
+    /** Cables, protections and terminals the kit is missing, ready to add (merged by product). */
     private List<SuggestedItemDto> suggestedItems = new ArrayList<>();
 
     /** Adds a suggestion, summing quantities when the same product is already suggested. */

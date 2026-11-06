@@ -32,7 +32,7 @@ En el admin, en **Configuración → Catálogo: exportar / importar**, puedes:
 
 | Campo | Obligatorio | Qué es |
 |---|---|---|
-| `type` | sí | `SOLAR_PANEL`, `BATTERY`, `INVERTER`, `CHARGE_CONTROLLER`, `CABLE`, `STRUCTURE` o `PROTECTION` |
+| `type` | sí | `SOLAR_PANEL`, `BATTERY`, `INVERTER`, `CHARGE_CONTROLLER`, `CABLE`, `STRUCTURE`, `PROTECTION` o `TERMINAL` |
 | `sku` | sí | Tu código único del producto, p. ej. `PNL-550-MONO` |
 | `name` | sí | Nombre que ve el cliente |
 | `brand` | no | Marca |
@@ -66,6 +66,7 @@ Los números van sin comillas (`550`, `21.3`); los textos, con comillas (`"Jinko
 | `cycleLife` | no | Ciclos de vida |
 | `bmsMaxDischargeA` | no | Solo litio: corriente máxima continua de descarga de su BMS (A), de la ficha. Sin ella se supone su capacidad en amperes (100 Ah → 100 A) |
 | `integratedBreakerA` | no | Breaker de salida que ya trae la batería (A), p. ej. las tipo rack. Con él el kit no pide fusible ni interruptor aparte para esa batería |
+| `terminalSize` | no | Borne de la batería: `M8` (si no viene), `M6` o `M10` |
 
 Los kWh y la profundidad de descarga se calculan solos. La corriente máxima es la del BMS si la capturas.
 
@@ -84,6 +85,7 @@ Los kWh y la profundidad de descarga se calculan solos. La corriente máxima es 
 | `mpptMaxChargeCurrentA` | no | Corriente máxima de carga a la batería (A) |
 | `mpptMaxInputCurrentA` | no | Corriente PV máxima por entrada (A) |
 | `maxPvInputPowerW` | no | Potencia PV máxima (W) |
+| `terminalSize` | no | Borne de la entrada de batería: `M8` (si no viene), `M6` o `M10` |
 
 Con `builtInCharger: false`, los campos `mppt…`, `maxInputVoltage` y `maxPvInputPowerW` se ignoran.
 
@@ -121,6 +123,7 @@ Fusibles, breakers y desconectadores. Se agregan al kit como cualquier producto 
 | `ratedCurrentA` | sí | Corriente nominal (A) |
 | `maxVoltage` | sí | Voltaje máximo que aguanta: DC en fusibles, breakers DC y desconectadores; AC en breakers AC |
 | `poles` | no | Polos (si no viene: 1). El desconectador de paneles necesita 2 |
+| `terminalSize` | no | Borne donde se atornillan los cables: `M8` (si no viene), `M6` o `M10` |
 
 Ejemplo:
 
@@ -139,6 +142,31 @@ Qué pide la revisión del kit:
 - **Breaker AC de salida**: potencia del inversor ÷ 120 V × 1.25, al tamaño comercial siguiente (o uno más).
 
 Una batería con `integratedBreakerA` cubre el interruptor, y también el fusible si es una sola cadena de baterías y su breaker no pasa de lo que aguanta el cable.
+
+### Terminal: `"type": "TERMINAL"`
+
+Terminales de ojillo para los cables gruesos, que se venden aparte de los cables.
+
+| Campo | Obligatorio | Qué es |
+|---|---|---|
+| `gauge` | sí | Calibre del cable que lleva (igual que en cables, p. ej. `AWG_2`) |
+| `terminalSize` | no | Tamaño del ojillo: `M8` (si no viene), `M6` o `M10` |
+| `piecesPerPack` | no | Piezas por paquete (si no viene: 1). El `price` es el del paquete |
+
+Ejemplo:
+
+```json
+{ "type": "TERMINAL", "sku": "TER-2AWG-M8-10", "name": "Terminal cobre estañado 2 AWG M8 (bolsa de 10)", "price": 120,
+  "gauge": "AWG_2", "terminalSize": "M8", "piecesPerPack": 10 }
+```
+
+La revisión del kit cuenta cuántas necesita (solo informativo, no marca advertencias):
+
+- **Batería – inversor:** 2 con el borne de la batería y 2 con el del inversor.
+- **Cada protección en serie** (breaker DC, portafusible ANL o Clase T): 2 más, con su borne. El fusible **MRBF no suma** porque va montado en el borne de la batería.
+- **Controlador – batería** (solo con MPPT aparte): 2 del lado de la batería, más 2 por cada protección en serie.
+- El calibre es el del cable que trae el kit para ese tramo. Paneles (MC4) y salida AC no llevan.
+- Se redondean a paquetes, y entran en "Agregar sugeridos".
 
 ### Kits
 

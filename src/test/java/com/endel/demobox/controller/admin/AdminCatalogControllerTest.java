@@ -225,7 +225,7 @@ class AdminCatalogControllerTest {
         assertThat(errorsOf(result)).containsExactly(
                 "T-NO-AH: Falta «capacityAh».",
                 "T-CHEM: «chemistry»: «NUCLEAR» no es válido; usa uno de: LIFEPO4, LITHIUM_ION, LEAD_ACID, GEL, AGM.",
-                "T-TYPE: El tipo «PANEL» no existe; usa uno de: SOLAR_PANEL, BATTERY, INVERTER, CHARGE_CONTROLLER, CABLE, STRUCTURE, PROTECTION.",
+                "T-TYPE: El tipo «PANEL» no existe; usa uno de: SOLAR_PANEL, BATTERY, INVERTER, CHARGE_CONTROLLER, CABLE, STRUCTURE, PROTECTION, TERMINAL.",
                 "T-TYPO: Campos desconocidos para panel solar: «potencia».",
                 "T-OK: El SKU «T-OK» está repetido en el archivo (también en el producto 1).",
                 "TEST Kit roto: Producto 1 del kit: no existe un producto con SKU «T-NO-EXISTE» (ni en el archivo ni en la tienda).",
@@ -294,6 +294,43 @@ class AdminCatalogControllerTest {
         mockMvc.perform(get("/api/catalog/protections").header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.sku=='T-FUS-110')].specLabel").value("110 A · 58 V DC · MRBF"));
+    }
+
+    @Test
+    void terminalsAndStudSizesImportAndExport() throws Exception {
+        JsonNode saved = importFile("""
+                { "products": [
+                    { "type": "TERMINAL", "sku": "T-TER-2-M8", "name": "Terminal 2 AWG M8 (bolsa de 10)", "price": 120,
+                      "gauge": "AWG_2", "piecesPerPack": 10 },
+                    { "type": "BATTERY", "sku": "T-BAT-M10", "name": "Batería M10", "price": 1, "capacityAh": 100, "voltage": 12.8,
+                      "terminalSize": "M10" },
+                    { "type": "BATTERY", "sku": "T-BAT-DEF", "name": "Batería sin borne", "price": 1, "capacityAh": 100, "voltage": 12.8 } ] }
+                """, false);
+        assertThat(errorsOf(saved)).isEmpty();
+
+        JsonNode exported = testPart(export());
+        JsonNode battery10 = null;
+        JsonNode batteryDefault = null;
+        JsonNode terminal = null;
+        for (JsonNode p : exported.get("products")) {
+            switch (p.get("sku").asText()) {
+                case "T-BAT-M10" -> battery10 = p;
+                case "T-BAT-DEF" -> batteryDefault = p;
+                case "T-TER-2-M8" -> terminal = p;
+                default -> { }
+            }
+        }
+        assertThat(battery10.get("terminalSize").asText()).isEqualTo("M10");
+        assertThat(batteryDefault.get("terminalSize").asText()).as("missing -> M8").isEqualTo("M8");
+        assertThat(terminal.get("type").asText()).isEqualTo("TERMINAL");
+        assertThat(terminal.get("terminalSize").asText()).isEqualTo("M8");
+        assertThat(terminal.get("piecesPerPack").asInt()).isEqualTo(10);
+        assertThat(terminal.has("specLabel")).isFalse();
+
+        mockMvc.perform(get("/api/catalog/terminals")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/catalog/terminals").header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.sku=='T-TER-2-M8')].specLabel").value("2 AWG · M8 · bolsa de 10"));
     }
 
     @Test

@@ -55,8 +55,23 @@ public class KitProtectionPlanner {
                         double inverterKw) {
     }
 
+    /** Which cable run a protection is wired into (its terminals are counted on that run's cable). */
+    enum Run { BATTERY, CONTROLLER, OTHER }
+
+    /** The protections that end up on each run: the kit's own, or the suggested ones when it lacks them. */
+    public record ProtectionPlan(List<Protection> batteryRun, List<Protection> controllerRun) {
+        static ProtectionPlan empty() {
+            return new ProtectionPlan(List.of(), List.of());
+        }
+    }
+
     record Requirement(String label, int quantity, Set<ProtectionType> types, double minA, double maxA, double minV,
-                       int minPoles, Set<FuseClass> fuseClasses) {
+                       int minPoles, Set<FuseClass> fuseClasses, Run run) {
+
+        Requirement(String label, int quantity, Set<ProtectionType> types, double minA, double maxA, double minV,
+                    int minPoles, Set<FuseClass> fuseClasses) {
+            this(label, quantity, types, minA, maxA, minV, minPoles, fuseClasses, Run.OTHER);
+        }
 
         boolean isMetBy(Protection p) {
             return problemWith(p) == null;
@@ -102,7 +117,7 @@ public class KitProtectionPlanner {
         }
     }
 
-    public void plan(KitCompatibilityReportDto report, Input in, List<KitLine> protectionLines) {
+    public ProtectionPlan plan(KitCompatibilityReportDto report, Input in, List<KitLine> protectionLines) {
         List<Requirement> requirements = new ArrayList<>();
         double chargeVolts = round1(in.busVolts() * CHARGE_VOLTAGE_FACTOR);
 
@@ -130,20 +145,20 @@ public class KitProtectionPlanner {
                             + fmt(builtIn) + " A)", 1));
                 } else {
                     requirements.add(new Requirement("Fusible principal de batería", 1, EnumSet.of(ProtectionType.FUSE),
-                            designA, cableA, chargeVolts, 1, fuseClasses));
+                            designA, cableA, chargeVolts, 1, fuseClasses, Run.BATTERY));
                 }
             } else {
                 requirements.add(new Requirement("Fusible principal de batería", 1, EnumSet.of(ProtectionType.FUSE),
-                        designA, cableA, chargeVolts, 1, fuseClasses));
+                        designA, cableA, chargeVolts, 1, fuseClasses, Run.BATTERY));
                 requirements.add(new Requirement("Interruptor / breaker DC de batería", 1, EnumSet.of(ProtectionType.DC_BREAKER),
-                        designA, Double.MAX_VALUE, chargeVolts, 1, BATTERY_FUSES));
+                        designA, Double.MAX_VALUE, chargeVolts, 1, BATTERY_FUSES, Run.BATTERY));
             }
         }
 
         WiringSegmentDto controllerRun = in.controllerRun();
         if (controllerRun != null && controllerRun.getGauge() != null) {
             requirements.add(new Requirement("Protección controlador – batería", 1, EnumSet.of(ProtectionType.FUSE, ProtectionType.DC_BREAKER),
-                    controllerRun.getDesignCurrentA(), controllerRun.getGauge().getAmpacityA(), chargeVolts, 1, BATTERY_FUSES));
+                    controllerRun.getDesignCurrentA(), controllerRun.getGauge().getAmpacityA(), chargeVolts, 1, BATTERY_FUSES, Run.CONTROLLER));
         }
 
         WiringSegmentDto pvRun = in.pvRun();
@@ -169,10 +184,12 @@ public class KitProtectionPlanner {
             }
         }
 
-        cover(report, requirements, protectionLines);
+        return cover(report, requirements, protectionLines);
     }
 
-    private void cover(KitCompatibilityReportDto report, List<Requirement> requirements, List<KitLine> protectionLines) {
+    private ProtectionPlan cover(KitCompatibilityReportDto report, List<Requirement> requirements, List<KitLine> protectionLines) {
+        List<Protection> onBatteryRun = new ArrayList<>();
+        List<Protection> onControllerRun = new ArrayList<>();
         List<Pool> pools = protectionLines.stream()
                 .map(line -> new Pool((Protection) line.product(), line.quantity()))
                 .sorted(Comparator.comparingDouble(p -> p.protection.getRatedCurrentA()))
@@ -196,6 +213,7 @@ public class KitProtectionPlanner {
                     pool.remaining -= take;
                     missing -= take;
                     used.add(take + " × " + pool.protection.getName());
+                    record(requirement, pool.protection, take, onBatteryRun, onControllerRun);
                 }
             }
             row.setCovered(missing == 0);
@@ -215,6 +233,7 @@ public class KitProtectionPlanner {
                         .filter(p -> p.isActive() && requirement.isMetBy(p))
                         .min(Comparator.comparing(Protection::getPrice).thenComparingDouble(Protection::getRatedCurrentA));
                 final int toAdd = missing;
+                best.ifPresent(p -> record(requirement, p, toAdd, onBatteryRun, onControllerRun));
                 best.ifPresent(p -> {
                     SuggestedItemDto suggestion = new SuggestedItemDto(p.getId(), p.getSku(), p.getName(), toAdd, p.getPrice(), requirement.label());
                     row.setSuggestion(suggestion);
@@ -233,6 +252,21 @@ public class KitProtectionPlanner {
             if (pool.remaining > 0) {
                 report.warn(pool.remaining + " × " + pool.protection.getName()
                         + " no corresponde a ninguna protección que necesite este kit; revisa si sobra o si sus datos son correctos.");
+            }
+        }
+        return new ProtectionPlan(onBatteryRun, onControllerRun);
+    }
+
+    private static void record(Requirement requirement, Protection protection, int count,
+                               List<Protection> onBatteryRun, List<Protection> onControllerRun) {
+        List<Protection> target = switch (requirement.run()) {
+            case BATTERY -> onBatteryRun;
+            case CONTROLLER -> onControllerRun;
+            case OTHER -> null;
+        };
+        if (target != null) {
+            for (int i = 0; i < count; i++) {
+                target.add(protection);
             }
         }
     }

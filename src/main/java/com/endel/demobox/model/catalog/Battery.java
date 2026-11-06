@@ -52,6 +52,18 @@ public class Battery extends Product {
     @Column(name = "integrated_breaker_a")
     private Double integratedBreakerA;
 
+    /**
+     * Stud size of its battery terminals (M8 unless set). Nullable so rows saved before this column existed
+     * still load; {@link #getTerminalSize()} reads them as M8.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "terminal_size", length = 10)
+    private TerminalSize terminalSize = TerminalSize.M8;
+
+    public TerminalSize getTerminalSize() {
+        return TerminalSize.orDefault(terminalSize);
+    }
+
     public double getCapacityKwh() {
         return capacityAh == null ? 0 : capacityAh * voltage / 1000.0;
     }

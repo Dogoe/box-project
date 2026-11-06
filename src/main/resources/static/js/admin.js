@@ -88,6 +88,7 @@
         { value: 'AC_BREAKER', label: 'Breaker AC (con caja)' }
     ];
     const PROTECTION_TYPE_LABELS = Object.fromEntries(PROTECTION_TYPES.map((t) => [t.value, t.label]));
+    const TERMINAL_SIZES = ['M6', 'M8', 'M10'];
     const FUSE_CLASSES = [
         { value: 'MRBF', label: 'MRBF' },
         { value: 'ANL', label: 'ANL' },
@@ -166,6 +167,8 @@
                     help: 'La que dice la ficha de la batería. Si la dejas vacía se supone su capacidad en amperes (100 Ah → 100 A) y la revisión de kits te avisa.' },
                 { key: 'integratedBreakerA', label: 'Breaker de salida integrado (A) · opcional', type: 'number', step: '0.1',
                     help: 'Si la batería trae su propio breaker (las tipo rack), el kit no necesita fusible ni interruptor aparte para ella.' },
+                { key: 'terminalSize', label: 'Borne (tornillo de conexión)', type: 'select', required: true, defaultValue: 'M8',
+                    options: TERMINAL_SIZES, help: 'El tornillo donde se atornillan los cables (casi siempre M8). Define qué terminales lleva el kit.' },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
         },
@@ -211,6 +214,8 @@
                 { key: 'mpptMaxInputCurrentA', label: 'MPPT: corriente PV máx. por canal (A)', type: 'number', step: '0.1', dependsOn: 'builtInCharger' },
                 { key: 'mpptMaxChargeCurrentA', label: 'MPPT: corriente máx. de carga a batería (A)', type: 'number', step: '0.1', required: true, dependsOn: 'builtInCharger' },
                 { key: 'maxPvInputPowerW', label: 'MPPT: potencia PV máx. (W) — opcional, dato de la ficha', type: 'number', step: '1', dependsOn: 'builtInCharger' },
+                { key: 'terminalSize', label: 'Borne (tornillo de conexión)', type: 'select', required: true, defaultValue: 'M8',
+                    options: TERMINAL_SIZES, help: 'El tornillo de la entrada de batería (casi siempre M8).' },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
         },
@@ -334,6 +339,37 @@
                     help: 'Lo que dice la pieza: p. ej. 58 V DC un MRBF, 500 V DC un desconectador, 120 V AC un breaker AC.' },
                 { key: 'poles', label: 'Polos', type: 'number', defaultValue: 1,
                     help: 'El desconectador de paneles necesita 2 (corta positivo y negativo).' },
+                { key: 'terminalSize', label: 'Borne (tornillo de conexión)', type: 'select', required: true, defaultValue: 'M8',
+                    options: TERMINAL_SIZES, help: 'El tornillo donde se atornillan los cables (casi siempre M8). Un MRBF va montado en la batería y no suma terminales.' },
+                { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
+            ]
+        },
+        terminals: {
+            label: 'Terminales',
+            endpoint: '/api/catalog/terminals',
+            columns: [
+                { key: 'imageUrl', label: '', type: 'thumb' },
+                { key: 'sku', label: 'SKU' },
+                { key: 'name', label: 'Nombre' },
+                { key: 'specLabel', label: 'Calibre · borne · paquete' },
+                { key: 'price', label: 'Precio', prefix: '$' },
+                { key: 'stockQuantity', label: 'Stock' },
+                { key: 'referenceUrl', label: 'Ref.', type: 'link' },
+                { key: 'active', label: 'Activo', type: 'boolean' }
+            ],
+            fields: [
+                { key: 'sku', label: 'SKU', type: 'text', required: true },
+                { key: 'name', label: 'Nombre', type: 'text', required: true },
+                { key: 'brand', label: 'Marca', type: 'text' },
+                { key: 'description', label: 'Descripción', type: 'textarea' },
+                { key: 'price', label: 'Precio (del paquete)', type: 'number', step: '0.01', required: true },
+                { key: 'stockQuantity', label: 'Stock (paquetes)', type: 'number', required: true, defaultValue: 0 },
+                { key: 'imageUrls', label: 'Fotos', type: 'images', folder: 'products' },
+                { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
+                { key: 'gauge', label: 'Calibre del cable', type: 'select', required: true, options: WIRE_GAUGES },
+                { key: 'terminalSize', label: 'Borne (ojillo)', type: 'select', required: true, defaultValue: 'M8', options: TERMINAL_SIZES },
+                { key: 'piecesPerPack', label: 'Piezas por paquete', type: 'number', required: true, defaultValue: 1,
+                    help: '1 si se venden sueltas; 10 si es una bolsa de 10, etc.' },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
         }
@@ -765,16 +801,17 @@
     // ---- Kits (own logic: nested items referencing existing products) ----
 
     async function loadAllProducts() {
-        const [panels, batteries, inverters, controllers, structures, cables, protections] = await Promise.all([
+        const [panels, batteries, inverters, controllers, structures, cables, protections, terminals] = await Promise.all([
             authFetch('/api/catalog/panels').then((r) => r.json()),
             authFetch('/api/catalog/batteries').then((r) => r.json()),
             authFetch('/api/catalog/inverters').then((r) => r.json()),
             authFetch('/api/catalog/charge-controllers').then((r) => r.json()),
             authFetch('/api/catalog/structures').then((r) => r.json()),
             authFetch('/api/catalog/cables').then((r) => r.json()),
-            authFetch('/api/catalog/protections').then((r) => r.json())
+            authFetch('/api/catalog/protections').then((r) => r.json()),
+            authFetch('/api/catalog/terminals').then((r) => r.json())
         ]);
-        allProducts = panels.concat(batteries, inverters, controllers, structures, cables, protections).map((p) => ({
+        allProducts = panels.concat(batteries, inverters, controllers, structures, cables, protections, terminals).map((p) => ({
             id: p.id,
             label: p.sku + ' — ' + p.name + ' ($' + p.price + ')'
         }));
@@ -903,6 +940,24 @@
             }).join('') + '</tbody></table>';
     }
 
+    function terminalsHtml(terminals) {
+        if (!terminals || terminals.length === 0) {
+            return '';
+        }
+        return '<h6 class="fw-semibold mt-3 mb-1"><i class="bi bi-nut"></i> Terminales</h6>' +
+            '<table class="table table-sm small mb-0"><thead><tr><th>Terminal</th><th>Cant.</th><th>Dónde</th><th>En el kit</th></tr></thead><tbody>' +
+            terminals.map((t) => {
+                const status = t.covered
+                    ? '<i class="bi bi-check-circle-fill text-success me-1"></i>' + escapeHtml(t.coveredBy)
+                    : '<span class="text-secondary">' + (t.coveredBy ? escapeHtml(t.coveredBy) + ' (no alcanzan) · ' : '') +
+                      (t.suggestion
+                          ? 'Sugerencia: ' + t.suggestion.quantity + ' × ' + escapeHtml(t.suggestion.name) + ' ($' + t.suggestion.unitPrice + ')'
+                          : 'No hay en tu catálogo; dalas de alta en Terminales.') + '</span>';
+                return '<tr><td class="text-nowrap">' + escapeHtml(t.gaugeLabel) + ' · ' + escapeHtml(t.sizeLabel) + '</td><td>' + t.quantity +
+                    '</td><td>' + escapeHtml(t.places) + '</td><td>' + status + '</td></tr>';
+            }).join('') + '</tbody></table>';
+    }
+
     function suggestedItemsHtml(items) {
         if (!items || items.length === 0) {
             return '';
@@ -943,7 +998,7 @@
         return '<div class="border rounded p-3 bg-body-tertiary">' +
             '<h6 class="fw-semibold mb-2"><i class="bi bi-plug"></i> Revisión de compatibilidad</h6>' +
             (summary ? '<div class="small mb-2">' + summary + '</div>' : '') +
-            checks + expansionHtml(report.expansion) + wiring + protectionsHtml(report.protections) +
+            checks + expansionHtml(report.expansion) + wiring + protectionsHtml(report.protections) + terminalsHtml(report.terminals) +
             suggestedItemsHtml(report.suggestedItems) +
             '</div>';
     }
@@ -1496,6 +1551,10 @@
             {
                 type: 'PROTECTION', sku: 'FUS-MRBF-110', name: 'Fusible MRBF 110 A 58 V con base', price: 350.00, stockQuantity: 5,
                 protectionType: 'FUSE', fuseClass: 'MRBF', ratedCurrentA: 110, maxVoltage: 58
+            },
+            {
+                type: 'TERMINAL', sku: 'TER-2AWG-M8-10', name: 'Terminal cobre estañado 2 AWG M8 (bolsa de 10)', price: 120.00,
+                stockQuantity: 5, gauge: 'AWG_2', terminalSize: 'M8', piecesPerPack: 10
             }
         ],
         kits: [

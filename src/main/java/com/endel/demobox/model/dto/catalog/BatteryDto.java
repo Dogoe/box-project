@@ -1,5 +1,6 @@
 package com.endel.demobox.model.dto.catalog;
 
+import com.endel.demobox.model.catalog.TerminalSize;
 import com.endel.demobox.model.catalog.BatteryChemistry;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -59,6 +60,8 @@ public class BatteryDto {
     /** Optional: output breaker built into the battery (A); then no separate main fuse/switch is needed. */
     @Positive(message = "El breaker integrado debe ser mayor que 0")
     private Double integratedBreakerA;
+    /** Stud size of its connection terminals: M8 (default when missing), M6 or M10. */
+    private TerminalSize terminalSize;
 
     // Read-only, derived from capacityAh/voltage/chemistry.
     private double capacityKwh;

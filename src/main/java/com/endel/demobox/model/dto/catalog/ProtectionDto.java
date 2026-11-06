@@ -1,5 +1,6 @@
 package com.endel.demobox.model.dto.catalog;
 
+import com.endel.demobox.model.catalog.TerminalSize;
 import com.endel.demobox.model.catalog.FuseClass;
 import com.endel.demobox.model.catalog.ProtectionType;
 import jakarta.validation.constraints.NotBlank;
@@ -58,6 +59,8 @@ public class ProtectionDto {
 
     @Positive(message = "Los polos deben ser 1 o más")
     private Integer poles;
+    /** Stud size of its connection terminals: M8 (default when missing), M6 or M10. */
+    private TerminalSize terminalSize;
 
     /** Read-only, e.g. "125 A · 58 V DC · MRBF". */
     private String specLabel;

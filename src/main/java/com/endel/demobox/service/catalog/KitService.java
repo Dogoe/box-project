@@ -12,6 +12,7 @@ import com.endel.demobox.model.catalog.Kit;
 import com.endel.demobox.model.catalog.KitItem;
 import com.endel.demobox.model.catalog.Product;
 import com.endel.demobox.model.catalog.Protection;
+import com.endel.demobox.model.catalog.Terminal;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.dto.catalog.KitDto;
 import com.endel.demobox.model.dto.catalog.KitItemDto;
@@ -214,6 +215,9 @@ public class KitService {
             } else if (product instanceof Protection protection) {
                 itemDto.setProductType("PROTECTION");
                 itemDto.setSpecLabel(protection.getSpecLabel());
+            } else if (product instanceof Terminal terminal) {
+                itemDto.setProductType("TERMINAL");
+                itemDto.setSpecLabel(terminal.getSpecLabel());
             } else {
                 itemDto.setProductType("OTHER");
             }
@@ -240,7 +244,7 @@ public class KitService {
 
     /** Display order of a kit's parts: what defines the system first, small extras last. */
     private static final List<String> TYPE_ORDER = List.of("INVERTER", "CHARGE_CONTROLLER", "PANEL", "BATTERY", "STRUCTURE", "CABLE",
-            "PROTECTION", "OTHER");
+            "PROTECTION", "TERMINAL", "OTHER");
     /** Parts that make a recognizable collage; cables and structures look like clutter as thumbnails. */
     private static final List<String> COLLAGE_TYPES = List.of("INVERTER", "CHARGE_CONTROLLER", "PANEL", "BATTERY");
     static final int COLLAGE_TILES = 4;

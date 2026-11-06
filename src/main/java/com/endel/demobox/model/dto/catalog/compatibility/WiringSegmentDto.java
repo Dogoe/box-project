@@ -25,6 +25,8 @@ public class WiringSegmentDto {
     private String coveredBy;
     /** Connector on the cable, when it's known (the panels' cable: MC4 or SAE). */
     private String connector;
+    /** Gauge of the cable the kit actually uses for this run (or the one suggested); terminals follow it. */
+    private WireGauge cableGauge;
 
     public double getRequiredCableMeters() {
         return lengthMeters * 2;

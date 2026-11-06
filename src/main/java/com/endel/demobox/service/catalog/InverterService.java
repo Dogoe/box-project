@@ -1,6 +1,7 @@
 package com.endel.demobox.service.catalog;
 
 import com.endel.demobox.model.catalog.PhotoUrls;
+import com.endel.demobox.model.catalog.TerminalSize;
 import com.endel.demobox.exception.ResourceNotFoundException;
 import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.dto.catalog.InverterDto;
@@ -67,6 +68,7 @@ public class InverterService {
         inverter.setSurgePowerKw(dto.getSurgePowerKw());
         inverter.setInverterType(dto.getInverterType());
         inverter.setBatteryVoltage(dto.getBatteryVoltage());
+        inverter.setTerminalSize(TerminalSize.orDefault(dto.getTerminalSize()));
         boolean builtInCharger = !Boolean.FALSE.equals(dto.getBuiltInCharger());
         inverter.setBuiltInCharger(builtInCharger);
         if (builtInCharger) {
@@ -111,6 +113,7 @@ public class InverterService {
         dto.setMpptMaxChargeCurrentA(inverter.getMpptMaxChargeCurrentA());
         dto.setMpptMaxInputCurrentA(inverter.getMpptMaxInputCurrentA());
         dto.setMaxPvInputPowerW(inverter.getMaxPvInputPowerW());
+        dto.setTerminalSize(inverter.getTerminalSize());
         dto.setMaxChargePowerW(inverter.getMaxChargePowerW());
         dto.setEffectiveMaxPvPowerW(inverter.getEffectiveMaxPvPowerW());
         dto.setMaxPvPowerEstimated(inverter.isMaxPvPowerEstimated());

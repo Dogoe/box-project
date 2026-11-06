@@ -3,6 +3,7 @@ package com.endel.demobox.service.catalog;
 import com.endel.demobox.exception.BadRequestException;
 import com.endel.demobox.exception.ResourceNotFoundException;
 import com.endel.demobox.model.catalog.PhotoUrls;
+import com.endel.demobox.model.catalog.TerminalSize;
 import com.endel.demobox.model.catalog.Protection;
 import com.endel.demobox.model.catalog.ProtectionType;
 import com.endel.demobox.model.dto.catalog.ProtectionDto;
@@ -66,6 +67,7 @@ public class ProtectionService {
         protection.setRatedCurrentA(dto.getRatedCurrentA());
         protection.setMaxVoltage(dto.getMaxVoltage());
         protection.setPoles(dto.getPoles());
+        protection.setTerminalSize(TerminalSize.orDefault(dto.getTerminalSize()));
     }
 
     private ProtectionDto toDto(Protection protection) {
@@ -86,6 +88,7 @@ public class ProtectionService {
         dto.setRatedCurrentA(protection.getRatedCurrentA());
         dto.setMaxVoltage(protection.getMaxVoltage());
         dto.setPoles(protection.getPoles());
+        dto.setTerminalSize(protection.getTerminalSize());
         dto.setSpecLabel(protection.getSpecLabel());
         return dto;
     }

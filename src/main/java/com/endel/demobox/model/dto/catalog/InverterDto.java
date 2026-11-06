@@ -1,5 +1,6 @@
 package com.endel.demobox.model.dto.catalog;
 
+import com.endel.demobox.model.catalog.TerminalSize;
 import com.endel.demobox.model.catalog.InverterType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -73,6 +74,8 @@ public class InverterDto {
 
     @Positive
     private Double maxPvInputPowerW;
+    /** Stud size of its connection terminals: M8 (default when missing), M6 or M10. */
+    private TerminalSize terminalSize;
 
     // Read-only, derived: mpptMaxChargeCurrentA x batteryVoltage.
     private double maxChargePowerW;

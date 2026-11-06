@@ -7,6 +7,7 @@ import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.catalog.InverterType;
 import com.endel.demobox.model.catalog.Product;
 import com.endel.demobox.model.catalog.Protection;
+import com.endel.demobox.model.catalog.Terminal;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.catalog.WireGauge;
 import com.endel.demobox.model.dto.WiringSettingsDto;
@@ -64,10 +65,13 @@ public class KitCompatibilityService {
 
     private final ConnectionCableRepository cableRepository;
     private final KitProtectionPlanner protectionPlanner;
+    private final KitTerminalPlanner terminalPlanner;
 
-    public KitCompatibilityService(ConnectionCableRepository cableRepository, KitProtectionPlanner protectionPlanner) {
+    public KitCompatibilityService(ConnectionCableRepository cableRepository, KitProtectionPlanner protectionPlanner,
+                                   KitTerminalPlanner terminalPlanner) {
         this.cableRepository = cableRepository;
         this.protectionPlanner = protectionPlanner;
+        this.terminalPlanner = terminalPlanner;
     }
 
     public KitCompatibilityReportDto analyze(List<KitLine> lines, WiringSettingsDto lengths) {
@@ -120,13 +124,15 @@ public class KitCompatibilityService {
         checkKitCables(report, cables, segments);
 
         double busVolts = inverter.getBatteryVoltage() == null ? 0 : inverter.getBatteryVoltage();
-        protectionPlanner.plan(report, new KitProtectionPlanner.Input(busVolts,
+        KitProtectionPlanner.ProtectionPlan protectionPlan = protectionPlanner.plan(report, new KitProtectionPlanner.Input(busVolts,
                 batteryRun, bank == null ? null : bank.battery(), bank == null ? 0 : bank.parallel(),
                 controllerRun,
                 pvRun, pv == null ? 0 : pv.strings(), pv == null ? 0 : pv.stringsPerChannel(), pv == null ? 0 : pv.channels(),
                 pv == null ? 0 : pv.series() * pv.panel().getVoc() * PV_COLD_VOC_FACTOR,
                 pv == null ? 0 : pv.panelIscA(),
                 inverter.getRatedPowerKw()), ofType(lines, Protection.class));
+        terminalPlanner.plan(report, bank == null ? null : bank.battery(), inverter, batteryRun, controllerRun,
+                protectionPlan, ofType(lines, Terminal.class));
 
         if (report.getStatus() != CompatibilitySeverity.ERROR) {
             report.setExpansion(expansion(inverter, charger, !panels.isEmpty(), !batteries.isEmpty(), pv, bank));
@@ -680,6 +686,7 @@ public class KitCompatibilityService {
                     .filter(p -> p.remainingMeters > 0 && p.cable.getGauge().isAtLeast(segment.getGauge()))
                     .sorted(Comparator.comparing(p -> p.cable.getGauge()))
                     .toList();
+            WireGauge usedGauge = null;
             for (CablePool pool : candidates) {
                 if (covered >= needed) {
                     break;
@@ -688,7 +695,9 @@ public class KitCompatibilityService {
                 pool.remainingMeters -= take;
                 covered += take;
                 usedNames.add(pool.cable.getName());
+                usedGauge = thicker(usedGauge, pool.cable.getGauge());
             }
+            segment.setCableGauge(usedGauge != null ? usedGauge : segment.getGauge());
 
             if (covered + 1e-6 >= needed) {
                 segment.setCoveredBy(String.join(", ", usedNames));
@@ -702,11 +711,19 @@ public class KitCompatibilityService {
                         suggestion.map(c -> " Sugerencia: " + c.getSku() + " – " + c.getName() + " (" + c.getGauge().getLabel()
                                 + ", " + fmt(c.getLengthMeters()) + " m).").orElse("")));
                 double missingMeters = needed - covered;
+                suggestion.ifPresent(c -> segment.setCableGauge(thicker(segment.getCableGauge(), c.getGauge())));
                 suggestion.filter(c -> c.getLengthMeters() > 0).ifPresent(c -> report.suggest(new SuggestedItemDto(
                         c.getId(), c.getSku(), c.getName(), (int) Math.ceil(missingMeters / c.getLengthMeters() - 1e-9),
                         c.getPrice(), segment.getSegment())));
             }
         }
+    }
+
+    private static WireGauge thicker(WireGauge a, WireGauge b) {
+        if (a == null) {
+            return b;
+        }
+        return b == null || a.compareTo(b) >= 0 ? a : b;
     }
 
     private Optional<ConnectionCable> suggestCable(WireGauge required) {

@@ -13,6 +13,8 @@ import com.endel.demobox.model.dto.catalog.compatibility.ProtectionCheckDto;
 import com.endel.demobox.model.catalog.FuseClass;
 import com.endel.demobox.model.catalog.ProtectionType;
 import com.endel.demobox.model.catalog.Protection;
+import com.endel.demobox.model.catalog.Terminal;
+import com.endel.demobox.model.catalog.TerminalSize;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.catalog.WireGauge;
 import com.endel.demobox.model.dto.WiringSettingsDto;
@@ -22,6 +24,7 @@ import com.endel.demobox.model.dto.catalog.compatibility.KitCompatibilityReportD
 import com.endel.demobox.model.dto.catalog.compatibility.WiringSegmentDto;
 import com.endel.demobox.repository.catalog.ConnectionCableRepository;
 import com.endel.demobox.repository.catalog.ProtectionRepository;
+import com.endel.demobox.repository.catalog.TerminalRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +46,7 @@ class KitCompatibilityServiceTest {
     private KitCompatibilityService service;
     private WiringSettingsDto lengths;
     private ProtectionRepository protectionRepository;
+    private TerminalRepository terminalRepository;
     private long nextId = 1;
 
     @BeforeEach
@@ -51,7 +55,10 @@ class KitCompatibilityServiceTest {
         when(cableRepository.findAll()).thenReturn(List.of());
         protectionRepository = mock(ProtectionRepository.class);
         when(protectionRepository.findAll()).thenReturn(List.of());
-        service = new KitCompatibilityService(cableRepository, new KitProtectionPlanner(protectionRepository));
+        terminalRepository = mock(TerminalRepository.class);
+        when(terminalRepository.findAll()).thenReturn(List.of());
+        service = new KitCompatibilityService(cableRepository, new KitProtectionPlanner(protectionRepository),
+                new KitTerminalPlanner(terminalRepository));
         lengths = new WiringSettingsDto();
         lengths.setBatteryToInverterMeters(2.0);
         lengths.setPvToInverterMeters(10.0);
@@ -276,6 +283,86 @@ class KitCompatibilityServiceTest {
         assertEquals("Breaker AC 15 A con caja", protectionRow(report, "Breaker AC de salida del inversor").getSuggestion().getName());
         assertTrue(hasCheck(report, CompatibilitySeverity.WARNING,
                 "No hay en tu catálogo una protección que cumpla; dala de alta en Protecciones."), report.getChecks().toString());
+    }
+
+
+    // ---- Terminals ----
+
+    private Terminal terminal(String name, WireGauge gauge, TerminalSize size, int perPack, int price) {
+        Terminal terminal = new Terminal();
+        terminal.setId(nextId++);
+        terminal.setSku(name);
+        terminal.setName(name);
+        terminal.setGauge(gauge);
+        terminal.setTerminalSize(size);
+        terminal.setPiecesPerPack(perPack);
+        terminal.setPrice(BigDecimal.valueOf(price));
+        terminal.setActive(true);
+        return terminal;
+    }
+
+    private static List<String> terminalRows(KitCompatibilityReportDto report) {
+        return report.getTerminals().stream()
+                .map(t -> t.getQuantity() + " × " + t.getGaugeLabel() + " " + t.getSizeLabel() + " (" + t.getPlaces() + ")")
+                .toList();
+    }
+
+    @Test
+    void terminalsForTheBatteryRun_mrbfAddsNoneAndTheBreakerAddsTwo() {
+        catalogHas(mrbf110, dcBreaker125, pv500, ac40);
+        // Protections only suggested (not in the kit yet): the count already assumes them.
+        KitCompatibilityReportDto report = service.analyze(midSystem(), lengths);
+
+        assertEquals(List.of("6 × 2 AWG M8 (2 lado batería, 2 lado inversor, 2 breaker DC)"), terminalRows(report));
+        assertFalse(report.getTerminals().get(0).isCovered());
+        assertFalse(hasCheck(report, CompatibilitySeverity.WARNING, "erminal"), "terminals are informational only");
+    }
+
+    @Test
+    void anInverterWithAnotherStudGetsItsOwnRow() {
+        catalogHas(mrbf110, dcBreaker125);
+        List<KitLine> lines = midSystem();
+        ((Inverter) lines.get(0).product()).setTerminalSize(TerminalSize.M6);
+        KitCompatibilityReportDto report = service.analyze(lines, lengths);
+
+        assertEquals(List.of("4 × 2 AWG M8 (2 lado batería, 2 breaker DC)", "2 × 2 AWG M6 (2 lado inversor)"), terminalRows(report));
+    }
+
+    @Test
+    void aClassTFuseHolderAddsTwoMoreTerminals() {
+        catalogHas(classT110, dcBreaker125);
+        KitCompatibilityReportDto report = service.analyze(midSystem(), lengths);
+
+        assertEquals(List.of("8 × 2 AWG M8 (2 lado batería, 2 lado inversor, 2 portafusible Clase T, 2 breaker DC)"), terminalRows(report));
+    }
+
+    @Test
+    void terminalsFollowTheCableTheKitActuallyUses() {
+        catalogHas(mrbf110, dcBreaker125);
+        // The run needs 2 AWG, but the kit brings thicker 1/0 cable: the lugs must fit 1/0.
+        KitCompatibilityReportDto report = service.analyze(midSystem(new KitLine(cable("CAB-1/0", WireGauge.AWG_1_0, 2), 2)), lengths);
+
+        assertEquals(List.of("6 × 1/0 AWG M8 (2 lado batería, 2 lado inversor, 2 breaker DC)"), terminalRows(report));
+    }
+
+    @Test
+    void terminalSuggestionIsRoundedToPacks_andAPackInTheKitCoversThem() {
+        catalogHas(mrbf110, dcBreaker125);
+        Terminal bagOf10 = terminal("Terminal 2 AWG M8 (bolsa de 10)", WireGauge.AWG_2, TerminalSize.M8, 10, 80);
+        Terminal loose = terminal("Terminal 2 AWG M8 suelta", WireGauge.AWG_2, TerminalSize.M8, 1, 15);
+        Terminal wrongStud = terminal("Terminal 2 AWG M10 (bolsa de 10)", WireGauge.AWG_2, TerminalSize.M10, 10, 50);
+        when(terminalRepository.findAll()).thenReturn(List.of(bagOf10, loose, wrongStud));
+
+        KitCompatibilityReportDto report = service.analyze(midSystem(), lengths);
+        // 6 needed: one bag ($80) beats 6 loose ($90); the cheaper M10 bag doesn't fit M8 studs.
+        assertEquals("Terminal 2 AWG M8 (bolsa de 10)", report.getTerminals().get(0).getSuggestion().getName());
+        assertEquals(1, report.getTerminals().get(0).getSuggestion().getQuantity());
+        assertTrue(report.getSuggestedItems().stream().anyMatch(i -> i.getName().equals("Terminal 2 AWG M8 (bolsa de 10)") && i.getQuantity() == 1));
+
+        KitCompatibilityReportDto withBag = service.analyze(midSystem(new KitLine(bagOf10, 1)), lengths);
+        assertTrue(withBag.getTerminals().get(0).isCovered());
+        assertEquals("1 × Terminal 2 AWG M8 (bolsa de 10)", withBag.getTerminals().get(0).getCoveredBy());
+        assertFalse(withBag.getSuggestedItems().stream().anyMatch(i -> i.getName().startsWith("Terminal")));
     }
 
     @Test

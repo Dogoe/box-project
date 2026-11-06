@@ -1,6 +1,7 @@
 package com.endel.demobox.service.catalog;
 
 import com.endel.demobox.model.catalog.PhotoUrls;
+import com.endel.demobox.model.catalog.TerminalSize;
 import com.endel.demobox.exception.ResourceNotFoundException;
 import com.endel.demobox.model.catalog.Battery;
 import com.endel.demobox.model.catalog.BatteryChemistry;
@@ -70,6 +71,7 @@ public class BatteryService {
         battery.setCycleLife(dto.getCycleLife());
         battery.setBmsMaxDischargeA(dto.getBmsMaxDischargeA());
         battery.setIntegratedBreakerA(dto.getIntegratedBreakerA());
+        battery.setTerminalSize(TerminalSize.orDefault(dto.getTerminalSize()));
     }
 
     private BatteryDto toDto(Battery battery) {
@@ -91,6 +93,7 @@ public class BatteryService {
         dto.setCycleLife(battery.getCycleLife());
         dto.setBmsMaxDischargeA(battery.getBmsMaxDischargeA());
         dto.setIntegratedBreakerA(battery.getIntegratedBreakerA());
+        dto.setTerminalSize(battery.getTerminalSize());
         dto.setCapacityKwh(battery.getCapacityKwh());
         dto.setDepthOfDischargePercent(battery.getDepthOfDischarge() * 100);
         dto.setMaxDischargeCurrentA(battery.getMaxDischargeCurrentA());

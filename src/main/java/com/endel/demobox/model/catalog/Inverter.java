@@ -71,6 +71,18 @@ public class Inverter extends Product {
     @Positive
     private Double mpptMaxInputCurrentA;
 
+    /**
+     * Stud size of its battery input (M8 unless set). Nullable so rows saved before this column existed
+     * still load; {@link #getTerminalSize()} reads them as M8.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "terminal_size", length = 10)
+    private TerminalSize terminalSize = TerminalSize.M8;
+
+    public TerminalSize getTerminalSize() {
+        return TerminalSize.orDefault(terminalSize);
+    }
+
     // Datasheet PV limits typically run 1.25-1.5x charge power, since surplus feeds loads directly.
     public static final double ESTIMATED_PV_TO_CHARGE_POWER_RATIO = 1.30;
 

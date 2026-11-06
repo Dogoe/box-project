@@ -45,6 +45,18 @@ public class Protection extends Product {
 
     private Integer poles;
 
+    /**
+     * Stud size of its connection terminals (M8 unless set). Nullable so rows saved before this column existed
+     * still load; {@link #getTerminalSize()} reads them as M8.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "terminal_size", length = 10)
+    private TerminalSize terminalSize = TerminalSize.M8;
+
+    public TerminalSize getTerminalSize() {
+        return TerminalSize.orDefault(terminalSize);
+    }
+
     public int getPolesOrOne() {
         return poles == null || poles < 1 ? 1 : poles;
     }
