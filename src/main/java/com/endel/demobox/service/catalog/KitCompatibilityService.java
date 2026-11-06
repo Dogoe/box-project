@@ -546,6 +546,7 @@ public class KitCompatibilityService {
         double operatingA = pv.panelIscA() * pv.stringsPerChannel();
         String name = charger.builtIn() ? "Paneles – inversor (MPPT)" : "Paneles – controlador MPPT";
         WiringSegmentDto segment = sizeSegment(report, name, operatingA, pv.stringVmp(), lengthMeters);
+        segment.setConnector(pv.panel().getConnector().getLabel());
         if (pv.stringsPerChannel() >= MIN_PARALLEL_STRINGS_NEEDING_FUSE) {
             segment.setFuseA(standardFuse(pv.panelIscA() * PV_STRING_FUSE_FACTOR));
             segment.setFuseNote("Fusible por cadena (3 o más cadenas en paralelo)");

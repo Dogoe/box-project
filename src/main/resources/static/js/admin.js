@@ -91,6 +91,7 @@
                 { key: 'sku', label: 'SKU' },
                 { key: 'name', label: 'Nombre' },
                 { key: 'wattage', label: 'Potencia', suffix: ' W' },
+                { key: 'connector', label: 'Conector' },
                 { key: 'price', label: 'Precio', prefix: '$' },
                 { key: 'stockQuantity', label: 'Stock' },
                 { key: 'referenceUrl', label: 'Ref.', type: 'link' },
@@ -111,6 +112,8 @@
                 { key: 'efficiencyPercent', label: 'Eficiencia (%)', type: 'number', step: '0.1' },
                 { key: 'voc', label: 'Voc (V)', type: 'number', step: '0.1' },
                 { key: 'isc', label: 'Isc (A)', type: 'number', step: '0.1' },
+                { key: 'connector', label: 'Conector del cable', type: 'select', required: true, defaultValue: 'MC4',
+                    options: [{ value: 'MC4', label: 'MC4 (paneles normales)' }, { value: 'SAE', label: 'SAE (kits chicos de 12 V)' }] },
                 { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true }
             ]
         },
@@ -818,7 +821,8 @@
         const wiring = report.wiring.length
             ? '<table class="table table-sm small mt-3 mb-0"><thead><tr><th>Tramo</th><th>Corriente</th><th>Calibre</th><th>Caída</th><th>Fusible</th></tr></thead><tbody>' +
               report.wiring.map((w) =>
-                  '<tr><td>' + escapeHtml(w.segment) + '</td>' +
+                  '<tr><td>' + escapeHtml(w.segment) +
+                  (w.connector ? '<div class="text-secondary">Cable con conector ' + escapeHtml(w.connector) + '</div>' : '') + '</td>' +
                   '<td>' + w.operatingCurrentA + ' A</td>' +
                   '<td>' + (w.gaugeLabel ? escapeHtml(w.gaugeLabel) : '—') + ' · ' + w.lengthMeters + ' m</td>' +
                   '<td>' + (w.gaugeLabel ? w.voltageDropPercent + ' %' : '—') + '</td>' +
@@ -1365,7 +1369,8 @@
                 type: 'SOLAR_PANEL', sku: 'PNL-550-MONO', name: 'Panel solar 550 W monocristalino', brand: 'Marca',
                 description: 'Panel de 144 celdas.', price: 2450.00, stockQuantity: 10,
                 imageUrls: ['https://ejemplo.com/fotos/panel-550.jpg'], referenceUrl: 'https://ejemplo.com/panel-550',
-                active: true, wattage: 550, technology: 'MONOCRYSTALLINE', efficiencyPercent: 21.3, voc: 49.6, isc: 14.0
+                active: true, wattage: 550, technology: 'MONOCRYSTALLINE', efficiencyPercent: 21.3, voc: 49.6, isc: 14.0,
+                connector: 'MC4'
             },
             {
                 type: 'BATTERY', sku: 'BAT-24V-100AH', name: 'Batería LiFePO4 24 V 100 Ah', price: 8900.00, stockQuantity: 4,

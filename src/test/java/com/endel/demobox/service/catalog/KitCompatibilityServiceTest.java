@@ -7,6 +7,7 @@ import com.endel.demobox.model.catalog.ChargeController;
 import com.endel.demobox.model.catalog.ConnectionCable;
 import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.catalog.InverterType;
+import com.endel.demobox.model.catalog.PanelConnector;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.catalog.WireGauge;
 import com.endel.demobox.model.dto.WiringSettingsDto;
@@ -553,6 +554,37 @@ class KitCompatibilityServiceTest {
         assertEquals("Integrado en el inversor · 40 A de carga", report.getSolarCharger());
         assertFalse(report.getWiring().stream().anyMatch(s -> s.getSegment().startsWith("Controlador")));
         segment(report, "Paneles – inversor (MPPT)");
+    }
+
+    @Test
+    void panelCableNamesThePanelsConnector_mc4UnlessThePanelSaysOtherwise() {
+        List<KitLine> base = List.of(
+                new KitLine(inverter(5.0, 48.0, InverterType.HYBRID), 1),
+                new KitLine(battery(51.2, 100), 1));
+
+        KitCompatibilityReportDto mc4 = service.analyze(withPanels(base, panel()), lengths);
+        assertEquals("MC4", segment(mc4, "Paneles – inversor (MPPT)").getConnector());
+
+        SolarPanel saePanel = panel();
+        saePanel.setConnector(PanelConnector.SAE);
+        KitCompatibilityReportDto sae = service.analyze(withPanels(base, saePanel), lengths);
+        assertEquals("SAE", segment(sae, "Paneles – inversor (MPPT)").getConnector());
+
+        // Panels saved before the connector column existed have none stored: they read as MC4.
+        SolarPanel legacy = panel();
+        legacy.setConnector(null);
+        assertEquals(PanelConnector.MC4, legacy.getConnector());
+
+        // Only the panels' cable has a known connector.
+        mc4.getWiring().stream()
+                .filter(s -> !s.getSegment().startsWith("Paneles"))
+                .forEach(s -> assertNull(s.getConnector(), s.getSegment()));
+    }
+
+    private static List<KitLine> withPanels(List<KitLine> base, SolarPanel panel) {
+        List<KitLine> lines = new java.util.ArrayList<>(base);
+        lines.add(new KitLine(panel, 6));
+        return lines;
     }
 
     @Test

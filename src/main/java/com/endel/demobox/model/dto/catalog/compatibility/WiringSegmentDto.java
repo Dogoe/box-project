@@ -21,6 +21,8 @@ public class WiringSegmentDto {
     private String fuseNote;
     /** Which of the kit's own cables cover this run, if any. */
     private String coveredBy;
+    /** Connector on the cable, when it's known (the panels' cable: MC4 or SAE). */
+    private String connector;
 
     public double getRequiredCableMeters() {
         return lengthMeters * 2;
