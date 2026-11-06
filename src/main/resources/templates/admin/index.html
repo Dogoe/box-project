@@ -29,7 +29,10 @@
 
     <ul class="nav nav-tabs mb-3">
         <li class="nav-item">
-            <a href="#" class="nav-link active entity-tab" data-entity="panels">Paneles Solares</a>
+            <a href="#" class="nav-link active entity-tab" data-entity="kits">Kits</a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link entity-tab" data-entity="panels">Paneles Solares</a>
         </li>
         <li class="nav-item">
             <a href="#" class="nav-link entity-tab" data-entity="batteries">Baterías</a>
@@ -47,9 +50,6 @@
             <a href="#" class="nav-link entity-tab" data-entity="cables">Cables de Conexión</a>
         </li>
         <li class="nav-item">
-            <a href="#" class="nav-link entity-tab" data-entity="kits">Kits</a>
-        </li>
-        <li class="nav-item">
             <a href="#" class="nav-link entity-tab" data-entity="orders">
                 Pedidos <span class="badge rounded-pill bg-warning text-dark d-none" id="pending-orders-badge">0</span>
             </a>
@@ -62,7 +62,7 @@
     <div id="list-alert" class="alert alert-danger d-none" role="alert"></div>
 
     <div class="d-flex justify-content-between align-items-center mb-3" id="entity-toolbar">
-        <h5 class="mb-0" id="entity-title">Paneles Solares</h5>
+        <h5 class="mb-0" id="entity-title">Kits</h5>
         <button type="button" class="btn btn-success btn-sm" id="new-entity-btn">
             <i class="bi bi-plus-lg"></i> Nuevo
         </button>
@@ -89,97 +89,140 @@
         </table>
     </div>
 
-    <div id="settings-panel" class="d-none" style="max-width: 420px;">
-        <div class="card mb-4">
-            <div class="card-body">
-                <h6 class="card-title">Pedidos</h6>
-                <p class="text-secondary small">
-                    Lo que ve el cliente al hacer su pedido. Si dejas vacío el WhatsApp, no se muestra el botón.
-                </p>
-                <div id="store-error" class="alert alert-danger d-none"></div>
-                <div id="store-success" class="alert alert-success d-none"></div>
-                <form id="store-form">
-                    <div class="mb-3">
-                        <label class="form-label" for="store-whatsapp-input">Tu WhatsApp (10 dígitos)</label>
-                        <input type="tel" class="form-control" id="store-whatsapp-input" maxlength="20" placeholder="6461234567">
+    <div id="settings-panel" class="d-none settings-compact">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3">
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="card-title">Pedidos</h6>
+                        <p class="text-secondary">Lo que ve el cliente al pedir. Sin WhatsApp no se muestra el botón.</p>
+                        <div id="store-error" class="alert alert-danger d-none"></div>
+                        <div id="store-success" class="alert alert-success d-none"></div>
+                        <form id="store-form">
+                            <div class="mb-2">
+                                <label class="form-label" for="store-whatsapp-input">Tu WhatsApp (10 dígitos)</label>
+                                <input type="tel" class="form-control form-control-sm" id="store-whatsapp-input" maxlength="20" placeholder="6461234567">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label" for="store-email-input">Correo para avisos de pedidos nuevos</label>
+                                <input type="email" class="form-control form-control-sm" id="store-email-input" maxlength="200" placeholder="tu-correo@ejemplo.com">
+                                <div class="form-text">Vacío = sin aviso. Al cliente se le escribe si dejó su correo.</div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label" for="store-instructions-input">Instrucciones de pago</label>
+                                <textarea class="form-control form-control-sm" id="store-instructions-input" rows="2" maxlength="1000" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-sm">Guardar</button>
+                        </form>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label" for="store-email-input">Correo para avisos de pedidos nuevos</label>
-                        <input type="email" class="form-control" id="store-email-input" maxlength="200" placeholder="tu-correo@ejemplo.com">
-                        <div class="form-text">Vacío = no se envía aviso por correo. Al cliente se le escribe si dejó su correo.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" for="store-instructions-input">Instrucciones de pago</label>
-                        <textarea class="form-control" id="store-instructions-input" rows="3" maxlength="1000" required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-success">Guardar</button>
-                </form>
+                </div>
             </div>
-        </div>
 
-        <div class="card">
-            <div class="card-body">
-                <h6 class="card-title">Tipo de cambio</h6>
-                <p class="text-secondary small">
-                    Se usa para mostrar los precios en dólares en el sitio público. Los precios
-                    del catálogo siempre se guardan en pesos (MXN).
-                </p>
-                <div id="settings-error" class="alert alert-danger d-none"></div>
-                <div id="settings-success" class="alert alert-success d-none"></div>
-                <form id="settings-form">
-                    <div class="mb-3">
-                        <label class="form-label" for="exchange-rate-input">1 USD equivale a (MXN)</label>
-                        <input type="number" step="0.01" min="0.01" class="form-control" id="exchange-rate-input" required>
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="card-title">Tipo de cambio</h6>
+                        <p class="text-secondary">Para mostrar precios en dólares. El catálogo siempre se guarda en pesos (MXN).</p>
+                        <div id="settings-error" class="alert alert-danger d-none"></div>
+                        <div id="settings-success" class="alert alert-success d-none"></div>
+                        <form id="settings-form">
+                            <label class="form-label" for="exchange-rate-input">1 USD equivale a (MXN)</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="0.01" min="0.01" class="form-control" id="exchange-rate-input" required>
+                                <button type="submit" class="btn btn-success">Guardar</button>
+                            </div>
+                        </form>
                     </div>
-                    <button type="submit" class="btn btn-success">Guardar</button>
-                </form>
+                </div>
             </div>
-        </div>
 
-        <div class="card mt-4">
-            <div class="card-body">
-                <h6 class="card-title">Margen de ganancia</h6>
-                <p class="text-secondary small">
-                    Porcentaje que se agrega sobre el costo de producción de cada kit para obtener su
-                    precio de venta. No aplica a kits con precio manual (precio override).
-                </p>
-                <div id="margin-error" class="alert alert-danger d-none"></div>
-                <div id="margin-success" class="alert alert-success d-none"></div>
-                <form id="margin-form">
-                    <div class="mb-3">
-                        <label class="form-label" for="margin-input">Margen de ganancia (%)</label>
-                        <input type="number" step="0.01" min="0" class="form-control" id="margin-input" required>
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="card-title">Margen de ganancia</h6>
+                        <p class="text-secondary">Se suma al costo de cada kit para su precio de venta. No aplica a kits con precio manual.</p>
+                        <div id="margin-error" class="alert alert-danger d-none"></div>
+                        <div id="margin-success" class="alert alert-success d-none"></div>
+                        <form id="margin-form">
+                            <label class="form-label" for="margin-input">Margen de ganancia (%)</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="0.01" min="0" class="form-control" id="margin-input" required>
+                                <button type="submit" class="btn btn-success">Guardar</button>
+                            </div>
+                        </form>
                     </div>
-                    <button type="submit" class="btn btn-success">Guardar</button>
-                </form>
+                </div>
             </div>
-        </div>
 
-        <div class="card mt-4">
-            <div class="card-body">
-                <h6 class="card-title">Longitudes de cableado</h6>
-                <p class="text-secondary small">
-                    Distancia de ida (en metros) que se usa para calcular calibre y caída de voltaje de cada
-                    tramo. El cable necesario es el doble (positivo y negativo).
-                </p>
-                <div id="wiring-error" class="alert alert-danger d-none"></div>
-                <div id="wiring-success" class="alert alert-success d-none"></div>
-                <form id="wiring-form">
-                    <div class="mb-3">
-                        <label class="form-label" for="wiring-battery-input">Batería → inversor (m)</label>
-                        <input type="number" step="0.1" min="0.1" class="form-control" id="wiring-battery-input" required>
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="card-title">Longitudes de cableado</h6>
+                        <p class="text-secondary">Distancia de ida (m) para calcular calibre y caída de voltaje. El cable es el doble (+ y −).</p>
+                        <div id="wiring-error" class="alert alert-danger d-none"></div>
+                        <div id="wiring-success" class="alert alert-success d-none"></div>
+                        <form id="wiring-form">
+                            <div class="row g-2 mb-2">
+                                <div class="col-4">
+                                    <label class="form-label" for="wiring-battery-input" title="Batería → inversor">Batería → inv.</label>
+                                    <input type="number" step="0.1" min="0.1" class="form-control form-control-sm" id="wiring-battery-input" required>
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label" for="wiring-pv-input" title="Paneles → inversor">Paneles → inv.</label>
+                                    <input type="number" step="0.1" min="0.1" class="form-control form-control-sm" id="wiring-pv-input" required>
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label" for="wiring-controller-input" title="Controlador MPPT → batería (solo kits con controlador aparte)">MPPT → bat.</label>
+                                    <input type="number" step="0.1" min="0.1" class="form-control form-control-sm" id="wiring-controller-input" required>
+                                </div>
+                            </div>
+                            <div class="form-text mb-2">MPPT → bat.: solo en kits con controlador aparte del inversor.</div>
+                            <button type="submit" class="btn btn-success btn-sm">Guardar</button>
+                        </form>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label" for="wiring-pv-input">Paneles → inversor (m)</label>
-                        <input type="number" step="0.1" min="0.1" class="form-control" id="wiring-pv-input" required>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-12 col-xl-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-1">
+                            <h6 class="card-title mb-0">Catálogo: exportar / importar</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-ghost btn-sm" id="catalog-export-btn">
+                                    <i class="bi bi-download"></i> Descargar catálogo
+                                </button>
+                                <button type="button" class="btn btn-ghost btn-sm" id="catalog-example-btn">
+                                    <i class="bi bi-file-earmark-code"></i> Descargar ejemplo
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-secondary">
+                            Tus productos y kits en un archivo .json, para respaldarlos o pasarlos a otra tienda. Al importar,
+                            los SKU (y nombres de kit) que ya existen se actualizan con lo que traiga el archivo y los nuevos
+                            se crean. Nunca se borra nada. La configuración, usuarios y pedidos no se incluyen.
+                        </p>
+                        <div id="catalog-alert" class="alert d-none"></div>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <input type="file" class="form-control form-control-sm" id="catalog-file-input" accept=".json,application/json" style="max-width: 340px;">
+                            <button type="button" class="btn btn-ghost btn-sm" id="catalog-review-btn" disabled>
+                                <i class="bi bi-search"></i> Revisar archivo
+                            </button>
+                            <button type="button" class="btn btn-success btn-sm d-none" id="catalog-import-btn">
+                                <i class="bi bi-upload"></i> <span id="catalog-import-label">Importar</span>
+                            </button>
+                        </div>
+                        <div id="catalog-review" class="d-none mt-3">
+                            <div id="catalog-summary" class="mb-2"></div>
+                            <div class="table-responsive catalog-review-table">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead><tr><th>#</th><th>Tipo</th><th>SKU / Kit</th><th>Nombre</th><th>Resultado</th></tr></thead>
+                                    <tbody id="catalog-review-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label" for="wiring-controller-input">Controlador MPPT → batería (m)</label>
-                        <input type="number" step="0.1" min="0.1" class="form-control" id="wiring-controller-input" required>
-                        <div class="form-text">Solo en kits con controlador de carga aparte del inversor.</div>
-                    </div>
-                    <button type="submit" class="btn btn-success">Guardar</button>
-                </form>
+                </div>
             </div>
         </div>
     </div>
