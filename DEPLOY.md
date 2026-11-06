@@ -65,6 +65,12 @@ das de alta desde el admin.
    `https://baja-solar-supply.onrender.com` (Render te muestra la dirección exacta).
 5. Entra a `/admin` con el correo y contraseña del paso 3.
 
+### Correos: puerto 2525
+
+El plan gratis de Render bloquea la salida a los puertos de correo 25, 465 y 587 (el error en Logs
+es `Couldn't connect to host, port: smtp-relay.brevo.com, 587; timeout`). Brevo también recibe en
+el **2525**, que es el que trae `render.yaml`. En un plan de pago de Render funciona cualquiera.
+
 ### Si no arranca
 
 Revisa **Logs** en Render. La app se niega a arrancar con valores inseguros y dice cuál es:
@@ -128,7 +134,7 @@ Cloudflare → `bajasolarsupply.com` → **Email → Email Routing** → *Get st
      `v=spf1 include:_spf.mx.cloudflare.net include:spf.brevo.com ~all`.
 3. **Senders → Add a sender**: `Baja Solar Supply <pedidos@bajasolarsupply.com>`.
 4. **SMTP & API → SMTP → Generate a new SMTP key**.
-5. Render ya trae `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM` y `MAIL_ENABLED=true` (de `render.yaml`)
+5. Render ya trae `MAIL_HOST`, `MAIL_PORT=2525`, `MAIL_FROM` y `MAIL_ENABLED=true` (de `render.yaml`)
    y al crear el servicio te pide:
 
    | Variable | Valor |
