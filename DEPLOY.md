@@ -55,9 +55,12 @@ das de alta desde el admin.
    | `R2_ENDPOINT` | `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` (el mismo de tu `.env`) |
    | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | Los de tu token de R2 (mismos de tu `.env`) |
    | `R2_PUBLIC_URL` | `https://pub-xxxx.r2.dev` por ahora |
+   | `MAIL_USERNAME` | el *Login* de Brevo → SMTP & API → SMTP (`xxxx@smtp-brevo.com`) |
+   | `MAIL_PASSWORD` | la SMTP key de Brevo |
 
-   Ya vienen puestos: `SPRING_PROFILES_ACTIVE=prod`, `MAIL_ENABLED=false` (sin correos mientras
-   pruebas), `R2_BUCKET=box-app-images` y `JWT_SECRET` (Render lo genera al azar).
+   Ya vienen puestos: `SPRING_PROFILES_ACTIVE=prod`, `JWT_SECRET` (Render lo genera al azar),
+   `R2_BUCKET=box-app-images` y el correo con Brevo (`MAIL_ENABLED=true`, `MAIL_HOST`,
+   `MAIL_PORT`, `MAIL_FROM`). Para probar sin correos, cambia `MAIL_ENABLED` a `false`.
 4. **Apply**. El primer build tarda unos 5–8 min. Cuando diga *Live*, abre
    `https://baja-solar-supply.onrender.com` (Render te muestra la dirección exacta).
 5. Entra a `/admin` con el correo y contraseña del paso 3.
@@ -125,16 +128,13 @@ Cloudflare → `bajasolarsupply.com` → **Email → Email Routing** → *Get st
      `v=spf1 include:_spf.mx.cloudflare.net include:spf.brevo.com ~all`.
 3. **Senders → Add a sender**: `Baja Solar Supply <pedidos@bajasolarsupply.com>`.
 4. **SMTP & API → SMTP → Generate a new SMTP key**.
-5. En Render → Environment:
+5. Render ya trae `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM` y `MAIL_ENABLED=true` (de `render.yaml`)
+   y al crear el servicio te pide:
 
    | Variable | Valor |
    |---|---|
-   | `MAIL_ENABLED` | `true` |
-   | `MAIL_HOST` | `smtp-relay.brevo.com` |
-   | `MAIL_PORT` | `587` |
    | `MAIL_USERNAME` | el *SMTP login* que muestra Brevo (algo como `8a1b2c001@smtp-brevo.com`, no tu correo) |
    | `MAIL_PASSWORD` | la SMTP key |
-   | `MAIL_FROM` | `Baja Solar Supply <pedidos@bajasolarsupply.com>` |
 
 6. En el admin, en *Correo para avisos de pedidos nuevos*, pon el correo que recibe los avisos
    (p. ej. `pedidos@bajasolarsupply.com`).

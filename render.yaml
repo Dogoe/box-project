@@ -32,10 +32,20 @@ services:
         sync: false
       - key: ADMIN_BOOTSTRAP_PASSWORD
         sync: false
-      # Email: "false" to test without email. With "true", also set MAIL_USERNAME, MAIL_PASSWORD
-      # and MAIL_FROM (and MAIL_HOST for Brevo).
+      # Email through Brevo. To run without email, set MAIL_ENABLED to "false" (orders still work).
       - key: MAIL_ENABLED
-        value: "false"
+        value: "true"
+      - key: MAIL_HOST
+        value: smtp-relay.brevo.com
+      - key: MAIL_PORT
+        value: "587"
+      # Brevo > SMTP & API > SMTP: the "Login" (xxxx@smtp-brevo.com) and an SMTP key
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        value: Baja Solar Supply <pedidos@bajasolarsupply.com>
       # Photos (Cloudflare R2)
       - key: R2_ENDPOINT
         sync: false
