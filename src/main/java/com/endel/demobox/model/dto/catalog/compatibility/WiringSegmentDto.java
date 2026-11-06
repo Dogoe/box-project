@@ -8,6 +8,8 @@ public class WiringSegmentDto {
     private String segment;
     /** Max current the run actually carries. */
     private double operatingCurrentA;
+    /** Why the current above is lower than what the equipment could ask for (e.g. the BMS limit). */
+    private String currentNote;
     /** operatingCurrentA with the 1.25 continuous-load safety factor - what the wire and fuse are sized for. */
     private double designCurrentA;
     /** One-way run length; positive + negative conductors need twice this. */
@@ -21,6 +23,8 @@ public class WiringSegmentDto {
     private String fuseNote;
     /** Which of the kit's own cables cover this run, if any. */
     private String coveredBy;
+    /** Connector on the cable, when it's known (the panels' cable: MC4 or SAE). */
+    private String connector;
 
     public double getRequiredCableMeters() {
         return lengthMeters * 2;

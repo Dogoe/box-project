@@ -2,6 +2,7 @@ package com.endel.demobox.service.catalog;
 
 import com.endel.demobox.model.catalog.PhotoUrls;
 import com.endel.demobox.exception.ResourceNotFoundException;
+import com.endel.demobox.model.catalog.PanelConnector;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.dto.catalog.SolarPanelDto;
 import com.endel.demobox.repository.catalog.SolarPanelRepository;
@@ -68,6 +69,7 @@ public class SolarPanelService {
         panel.setEfficiencyPercent(dto.getEfficiencyPercent());
         panel.setVoc(dto.getVoc());
         panel.setIsc(dto.getIsc());
+        panel.setConnector(dto.getConnector() != null ? dto.getConnector() : PanelConnector.MC4);
     }
 
     private SolarPanelDto toDto(SolarPanel panel) {
@@ -88,6 +90,7 @@ public class SolarPanelService {
         dto.setEfficiencyPercent(panel.getEfficiencyPercent());
         dto.setVoc(panel.getVoc());
         dto.setIsc(panel.getIsc());
+        dto.setConnector(panel.getConnector());
         return dto;
     }
 }

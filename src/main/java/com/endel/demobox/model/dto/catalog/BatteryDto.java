@@ -53,6 +53,9 @@ public class BatteryDto {
     private BatteryChemistry chemistry;
 
     private Integer cycleLife;
+    /** Optional, lithium only: the BMS's continuous discharge limit (A). Empty = capacity in amps (1C). */
+    @Positive(message = "La corriente del BMS debe ser mayor que 0")
+    private Double bmsMaxDischargeA;
 
     // Read-only, derived from capacityAh/voltage/chemistry.
     private double capacityKwh;

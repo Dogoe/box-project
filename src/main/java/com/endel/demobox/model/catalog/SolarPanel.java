@@ -34,4 +34,16 @@ public class SolarPanel extends Product {
     private double voc;
 
     private double isc;
+
+    /**
+     * Connector on the panel's output cable. Nullable in the database so panels saved before this
+     * column existed still load; {@link #getConnector()} reads those as MC4, the usual connector.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private PanelConnector connector = PanelConnector.MC4;
+
+    public PanelConnector getConnector() {
+        return connector == null ? PanelConnector.MC4 : connector;
+    }
 }

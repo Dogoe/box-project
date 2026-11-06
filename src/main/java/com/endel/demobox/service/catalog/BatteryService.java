@@ -68,6 +68,7 @@ public class BatteryService {
         battery.setVoltage(dto.getVoltage());
         battery.setChemistry(dto.getChemistry() != null ? dto.getChemistry() : BatteryChemistry.LIFEPO4);
         battery.setCycleLife(dto.getCycleLife());
+        battery.setBmsMaxDischargeA(dto.getBmsMaxDischargeA());
     }
 
     private BatteryDto toDto(Battery battery) {
@@ -87,6 +88,7 @@ public class BatteryService {
         dto.setVoltage(battery.getVoltage());
         dto.setChemistry(battery.getChemistry());
         dto.setCycleLife(battery.getCycleLife());
+        dto.setBmsMaxDischargeA(battery.getBmsMaxDischargeA());
         dto.setCapacityKwh(battery.getCapacityKwh());
         dto.setDepthOfDischargePercent(battery.getDepthOfDischarge() * 100);
         dto.setMaxDischargeCurrentA(battery.getMaxDischargeCurrentA());

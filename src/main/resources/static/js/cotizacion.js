@@ -302,8 +302,7 @@
         const addSuggestedBtn = document.getElementById('kit-suggestion-add');
         addSuggestedBtn.addEventListener('click', () => {
             if (suggestedKitId != null) {
-                window.BajaSolarCart.add(suggestedKitId, 1);
-                window.BajaSolarCart.flashAdded(addSuggestedBtn);
+                window.BajaSolarCart.addWithLock(suggestedKitId, 1, addSuggestedBtn);
             }
         });
     }

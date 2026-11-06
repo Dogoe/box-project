@@ -235,6 +235,31 @@ class AdminCatalogControllerTest {
     }
 
     @Test
+    void panelConnectorIsMc4UnlessTheFileSaysSae() throws Exception {
+        importFile(CATALOG, false);
+        JsonNode exported = testPart(export());
+        assertThat(exported.at("/products/0/connector").asText()).as("no connector in the file -> MC4").isEqualTo("MC4");
+
+        JsonNode result = importFile("""
+                { "products": [
+                    { "type": "SOLAR_PANEL", "sku": "T-PNL-50-SAE", "name": "Kit panel 50 W 12 V", "price": 650,
+                      "wattage": 50, "technology": "MONOCRYSTALLINE", "voc": 21.6, "isc": 3.06, "connector": "SAE" },
+                    { "type": "SOLAR_PANEL", "sku": "T-PNL-BAD", "name": "Panel", "price": 1, "wattage": 50,
+                      "technology": "MONOCRYSTALLINE", "connector": "ANDERSON" } ] }
+                """, true);
+        assertThat(errorsOf(result)).containsExactly(
+                "T-PNL-BAD: «connector»: «ANDERSON» no es válido; usa uno de: MC4, SAE.");
+
+        JsonNode saved = importFile("""
+                { "products": [ { "type": "SOLAR_PANEL", "sku": "T-PNL-50-SAE", "name": "Kit panel 50 W 12 V", "price": 650,
+                                  "wattage": 50, "technology": "MONOCRYSTALLINE", "voc": 21.6, "isc": 3.06, "connector": "SAE" } ] }
+                """, false);
+        assertThat(errorsOf(saved)).isEmpty();
+        assertThat(((com.endel.demobox.model.catalog.SolarPanel) productRepository.findBySku("T-PNL-50-SAE").orElseThrow())
+                .getConnector().name()).isEqualTo("SAE");
+    }
+
+    @Test
     void aSkuCannotChangeItsProductType() throws Exception {
         importFile(CATALOG, false);
 

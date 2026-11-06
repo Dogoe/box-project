@@ -1,5 +1,6 @@
 package com.endel.demobox.model.dto.catalog;
 
+import com.endel.demobox.model.catalog.PanelConnector;
 import com.endel.demobox.model.catalog.PanelTechnology;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -54,4 +55,6 @@ public class SolarPanelDto {
     private double voc;
 
     private double isc;
+    /** MC4 (default when missing) or SAE. */
+    private PanelConnector connector;
 }

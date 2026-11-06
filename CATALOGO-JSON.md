@@ -54,6 +54,7 @@ Los números van sin comillas (`550`, `21.3`); los textos, con comillas (`"Jinko
 | `efficiencyPercent` | no | Eficiencia en %, p. ej. `21.3` |
 | `voc` | no | Voltaje de circuito abierto (V) |
 | `isc` | no | Corriente de corto circuito (A) |
+| `connector` | no | Conector del cable del panel: `MC4` (si no viene) o `SAE` (kits chicos de 12 V) |
 
 ### Batería: `"type": "BATTERY"`
 
@@ -63,8 +64,9 @@ Los números van sin comillas (`550`, `21.3`); los textos, con comillas (`"Jinko
 | `voltage` | sí | Voltaje nominal: `12`, `24`, `48`… |
 | `chemistry` | no | `LIFEPO4` (si no viene), `LITHIUM_ION`, `LEAD_ACID`, `GEL` o `AGM` |
 | `cycleLife` | no | Ciclos de vida |
+| `bmsMaxDischargeA` | no | Solo litio: corriente máxima continua de descarga de su BMS (A), de la ficha. Sin ella se supone su capacidad en amperes (100 Ah → 100 A) |
 
-Los kWh, la profundidad de descarga y la corriente máxima se calculan solos.
+Los kWh y la profundidad de descarga se calculan solos. La corriente máxima es la del BMS si la capturas.
 
 ### Inversor: `"type": "INVERTER"`
 
@@ -72,7 +74,7 @@ Los kWh, la profundidad de descarga y la corriente máxima se calculan solos.
 |---|---|---|
 | `ratedPowerKw` | sí | Potencia continua en kW, p. ej. `3` |
 | `surgePowerKw` | sí | Potencia pico en kW |
-| `inverterType` | sí | `STRING`, `HYBRID` o `MICRO` |
+| `inverterType` | sí | `OFF_GRID`, `HYBRID`, `STRING` o `MICRO` |
 | `batteryVoltage` | no | Voltaje de batería: `12`, `24` o `48` |
 | `builtInCharger` | no | `true` si trae cargador solar MPPT (si no viene: `true`); `false` si necesita controlador aparte |
 | `mpptChannels` | no | Número de entradas MPPT |

@@ -7,6 +7,7 @@ import com.endel.demobox.model.catalog.ChargeController;
 import com.endel.demobox.model.catalog.ConnectionCable;
 import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.catalog.InverterType;
+import com.endel.demobox.model.catalog.PanelConnector;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.catalog.WireGauge;
 import com.endel.demobox.model.dto.WiringSettingsDto;
@@ -127,8 +128,9 @@ class KitCompatibilityServiceTest {
     }
 
     @Test
-    void oneKilowattInverterOnTwelveVolts_needsTwoOughtCableAndA125AmpFuse() {
-        // 1000 W / (12 V x 0.9) = 92.6 A operating; x1.25 = 115.7 A -> 1/0 (100 A) is too small, 2/0 (150 A) fits.
+    void oneKilowattInverterOnTwelveVolts_needsOneOughtCableAndA125AmpFuse() {
+        // 1000 W / (12 V x 0.9) = 92.6 A operating; x1.25 = 115.7 A -> 125 A fuse. The cable must carry the fuse:
+        // 2 AWG (115 A) is too small, 1/0 (150 A, NEC 75 C) fits. The 100 Ah LiFePO4 gives 100 A, so it doesn't limit.
         Inverter inverter = inverter(1.0, 12.0, InverterType.OFF_GRID);
         KitCompatibilityReportDto report = service.analyze(List.of(
                 new KitLine(inverter, 1),
@@ -136,10 +138,62 @@ class KitCompatibilityServiceTest {
 
         WiringSegmentDto batteryRun = segment(report, "Batería");
         assertEquals(92.6, batteryRun.getOperatingCurrentA(), 0.1);
-        assertEquals(WireGauge.AWG_2_0, batteryRun.getGauge());
+        assertEquals(WireGauge.AWG_1_0, batteryRun.getGauge());
         assertEquals(125, batteryRun.getFuseA());
         assertTrue(batteryRun.getVoltageDropPercent() < 3.0);
         assertTrue(report.getBatteryBank().startsWith("1 en serie × 1 en paralelo"));
+    }
+
+    @Test
+    void smallLithiumBankWithoutBmsRating_cableSizedForItsCapacityInAmps_withWarnings() {
+        // The inverter could pull 92.6 A, but a 50 Ah LiFePO4 is assumed to give 50 A (1C) before its BMS cuts off:
+        // 50 x 1.25 = 62.5 A -> 70 A fuse -> 4 AWG (85 A) instead of 1/0.
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverter(1.0, 12.0, InverterType.OFF_GRID), 1),
+                new KitLine(battery(12.8, 50), 1)), lengths);
+
+        WiringSegmentDto batteryRun = segment(report, "Batería");
+        assertEquals(50.0, batteryRun.getOperatingCurrentA(), 0.01);
+        assertEquals(70, batteryRun.getFuseA());
+        assertEquals(WireGauge.AWG_4, batteryRun.getGauge());
+        assertEquals("Limitada por el BMS del banco (50 A; el inversor podría pedir 92.6 A)", batteryRun.getCurrentNote());
+        assertTrue(hasCheck(report, CompatibilitySeverity.WARNING,
+                "El cable batería–inversor se calculó con esos 50 A, porque el BMS corta antes."), report.getChecks().toString());
+        assertTrue(hasCheck(report, CompatibilitySeverity.WARNING,
+                "no tiene capturada la corriente máxima de su BMS; se supuso 50 A"), report.getChecks().toString());
+    }
+
+    @Test
+    void capturedBmsRatingIsUsedAndTheAssumptionWarningGoesAway() {
+        Battery battery = battery(12.8, 50);
+        battery.setBmsMaxDischargeA(60.0);
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverter(1.0, 12.0, InverterType.OFF_GRID), 1),
+                new KitLine(battery, 1)), lengths);
+
+        WiringSegmentDto batteryRun = segment(report, "Batería");
+        assertEquals(60.0, batteryRun.getOperatingCurrentA(), 0.01); // 75 A design -> 80 A fuse -> 4 AWG
+        assertEquals(80, batteryRun.getFuseA());
+        assertEquals(WireGauge.AWG_4, batteryRun.getGauge());
+        assertFalse(hasCheck(report, CompatibilitySeverity.WARNING, "no tiene capturada"), report.getChecks().toString());
+    }
+
+    @Test
+    void leadAcidHasNoBms_soTheCableIsSizedForTheFullInverterDraw() {
+        Battery agm = battery(12.0, 50);
+        agm.setChemistry(BatteryChemistry.AGM);
+        agm.setBmsMaxDischargeA(30.0); // meaningless without a BMS: ignored
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverter(1.0, 12.0, InverterType.OFF_GRID), 1),
+                new KitLine(agm, 1)), lengths);
+
+        WiringSegmentDto batteryRun = segment(report, "Batería");
+        assertEquals(92.6, batteryRun.getOperatingCurrentA(), 0.1);
+        assertEquals(WireGauge.AWG_1_0, batteryRun.getGauge());
+        assertNull(batteryRun.getCurrentNote());
+        assertEquals(10.0, agm.getMaxDischargeCurrentA(), 0.01); // 0.2C, only used for the "bank gives max" warning
+        assertFalse(hasCheck(report, CompatibilitySeverity.WARNING, "se calculó con esos"), report.getChecks().toString());
+        assertFalse(hasCheck(report, CompatibilitySeverity.WARNING, "no tiene capturada"), report.getChecks().toString());
     }
 
     @Test
@@ -189,7 +243,8 @@ class KitCompatibilityServiceTest {
                 new KitLine(panel(), 6)), lengths);
 
         assertTrue(report.getPanelArray().startsWith("1 cadena de 6 paneles en serie"), report.getPanelArray());
-        assertEquals(WireGauge.AWG_10, segment(report, "Paneles").getGauge()); // 13.9 A x 1.25 = 17.4 A
+        // 13.9 A x 1.56 (NEC 690.8) = 21.7 A -> 25 A fuse -> 10 AWG (30 A); 12 AWG (20 A) is too small.
+        assertEquals(WireGauge.AWG_10, segment(report, "Paneles").getGauge());
     }
 
     @Test
@@ -553,6 +608,37 @@ class KitCompatibilityServiceTest {
         assertEquals("Integrado en el inversor · 40 A de carga", report.getSolarCharger());
         assertFalse(report.getWiring().stream().anyMatch(s -> s.getSegment().startsWith("Controlador")));
         segment(report, "Paneles – inversor (MPPT)");
+    }
+
+    @Test
+    void panelCableNamesThePanelsConnector_mc4UnlessThePanelSaysOtherwise() {
+        List<KitLine> base = List.of(
+                new KitLine(inverter(5.0, 48.0, InverterType.HYBRID), 1),
+                new KitLine(battery(51.2, 100), 1));
+
+        KitCompatibilityReportDto mc4 = service.analyze(withPanels(base, panel()), lengths);
+        assertEquals("MC4", segment(mc4, "Paneles – inversor (MPPT)").getConnector());
+
+        SolarPanel saePanel = panel();
+        saePanel.setConnector(PanelConnector.SAE);
+        KitCompatibilityReportDto sae = service.analyze(withPanels(base, saePanel), lengths);
+        assertEquals("SAE", segment(sae, "Paneles – inversor (MPPT)").getConnector());
+
+        // Panels saved before the connector column existed have none stored: they read as MC4.
+        SolarPanel legacy = panel();
+        legacy.setConnector(null);
+        assertEquals(PanelConnector.MC4, legacy.getConnector());
+
+        // Only the panels' cable has a known connector.
+        mc4.getWiring().stream()
+                .filter(s -> !s.getSegment().startsWith("Paneles"))
+                .forEach(s -> assertNull(s.getConnector(), s.getSegment()));
+    }
+
+    private static List<KitLine> withPanels(List<KitLine> base, SolarPanel panel) {
+        List<KitLine> lines = new java.util.ArrayList<>(base);
+        lines.add(new KitLine(panel, 6));
+        return lines;
     }
 
     @Test
