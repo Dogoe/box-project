@@ -29,19 +29,23 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  # Development: MailHog captures every email without delivering it (UI on http://localhost:8025).
-  # Production SMTP settings live in application-prod.yml.
+  # Without MAIL_* variables, development uses MailHog, which captures every email without
+  # delivering it (UI on http://localhost:8025). To send real emails from your machine (e.g. with
+  # Brevo), put MAIL_HOST, MAIL_PORT, MAIL_USERNAME and MAIL_PASSWORD in your .env (.env.example).
   mail:
-    host: localhost
-    port: 1025
-    username: ""
-    password: ""
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
+          # Stays false: the mail client still logs in whenever MAIL_USERNAME/MAIL_PASSWORD are set
+          # (Brevo, Gmail), and MailHog needs no login.
           auth: false
           starttls:
-            enable: false
+            # Encrypts when the server offers it (Brevo, Gmail); MailHog doesn't, so it's skipped.
+            enable: true
           # Fail fast instead of tying up a thread when the SMTP server is unreachable.
           connectiontimeout: 5000
           timeout: 5000
@@ -52,8 +56,8 @@ app:
   public-base-url: ${PUBLIC_BASE_URL:http://localhost:8080}
   mail:
     # false skips sending entirely (orders still work); emails are only ever a notification.
-    enabled: true
-    from: "Baja Solar Supply <pedidos@bajasolarsupply.com>"
+    enabled: ${MAIL_ENABLED:true}
+    from: ${MAIL_FROM:Baja Solar Supply <pedidos@bajasolarsupply.com>}
   rate-limit:
     # Caps login attempts, sign-ups, password-reset emails and orders per IP/email (see RateLimit).
     # Answers 429 "Intenta de nuevo en N minutos" when exceeded.

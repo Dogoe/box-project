@@ -1,4 +1,4 @@
-# Keep local secrets and build output out of the Docker build context.
+# Keep local secrets and build leftovers out of the Docker build.
 .env
 .env.*
 !.env.example
@@ -6,3 +6,5 @@
 .gradle
 build
 .idea
+*.iml
+out
