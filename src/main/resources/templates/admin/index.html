@@ -7,22 +7,20 @@
 
     <title>Panel de administración | Baja Solar Supply</title>
 
-    <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-            rel="stylesheet">
-    <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <th:block th:replace="~{fragments/layout :: commonHead}"></th:block>
 </head>
 
-<body>
+<body class="admin">
 
-<nav class="navbar navbar-expand-lg bg-white border-bottom">
+<nav class="navbar navbar-expand-lg site-nav">
     <div class="container">
-        <a class="navbar-brand fw-bold fs-4" href="/admin">Baja Solar Supply Admin</a>
-        <button type="button" class="btn btn-outline-secondary btn-sm" id="logout-btn">
-            <i class="bi bi-box-arrow-right"></i> Cerrar sesión
-        </button>
+        <a class="navbar-brand fw-bold fs-4" href="/admin">Baja Solar<span>Supply</span> Admin</a>
+        <div class="d-flex gap-2">
+            <th:block th:replace="~{fragments/layout :: themeToggle}"></th:block>
+            <button type="button" class="btn btn-ghost btn-sm" id="logout-btn">
+                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+            </button>
+        </div>
     </div>
 </nav>
 
@@ -77,11 +75,11 @@
     </div>
 
     <div class="btn-group btn-group-sm mb-3 d-none" role="group" id="orders-filter" aria-label="Filtrar pedidos">
-        <button type="button" class="btn btn-outline-dark active" data-status="">Todos</button>
-        <button type="button" class="btn btn-outline-dark" data-status="PENDING">Pendientes</button>
-        <button type="button" class="btn btn-outline-dark" data-status="PAID">Pagados</button>
-        <button type="button" class="btn btn-outline-dark" data-status="DELIVERED">Entregados</button>
-        <button type="button" class="btn btn-outline-dark" data-status="CANCELLED">Cancelados</button>
+        <button type="button" class="btn btn-ghost active" data-status="">Todos</button>
+        <button type="button" class="btn btn-ghost" data-status="PENDING">Pendientes</button>
+        <button type="button" class="btn btn-ghost" data-status="PAID">Pagados</button>
+        <button type="button" class="btn btn-ghost" data-status="DELIVERED">Entregados</button>
+        <button type="button" class="btn btn-ghost" data-status="CANCELLED">Cancelados</button>
     </div>
 
     <div class="table-responsive" id="entity-table-wrapper">
@@ -234,6 +232,7 @@
         src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
 </script>
 
+<script th:src="@{/js/theme.js}"></script>
 <script th:src="@{/js/admin.js}"></script>
 
 </body>

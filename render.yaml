@@ -1,0 +1,61 @@
+# Render Blueprint: Render > New > Blueprint > pick this repository. It creates the web service
+# from the Dockerfile; you then fill in the values marked "sync: false" (Render asks for them).
+# Step by step: DEPLOY.md.
+services:
+  - type: web
+    name: baja-solar-supply
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    # Free plan for testing: sleeps after 15 min without visits (the next visit takes ~1 min to
+    # wake it). Change to "starter" to keep it always on.
+    plan: free
+    # Same area as the Neon database (AWS us-west-2, Oregon), so queries stay fast.
+    region: oregon
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      # Render generates a random secret once and keeps it.
+      - key: JWT_SECRET
+        generateValue: true
+      # Neon database (see DEPLOY.md, step 1)
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # First admin (only used if it doesn't exist yet)
+      - key: ADMIN_BOOTSTRAP_EMAIL
+        sync: false
+      - key: ADMIN_BOOTSTRAP_PASSWORD
+        sync: false
+      # Email through Brevo. To run without email, set MAIL_ENABLED to "false" (orders still work).
+      - key: MAIL_ENABLED
+        value: "true"
+      - key: MAIL_HOST
+        value: smtp-relay.brevo.com
+      - key: MAIL_PORT
+        value: "587"
+      # Brevo > SMTP & API > SMTP: the "Login" (xxxx@smtp-brevo.com) and an SMTP key
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        value: Baja Solar Supply <pedidos@bajasolarsupply.com>
+      # Photos (Cloudflare R2)
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_BUCKET
+        value: box-app-images
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_PUBLIC_URL
+        sync: false
+      # PUBLIC_BASE_URL: leave it unset while you use the onrender.com address. When your domain
+      # points here, add PUBLIC_BASE_URL=https://bajasolarsupply.com in Render > Environment.

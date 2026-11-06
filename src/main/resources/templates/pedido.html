@@ -8,78 +8,12 @@
     <title>Tu pedido | Baja Solar Supply</title>
     <meta name="robots" content="noindex">
 
-    <!-- Bootstrap 5.3.8 -->
-    <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-            rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
-    <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <th:block th:replace="~{fragments/layout :: commonHead}"></th:block>
 </head>
 
-<body>
+<body class="storefront">
 
-<!-- ========================================================= -->
-<!-- NAVBAR -->
-<!-- ========================================================= -->
-
-<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
-    <div class="container">
-
-        <a class="navbar-brand fw-bold fs-3" href="/home">
-            Baja Solar<span>Supply</span>
-        </a>
-
-        <button
-                class="navbar-toggler"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#mainNavbar">
-
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="mainNavbar">
-
-            <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-
-                <li class="nav-item">
-                    <a class="nav-link" href="/home">Inicio</a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link text-success fw-semibold" href="/cotizacion">
-                        <i class="bi bi-calculator"></i> Cotizador
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="/kits">Kits</a>
-                </li>
-
-            </ul>
-
-            <div class="d-flex align-items-center gap-3">
-                <a href="/cuenta" class="btn btn-sm btn-outline-dark" aria-label="Mi cuenta">
-                    <i class="bi bi-person"></i> <span data-account-label>Entrar</span>
-                </a>
-
-                <a href="/carrito" class="btn btn-sm btn-outline-success position-relative" aria-label="Carrito">
-                    <i class="bi bi-cart3"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success d-none" data-cart-count>0</span>
-                </a>
-
-                <div class="btn-group btn-group-sm" role="group" aria-label="Región">
-                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="es">MX</button>
-                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="en">US</button>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</nav>
+<th:block th:replace="~{fragments/layout :: header('', false)}"></th:block>
 
 
 <section class="py-5">
@@ -88,7 +22,7 @@
         <div class="text-center py-5" th:if="${order == null}">
             <h1 class="fw-bold">No encontramos ese pedido</h1>
             <p class="text-secondary">Revisa el folio <strong th:text="${folio}">-</strong> o contáctanos.</p>
-            <a href="/kits" class="btn btn-success">Ver kits</a>
+            <a href="/kits" class="btn btn-accent">Ver kits</a>
         </div>
 
         <th:block th:if="${order != null}">
@@ -109,10 +43,10 @@
 
             <div class="card mb-4" th:if="${order.status.name() == 'PENDING'}">
                 <div class="card-body">
-                    <h5 class="fw-semibold"><i class="bi bi-cash-coin text-success"></i> Cómo pagar</h5>
+                    <h5 class="fw-semibold"><i class="bi bi-cash-coin"></i> Cómo pagar</h5>
                     <p class="mb-3" style="white-space: pre-line;" th:text="${paymentInstructions}">Instrucciones</p>
                     <a th:if="${whatsappUrl != null}" th:href="${whatsappUrl}" target="_blank" rel="noopener noreferrer"
-                       class="btn btn-success" id="whatsapp-order-btn">
+                       class="btn btn-accent" id="whatsapp-order-btn">
                         <i class="bi bi-whatsapp"></i> Enviar mi pedido por WhatsApp
                     </a>
                 </div>
@@ -166,7 +100,7 @@
 
             <div class="text-center mb-3" th:if="${order.status.name() != 'PENDING' and whatsappQuestionUrl != null}">
                 <a th:href="${whatsappQuestionUrl}" target="_blank" rel="noopener noreferrer"
-                   class="btn btn-outline-success" id="whatsapp-question-btn">
+                   class="btn btn-ghost" id="whatsapp-question-btn">
                     <i class="bi bi-whatsapp"></i> ¿Dudas? Escríbenos por WhatsApp
                 </a>
             </div>
@@ -178,25 +112,10 @@
     </div>
 </section>
 
-<!-- ========================================================= -->
-<!-- FOOTER -->
-<!-- ========================================================= -->
-
-<footer class="footer bg-dark text-white-50 py-4 mt-5">
-    <div class="container text-center">
-        <small>© 2026 Baja Solar Supply. Todos los derechos reservados.</small>
-    </div>
-</footer>
+<th:block th:replace="~{fragments/layout :: footer}"></th:block>
 
 
-<!-- Bootstrap JS -->
-<script
-        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
-</script>
-
-<script th:src="@{/js/region.js}"></script>
-<script th:src="@{/js/account.js}"></script>
-<script th:src="@{/js/cart.js}"></script>
+<th:block th:replace="~{fragments/layout :: commonScripts}"></th:block>
 
 </body>
 </html>

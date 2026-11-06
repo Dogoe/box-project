@@ -1,0 +1,56 @@
+/*
+ * Dark theme: pure black background, white text and controls.
+ * Only colors live here; layout and typography are in site.css.
+ * ":root[...]" outranks the light sheet's ":root" fallback, whichever loads last.
+ */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+
+    /* Store palette */
+    --bss-bg: #000000;
+    --bss-surface: #0b0b0c;
+    --bss-surface-alt: #141416;
+    --bss-border: rgba(255, 255, 255, 0.14);
+    --bss-text: #f2f2f2;
+    --bss-muted: #a3a3a3;
+    --bss-accent: #ffffff;
+    --bss-accent-contrast: #000000;
+    --bss-nav-bg: rgba(0, 0, 0, 0.88);
+    --bss-topbar-bg: #0b0b0c;
+    --bss-topbar-text: #a3a3a3;
+    --bss-footer-bg: #0b0b0c;
+    /* Product photos have white backgrounds; a soft light frame keeps them from glaring on black. */
+    --bss-photo-bg: #f2f2f2;
+    --bss-photo-gap: #dcdcdc;
+    --bss-hero-overlay: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.55) 55%, #000 100%);
+
+    /* Bootstrap, so its components follow the palette */
+    --bs-body-bg: var(--bss-bg);
+    --bs-body-bg-rgb: 0, 0, 0;
+    --bs-body-color: var(--bss-text);
+    --bs-body-color-rgb: 242, 242, 242;
+    --bs-emphasis-color: #ffffff;
+    --bs-emphasis-color-rgb: 255, 255, 255;
+    --bs-secondary-color: var(--bss-muted);
+    --bs-secondary-rgb: 163, 163, 163;
+    --bs-secondary-bg: var(--bss-surface-alt);
+    --bs-tertiary-bg: var(--bss-surface-alt);
+    --bs-tertiary-bg-rgb: 20, 20, 22;
+    --bs-border-color: var(--bss-border);
+    --bs-border-color-translucent: var(--bss-border);
+    --bs-heading-color: #ffffff;
+    --bs-link-color: #ffffff;
+    --bs-link-color-rgb: 255, 255, 255;
+    --bs-link-hover-color: #cfcfcf;
+    --bs-link-hover-color-rgb: 207, 207, 207;
+    --bs-focus-ring-color: rgba(255, 255, 255, 0.35);
+}
+
+/* The store fills checked boxes white (see site.css), so the mark must be black. */
+[data-theme="dark"] .storefront .form-check-input:checked[type="checkbox"] {
+    --bs-form-check-bg-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
+}
+
+[data-theme="dark"] .storefront .form-check-input:checked[type="radio"] {
+    --bs-form-check-bg-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23000'/%3e%3c/svg%3e");
+}

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Shared page chrome for the storefront. Each page keeps its own <title> and page-specific CSS/JS. -->
+
+<!-- Theme and stylesheets every page uses (store and admin); goes inside <head>. -->
+<th:block th:fragment="commonHead">
+    <!--
+      Set the theme before anything is painted so the page never flashes the wrong colors:
+      the visitor's saved choice, otherwise light. theme.js handles the switch button.
+    -->
+    <script>
+        (function () {
+            var theme = 'light';
+            try {
+                var saved = localStorage.getItem('bss-theme');
+                if (saved === 'light' || saved === 'dark') {
+                    theme = saved;
+                }
+            } catch (e) {
+                // storage blocked: use the default
+            }
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.setAttribute('data-bs-theme', theme);
+        })();
+    </script>
+    <!-- Bootstrap 5.3.8 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <!-- Barlow: a clean, technical sans-serif for the black-and-white look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap">
+    <!-- Shared layout/typography, then one sheet per theme (each only applies to its own theme) -->
+    <link rel="stylesheet" th:href="@{/css/site.css}">
+    <link rel="stylesheet" th:href="@{/css/theme-dark.css}">
+    <link rel="stylesheet" th:href="@{/css/theme-light.css}">
+</th:block>
+
+
+<!--
+  Top bar (optional) and main menu.
+  active: 'home', 'cotizacion' or 'kits' highlights that link; anything else highlights none.
+-->
+<th:block th:fragment="header(active, topBar)">
+
+    <div class="top-bar" th:if="${topBar}">
+        <div class="container">
+            <span>
+                <i class="bi bi-lightning-charge-fill"></i>
+                Energía limpia para una vida independiente
+            </span>
+        </div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg site-nav sticky-top">
+        <div class="container">
+
+            <a class="navbar-brand fw-bold fs-3" href="/home">
+                Baja Solar<span>Supply</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+                    aria-controls="mainNavbar" aria-expanded="false" aria-label="Abrir menú">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNavbar">
+
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${active == 'home'} ? 'active'" href="/home"
+                           th:attr="aria-current=${active == 'home'} ? 'page' : null">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${active == 'cotizacion'} ? 'active'" href="/cotizacion"
+                           th:attr="aria-current=${active == 'cotizacion'} ? 'page' : null">
+                            <i class="bi bi-calculator"></i> Cotizador
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${active == 'kits'} ? 'active'" href="/kits"
+                           th:attr="aria-current=${active == 'kits'} ? 'page' : null">Kits</a>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-3">
+                    <a href="/cuenta" class="btn btn-sm btn-ghost" aria-label="Mi cuenta">
+                        <i class="bi bi-person"></i> <span data-account-label>Entrar</span>
+                    </a>
+
+                    <a href="/carrito" class="btn btn-sm btn-ghost position-relative" aria-label="Carrito">
+                        <i class="bi bi-cart3"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill cart-count-badge d-none" data-cart-count>0</span>
+                    </a>
+
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Región">
+                        <button type="button" class="btn btn-ghost region-toggle-btn" data-lang="es">MX</button>
+                        <button type="button" class="btn btn-ghost region-toggle-btn" data-lang="en">US</button>
+                    </div>
+
+                    <th:block th:replace="~{:: themeToggle}"></th:block>
+                </div>
+
+            </div>
+        </div>
+    </nav>
+
+</th:block>
+
+
+<!-- Dark/light switch button (theme.js keeps its icon and label in sync). -->
+<th:block th:fragment="themeToggle">
+    <button type="button" class="btn btn-sm btn-ghost theme-toggle" data-theme-toggle
+            aria-label="Cambiar tema" title="Cambiar tema">
+        <i class="bi bi-sun"></i>
+    </button>
+</th:block>
+
+
+<th:block th:fragment="footer">
+    <footer class="footer mt-5">
+        <div class="container">
+
+            <div class="row g-4 py-5">
+
+                <div class="col-lg-6">
+                    <a class="footer-brand" href="/home">Baja Solar<span>Supply</span></a>
+                    <p class="text-white-50 mt-3 mb-0">
+                        Soluciones de energía solar para construir
+                        un futuro más independiente y sostenible.
+                    </p>
+                    <div class="d-flex gap-3 mt-4 footer-social">
+                        <a href="#" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+                        <a href="#" aria-label="YouTube"><i class="bi bi-youtube"></i></a>
+                    </div>
+                </div>
+
+                <div class="col-4 col-lg-2">
+                    <h6>Productos</h6>
+                    <ul>
+                        <li><a href="/kits">Kits</a></li>
+                        <li><a href="/cotizacion">Cotizador</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-4 col-lg-2">
+                    <h6>Ayuda</h6>
+                    <ul>
+                        <li><a href="#">Contacto</a></li>
+                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Garantía</a></li>
+                        <li><a href="#">Soporte</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-4 col-lg-2">
+                    <h6>Empresa</h6>
+                    <ul>
+                        <li><a href="#">Nosotros</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Proyectos</a></li>
+                        <li><a href="#">Privacidad</a></li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <div class="footer-bottom">
+                <small>© 2026 Baja Solar Supply. Todos los derechos reservados.</small>
+            </div>
+
+        </div>
+    </footer>
+</th:block>
+
+
+<!-- Scripts every page uses, before the page's own scripts. -->
+<th:block th:fragment="commonScripts">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/region.js}"></script>
+    <script th:src="@{/js/account.js}"></script>
+    <script th:src="@{/js/cart.js}"></script>
+    <script th:src="@{/js/theme.js}"></script>
+</th:block>
+
+</body>
+</html>

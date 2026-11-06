@@ -4,12 +4,8 @@ package com.endel.demobox.controller;
 import com.endel.demobox.authentication.CustomUserDetails;
 import com.endel.demobox.authentication.JWTAuthenticationService;
 import com.endel.demobox.authentication.LoginRequestDTO;
-import com.endel.demobox.authentication.RegisterRequestDTO;
 import com.endel.demobox.exception.InvalidCredentialsException;
 import com.endel.demobox.ratelimit.LoginAttemptGuard;
-import com.endel.demobox.ratelimit.RateLimit;
-import com.endel.demobox.ratelimit.RateLimiter;
-import com.endel.demobox.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -32,13 +28,7 @@ public class AuthController {
     private JWTAuthenticationService jwtAuthenticationService;
 
     @Autowired
-    private UserService userService;
-
-    @Autowired
     private LoginAttemptGuard loginGuard;
-
-    @Autowired
-    private RateLimiter rateLimiter;
 
     public AuthController(AuthenticationManager authenticationManager) {
         this.authenticationManager = authenticationManager;
@@ -50,7 +40,13 @@ public class AuthController {
             try {
                 Authentication authentication = authenticationManager.authenticate(
                         new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-                return jwtAuthenticationService.generateToken((CustomUserDetails) authentication.getPrincipal());
+                CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
+                // This login is the admin panel's. Customers sign in through /api/account/login, so a
+                // customer password here gets the same answer as a wrong one.
+                if (user.getAuthorities().stream().noneMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()))) {
+                    throw new InvalidCredentialsException("Correo o contraseña incorrectos.");
+                }
+                return jwtAuthenticationService.generateToken(user);
             } catch (AuthenticationException e) {
                 throw new InvalidCredentialsException("Correo o contraseña incorrectos.");
             }
@@ -61,12 +57,4 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<Map<String, Object>> register(@RequestBody RegisterRequestDTO registerRequest, HttpServletRequest http) {
-        rateLimiter.consume(RateLimit.REGISTER_PER_IP, http.getRemoteAddr());
-        Map<String, Object> response = new HashMap<>();
-        userService.registerUser(registerRequest);
-        response.put("Response","User registered successfully");
-        return ResponseEntity.ok(response);
-    }
 }

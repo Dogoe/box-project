@@ -19,79 +19,13 @@
         <meta name="twitter:card" content="summary_large_image">
     </th:block>
 
-    <!-- Bootstrap 5.3.8 -->
-    <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-            rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
-    <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <th:block th:replace="~{fragments/layout :: commonHead}"></th:block>
     <link rel="stylesheet" th:href="@{/css/kits.css}">
 </head>
 
-<body>
+<body class="storefront">
 
-<!-- ========================================================= -->
-<!-- NAVBAR -->
-<!-- ========================================================= -->
-
-<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
-    <div class="container">
-
-        <a class="navbar-brand fw-bold fs-3" href="/home">
-            Baja Solar<span>Supply</span>
-        </a>
-
-        <button
-                class="navbar-toggler"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#mainNavbar">
-
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="mainNavbar">
-
-            <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-
-                <li class="nav-item">
-                    <a class="nav-link" href="/home">Inicio</a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link text-success fw-semibold" href="/cotizacion">
-                        <i class="bi bi-calculator"></i> Cotizador
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link active" href="/kits">Kits</a>
-                </li>
-
-            </ul>
-
-            <div class="d-flex align-items-center gap-3">
-                <a href="/cuenta" class="btn btn-sm btn-outline-dark" aria-label="Mi cuenta">
-                    <i class="bi bi-person"></i> <span data-account-label>Entrar</span>
-                </a>
-
-                <a href="/carrito" class="btn btn-sm btn-outline-success position-relative" aria-label="Carrito">
-                    <i class="bi bi-cart3"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success d-none" data-cart-count>0</span>
-                </a>
-
-                <div class="btn-group btn-group-sm" role="group" aria-label="Región">
-                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="es">MX</button>
-                    <button type="button" class="btn btn-outline-dark region-toggle-btn" data-lang="en">US</button>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</nav>
+<th:block th:replace="~{fragments/layout :: header('kits', false)}"></th:block>
 
 
 <!-- ========================================================= -->
@@ -103,7 +37,7 @@
         <i class="bi bi-box-seam text-secondary" style="font-size: 3rem;"></i>
         <h1 class="fw-bold fs-2 mt-2">Este kit ya no está disponible</h1>
         <p class="text-secondary">Puede que lo hayamos actualizado o retirado del catálogo.</p>
-        <a href="/kits" class="btn btn-success">Ver kits disponibles</a>
+        <a href="/kits" class="btn btn-accent">Ver kits disponibles</a>
     </div>
 </section>
 
@@ -172,11 +106,11 @@
 
             <!-- Summary -->
             <div class="col-lg-5">
-                <span class="badge bg-success-subtle text-success-emphasis mb-2">KIT SOLAR</span>
+                <span class="badge badge-outline mb-2">KIT SOLAR</span>
                 <h1 class="fw-bold fs-2" th:text="${kit.name}">Kit</h1>
                 <p class="text-secondary" th:text="${kit.description}" th:if="${kit.description != null}">Descripción</p>
 
-                <div class="fs-2 fw-bold text-success mb-1" th:data-price-mxn="${kit.sellPrice}">$0.00</div>
+                <div class="fs-2 fw-bold mb-1" th:data-price-mxn="${kit.sellPrice}">$0.00</div>
                 <p class="small text-muted">
                     <i class="bi bi-cash-coin"></i> Pago en efectivo al recibir o al confirmar · Entrega en Ensenada, B.C.
                 </p>
@@ -203,14 +137,14 @@
                 </div>
 
                 <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-success btn-lg" th:data-add-to-cart="${kit.id}">
+                    <button type="button" class="btn btn-accent btn-lg" th:data-add-to-cart="${kit.id}">
                         <i class="bi bi-cart-plus"></i> Agregar al carrito
                     </button>
                     <div class="d-flex gap-2">
-                        <a th:href="@{'/kits/' + ${kit.id} + '/pdf'}" class="btn btn-outline-secondary flex-fill">
+                        <a th:href="@{'/kits/' + ${kit.id} + '/pdf'}" class="btn btn-ghost flex-fill">
                             <i class="bi bi-file-earmark-pdf"></i> Ficha PDF
                         </a>
-                        <a href="/cotizacion" class="btn btn-outline-dark flex-fill">Cotizar mi sistema</a>
+                        <a href="/cotizacion" class="btn btn-ghost flex-fill">Cotizar mi sistema</a>
                     </div>
                 </div>
             </div>
@@ -253,15 +187,15 @@
 
             <!-- WHAT IT CAN POWER + EXPANSION -->
             <div class="col-lg-7">
-                <div class="bg-light rounded p-3">
+                <div class="bg-body-tertiary rounded p-3">
                     <h5 class="fw-semibold mb-3">
-                        <i class="bi bi-lightning-charge-fill text-success"></i>
+                        <i class="bi bi-lightning-charge-fill"></i>
                         Qué puede alimentar
                     </h5>
                     <div class="row g-4">
                         <div class="col-md-6">
                             <div class="d-flex align-items-center gap-2 mb-1">
-                                <i class="bi bi-moon-stars-fill text-primary"></i>
+                                <i class="bi bi-moon-stars-fill"></i>
                                 <strong class="small">Durante la noche</strong>
                             </div>
                             <p class="small text-secondary mb-2">
@@ -270,7 +204,7 @@
                                 sin sol.
                             </p>
                             <div th:if="${not #lists.isEmpty(capacity.nightAppliances)}">
-                                <span class="badge bg-white text-dark border me-1 mb-1"
+                                <span class="badge bg-body text-body border me-1 mb-1"
                                       th:each="appliance : ${capacity.nightAppliances}" th:text="${appliance}">Aparato</span>
                             </div>
                             <p class="small text-muted mb-0" th:if="${#lists.isEmpty(capacity.nightAppliances)}">
@@ -279,7 +213,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="d-flex align-items-center gap-2 mb-1">
-                                <i class="bi bi-sun-fill text-warning"></i>
+                                <i class="bi bi-sun-fill"></i>
                                 <strong class="small">Durante el día</strong>
                             </div>
                             <p class="small text-secondary mb-2" th:if="${capacity.daySurplusKwh > 0}">
@@ -295,7 +229,7 @@
                                 al día — justo lo necesario para recargar la batería, sin excedente para aparatos extra.
                             </p>
                             <div th:if="${not #lists.isEmpty(capacity.dayAppliances)}">
-                                <span class="badge bg-white text-dark border me-1 mb-1"
+                                <span class="badge bg-body text-body border me-1 mb-1"
                                       th:each="appliance : ${capacity.dayAppliances}" th:text="${appliance}">Aparato</span>
                             </div>
                             <p class="small text-muted mb-0" th:if="${#lists.isEmpty(capacity.dayAppliances)}">
@@ -315,7 +249,7 @@
                 <th:block th:with="exp=${compatibility?.expansion}">
                 <div class="border rounded p-3 mt-3" th:if="${exp != null}">
                     <h6 class="fw-semibold mb-2">
-                        <i class="bi bi-arrows-angle-expand text-success"></i>
+                        <i class="bi bi-arrows-angle-expand"></i>
                         ¿Se puede ampliar?
                         <span class="badge ms-1"
                               th:classappend="${exp.level.name() == 'EXPANDABLE'} ? 'bg-success' : (${exp.level.name() == 'LIMITED'} ? 'bg-warning text-dark' : 'bg-secondary')"
@@ -369,25 +303,10 @@
 </th:block>
 
 
-<!-- ========================================================= -->
-<!-- FOOTER -->
-<!-- ========================================================= -->
-
-<footer class="footer bg-dark text-white-50 py-4 mt-5">
-    <div class="container text-center">
-        <small>© 2026 Baja Solar Supply. Todos los derechos reservados.</small>
-    </div>
-</footer>
+<th:block th:replace="~{fragments/layout :: footer}"></th:block>
 
 
-<!-- Bootstrap JS -->
-<script
-        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
-</script>
-
-<script th:src="@{/js/region.js}"></script>
-<script th:src="@{/js/account.js}"></script>
-<script th:src="@{/js/cart.js}"></script>
+<th:block th:replace="~{fragments/layout :: commonScripts}"></th:block>
 <th:block th:if="${kit != null}">
 <script th:inline="javascript">
     window.KIT_GALLERY = {

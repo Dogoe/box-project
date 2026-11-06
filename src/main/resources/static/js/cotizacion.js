@@ -184,9 +184,7 @@
         document.getElementById('result-daily').textContent = result.dailyConsumptionKwh.toFixed(2) + ' kWh/día';
         document.getElementById('result-peak').textContent = result.peakLoadKw.toFixed(2) + ' kW';
         document.getElementById('result-inverter').textContent = result.recommendedInverterKw.toFixed(2) + ' kW';
-        document.getElementById('result-battery').textContent = result.recommendedBatteryCapacityKwh > 0
-            ? result.recommendedBatteryCapacityKwh.toFixed(2) + ' kWh'
-            : 'No aplica (On-Grid)';
+        document.getElementById('result-battery').textContent = result.recommendedBatteryCapacityKwh.toFixed(2) + ' kWh';
         document.getElementById('result-panels').textContent = result.recommendedPanelArrayKwp.toFixed(2) + ' kWp';
 
         const kitSuggestion = document.getElementById('kit-suggestion');
@@ -223,8 +221,8 @@
             return;
         }
 
+        // Every system the store sells is off-grid; the server assumes it.
         const payload = {
-            systemType: form.querySelector('input[name="systemType"]:checked').value,
             autonomyDays: parseFloat(document.getElementById('autonomyDays').value),
             peakSunHours: parseFloat(document.getElementById('peakSunHours').value),
             appliances: rows.map(buildApplianceEntry)

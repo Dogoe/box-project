@@ -1,0 +1,46 @@
+/*
+ * Light theme (default): white background, black text and controls. Also the fallback
+ * when the theme script can't run. Only colors live here; layout and typography are in site.css.
+ */
+:root,
+[data-theme="light"] {
+    color-scheme: light;
+
+    /* Store palette */
+    --bss-bg: #ffffff;
+    --bss-surface: #ffffff;
+    --bss-surface-alt: #f4f4f5;
+    --bss-border: rgba(0, 0, 0, 0.12);
+    --bss-text: #111111;
+    --bss-muted: #5c5c5c;
+    --bss-accent: #111111;
+    --bss-accent-contrast: #ffffff;
+    --bss-nav-bg: rgba(255, 255, 255, 0.92);
+    --bss-topbar-bg: #111111;
+    --bss-topbar-text: #d4d4d4;
+    --bss-footer-bg: #111111;
+    --bss-photo-bg: #ffffff;
+    --bss-photo-gap: #ececec;
+    --bss-hero-overlay: linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.5) 60%, rgba(0, 0, 0, 0.8) 100%);
+
+    /* Bootstrap, so its components follow the palette */
+    --bs-body-bg: var(--bss-bg);
+    --bs-body-bg-rgb: 255, 255, 255;
+    --bs-body-color: var(--bss-text);
+    --bs-body-color-rgb: 17, 17, 17;
+    --bs-emphasis-color: #000000;
+    --bs-emphasis-color-rgb: 0, 0, 0;
+    --bs-secondary-color: var(--bss-muted);
+    --bs-secondary-rgb: 92, 92, 92;
+    --bs-secondary-bg: var(--bss-surface-alt);
+    --bs-tertiary-bg: var(--bss-surface-alt);
+    --bs-tertiary-bg-rgb: 244, 244, 245;
+    --bs-border-color: #e2e2e2;
+    --bs-border-color-translucent: var(--bss-border);
+    --bs-heading-color: #000000;
+    --bs-link-color: #111111;
+    --bs-link-color-rgb: 17, 17, 17;
+    --bs-link-hover-color: #555555;
+    --bs-link-hover-color-rgb: 85, 85, 85;
+    --bs-focus-ring-color: rgba(0, 0, 0, 0.25);
+}

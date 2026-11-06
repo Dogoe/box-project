@@ -25,20 +25,16 @@ public class JwtConfig {
         http
                 .csrf(csrf -> csrf.disable()) // disable CSRF
 
-//                .authorizeHttpRequests(auth -> auth
-//                        .requestMatchers("/auth/login", "/auth/register", "/openapi-ui", "/openapi", "/swagger-ui/", "/swagger-ui/index.html").permitAll()
-//                        .anyRequest().authenticated()
-//                )
                 .cors(cors -> {}) // enable CORS with default settings
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login",
-                                "/auth/login2",
-                                "/auth/register",
-                                "/actuator/**",
+                                // Only the health check; prod exposes no other actuator endpoint anyway.
+                                "/actuator/health",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
+                                "/",
                                 "/home/**",
                                 "/cotizacion",
                                 "/kits/**",

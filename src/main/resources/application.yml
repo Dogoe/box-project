@@ -1,3 +1,10 @@
+# Shared settings. Defaults here are for local development only; production (profile "prod",
+# application-prod.yml) requires every secret as an environment variable. See .env.example.
+
+server:
+  # Hosting platforms (Render...) tell the app which port to listen on.
+  port: ${PORT:8080}
+
 spring:
   config:
     # Local secrets (R2 keys...) can live in a .env file at the project root, one KEY=value per
@@ -9,36 +16,36 @@ spring:
       max-file-size: 10MB
       max-request-size: 11MB
 
-  security:
-    user:
-      name: testDev
-      password: admin
   datasource:
-    url: jdbc:postgresql://localhost:5432/dbbox
-    username: postgres
-    password: admin
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/dbbox}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:admin}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
       ddl-auto: update   # Options: none, validate, update, create, create-drop
-    show-sql: true
+    show-sql: ${SHOW_SQL:true}
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  # Development: MailHog captures every email without delivering it (UI on http://localhost:8025).
-  # Production SMTP settings live in application-prod.yml.
+  # Without MAIL_* variables, development uses MailHog, which captures every email without
+  # delivering it (UI on http://localhost:8025). To send real emails from your machine (e.g. with
+  # Brevo), put MAIL_HOST, MAIL_PORT, MAIL_USERNAME and MAIL_PASSWORD in your .env (.env.example).
   mail:
-    host: localhost
-    port: 1025
-    username: ""
-    password: ""
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
+          # Stays false: the mail client still logs in whenever MAIL_USERNAME/MAIL_PASSWORD are set
+          # (Brevo, Gmail), and MailHog needs no login.
           auth: false
           starttls:
-            enable: false
+            # Encrypts when the server offers it (Brevo, Gmail); MailHog doesn't, so it's skipped.
+            enable: true
           # Fail fast instead of tying up a thread when the SMTP server is unreachable.
           connectiontimeout: 5000
           timeout: 5000
@@ -46,11 +53,11 @@ spring:
 
 app:
   # Absolute base used for links inside emails (customer order page, admin).
-  public-base-url: http://localhost:8080
+  public-base-url: ${PUBLIC_BASE_URL:http://localhost:8080}
   mail:
     # false skips sending entirely (orders still work); emails are only ever a notification.
-    enabled: true
-    from: "Baja Solar Supply <pedidos@bajasolarsupply.local>"
+    enabled: ${MAIL_ENABLED:true}
+    from: ${MAIL_FROM:Baja Solar Supply <pedidos@bajasolarsupply.com>}
   rate-limit:
     # Caps login attempts, sign-ups, password-reset emails and orders per IP/email (see RateLimit).
     # Answers 429 "Intenta de nuevo en N minutos" when exceeded.
@@ -67,17 +74,17 @@ app:
     public-base-url: ${R2_PUBLIC_URL:}
 
 jwt:
-  secret: K0zDf0M5GyPlZtX7RhV0I5uPzZsZ3YgYV7Z7XgWyfL0=
+  # Signs login sessions. This default is public (it's in git) and only for local development;
+  # production refuses to start without its own JWT_SECRET.
+  secret: ${JWT_SECRET:K0zDf0M5GyPlZtX7RhV0I5uPzZsZ3YgYV7Z7XgWyfL0=}
   expiration-ms: 43_200_000
 
 admin:
   bootstrap:
-    # Seeded on startup if no user with this email exists yet, so the catalog
-    # admin panel (/admin) is reachable out of the box. Override both via
-    # ADMIN_BOOTSTRAP_EMAIL / ADMIN_BOOTSTRAP_PASSWORD env vars before
-    # deploying anywhere the default password would be a real risk.
-    email: admin@bajasolarsupply.com
-    password: admin123
+    # Created on startup only if no user with this email exists yet (changing these later does
+    # not change an existing admin). Production requires ADMIN_BOOTSTRAP_EMAIL / _PASSWORD.
+    email: ${ADMIN_BOOTSTRAP_EMAIL:admin@bajasolarsupply.com}
+    password: ${ADMIN_BOOTSTRAP_PASSWORD:admin123}
 
 management:
   endpoints:

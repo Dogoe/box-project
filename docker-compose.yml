@@ -7,11 +7,18 @@ services:
       - "8080:8080"
       - "5005:5005"   # Debug port
     environment:
+      # Local development: debug port 5005 (IntelliJ "Remote JVM Debug"). Never set this in production.
+      JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/dbbox
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: admin
-      SPRING_MAIL_HOST: mailhog
-      SPRING_MAIL_PORT: 1025
+      # Email: MailHog (http://localhost:8025) unless the .env next to this file sets MAIL_HOST etc.
+      MAIL_ENABLED: ${MAIL_ENABLED:-true}
+      MAIL_HOST: ${MAIL_HOST:-mailhog}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-Baja Solar Supply <pedidos@bajasolarsupply.com>}
       # Photo storage (Cloudflare R2): docker compose takes these from the .env file next to this one.
       R2_ENDPOINT: ${R2_ENDPOINT:-}
       R2_BUCKET: ${R2_BUCKET:-box-app-images}
