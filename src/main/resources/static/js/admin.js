@@ -345,6 +345,26 @@
         tableHead.innerHTML = '<tr>' + headerCells + '<th></th></tr>';
     }
 
+    // Each list load gets a number; a slower answer from a tab the admin already left is dropped,
+    // so it can't overwrite the list now on screen.
+    let listLoadSeq = 0;
+
+    function startListLoad() {
+        listLoadSeq += 1;
+        tableBody.innerHTML = tableMessageRow(
+            '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Cargando...');
+        return listLoadSeq;
+    }
+
+    function isStale(seq) {
+        return seq !== listLoadSeq;
+    }
+
+    function tableMessageRow(html) {
+        const columns = Math.max(1, tableHead.querySelectorAll('th').length);
+        return '<tr><td colspan="' + columns + '" class="text-center text-secondary py-5">' + html + '</td></tr>';
+    }
+
     function actionButtonsHtml(id) {
         return '<td class="text-end">' +
             '<button type="button" class="btn btn-sm btn-outline-secondary edit-btn" data-id="' + id + '"><i class="bi bi-pencil"></i></button> ' +
@@ -368,18 +388,26 @@
         const config = ENTITY_CONFIGS[entityKey];
         entityTitle.textContent = config.label;
         renderTableHead(config.columns);
+        const seq = startListLoad();
 
         try {
             const response = await authFetch(config.endpoint);
             const items = await response.json();
+            if (isStale(seq)) {
+                return;
+            }
 
-            tableBody.innerHTML = items.map((item) => {
+            tableBody.innerHTML = items.length === 0 ? tableMessageRow('Aún no hay registros. Usa <strong>Nuevo</strong> para agregar uno.') : items.map((item) => {
                 const cells = config.columns.map((c) => '<td>' + formatValue(item, c) + '</td>').join('');
                 return '<tr>' + cells + actionButtonsHtml(item.id) + '</tr>';
             }).join('');
 
             wireRowActions((id) => openModal(id), (id) => deleteItem(id));
         } catch (err) {
+            if (isStale(seq)) {
+                return;
+            }
+            tableBody.innerHTML = '';
             listAlert.textContent = 'No se pudo cargar la lista.';
             listAlert.classList.remove('d-none');
         }
@@ -834,6 +862,7 @@
         listAlert.classList.add('d-none');
         entityTitle.textContent = 'Kits';
         tableHead.innerHTML = '<tr><th></th><th>Nombre</th><th>Costo / Venta / Ganancia</th><th># Ítems</th><th>Ampliación</th><th>Activo</th><th></th></tr>';
+        const seq = startListLoad();
 
         try {
             await loadAllProducts();
@@ -841,8 +870,11 @@
                 authFetch('/api/catalog/kits').then((r) => r.json()),
                 authFetch('/api/catalog/kits/compatibility').then((r) => r.json())
             ]);
+            if (isStale(seq)) {
+                return;
+            }
 
-            tableBody.innerHTML = kits.map((kit) => {
+            tableBody.innerHTML = kits.length === 0 ? tableMessageRow('Aún no hay kits. Usa <strong>Nuevo</strong> para armar uno.') : kits.map((kit) => {
                 const margin = (kit.sellPrice - kit.computedPrice).toFixed(2);
                 const priceCell = 'Costo: $' + kit.computedPrice + ' · Venta: $' + kit.sellPrice + ' · Ganancia: $' + margin;
                 const report = compatibilityById[kit.id];
@@ -855,6 +887,10 @@
 
             wireRowActions((id) => openKitModal(id), (id) => deleteItem(id));
         } catch (err) {
+            if (isStale(seq)) {
+                return;
+            }
+            tableBody.innerHTML = '';
             listAlert.textContent = 'No se pudo cargar la lista de kits.';
             listAlert.classList.remove('d-none');
         }
@@ -928,6 +964,7 @@
 
     async function loadSettings() {
         currentEntity = 'settings';
+        listLoadSeq += 1;
         listAlert.classList.add('d-none');
         entityTitle.textContent = 'Configuración';
         showSettingsPanel();
@@ -1122,9 +1159,13 @@
             .then((store) => ordersWhatsappWarning.classList.toggle('d-none', Boolean(store.whatsappNumber)))
             .catch(() => ordersWhatsappWarning.classList.add('d-none'));
 
+        const seq = startListLoad();
         try {
             const url = '/api/admin/orders' + (ordersStatusFilter ? '?status=' + ordersStatusFilter : '');
             const orders = await authFetch(url).then((r) => r.json());
+            if (isStale(seq)) {
+                return;
+            }
             tableBody.innerHTML = orders.length
                 ? orders.map((order) =>
                     '<tr><td class="fw-semibold">' + escapeHtml(order.folio) + '</td>' +
@@ -1140,6 +1181,10 @@
                 btn.addEventListener('click', () => openOrderModal(Number(btn.dataset.id)));
             });
         } catch (err) {
+            if (isStale(seq)) {
+                return;
+            }
+            tableBody.innerHTML = '';
             listAlert.textContent = 'No se pudo cargar la lista de pedidos.';
             listAlert.classList.remove('d-none');
         }

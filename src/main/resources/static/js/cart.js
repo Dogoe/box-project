@@ -53,11 +53,74 @@
         return read().reduce((sum, i) => sum + i.quantity, 0);
     }
 
-    function renderBadge() {
+    function renderBadge(bump) {
         const total = count();
         document.querySelectorAll('[data-cart-count]').forEach((el) => {
-            el.textContent = total;
+            el.textContent = total > 99 ? '99+' : total;
             el.classList.toggle('d-none', total === 0);
+            if (bump && total > 0) {
+                el.classList.remove('cart-bump');
+                void el.offsetWidth; // restart the animation
+                el.classList.add('cart-bump');
+            }
+        });
+    }
+
+    // ---- Page lock while adding ----
+    // Adding is quick, but on a slow phone the button can look unresponsive and get tapped again;
+    // the lock shows that something is happening and swallows extra taps until it's done.
+    const MIN_LOCK_MS = 600;
+    let busy = false;
+    let overlay = null;
+
+    function lockScreen() {
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'cart-busy-overlay';
+            overlay.setAttribute('role', 'status');
+            overlay.setAttribute('aria-live', 'polite');
+            overlay.innerHTML = '<div class="cart-busy-box"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span>' +
+                '<span>Agregando al carrito...</span></div>';
+            document.body.appendChild(overlay);
+        }
+        overlay.hidden = false;
+        document.body.setAttribute('aria-busy', 'true');
+        document.querySelectorAll('[data-add-to-cart]').forEach((b) => { b.disabled = true; });
+    }
+
+    function unlockScreen() {
+        if (overlay) {
+            overlay.hidden = true;
+        }
+        document.body.removeAttribute('aria-busy');
+        document.querySelectorAll('[data-add-to-cart]').forEach((b) => { b.disabled = false; });
+    }
+
+    /**
+     * Adds a kit with the page locked, then confirms on the button. Taps while it's running are
+     * ignored. Resolves to false when it was ignored.
+     */
+    function addWithLock(kitId, quantity, button) {
+        if (busy) {
+            return Promise.resolve(false);
+        }
+        busy = true;
+        lockScreen();
+        const started = Date.now();
+        return new Promise((resolve) => {
+            try {
+                add(kitId, quantity);
+            } finally {
+                setTimeout(() => {
+                    busy = false;
+                    unlockScreen();
+                    renderBadge(true);
+                    if (button) {
+                        flashAdded(button);
+                    }
+                    resolve(true);
+                }, Math.max(0, MIN_LOCK_MS - (Date.now() - started)));
+            }
         });
     }
 
@@ -76,15 +139,29 @@
     function wireAddButtons(root) {
         (root || document).querySelectorAll('[data-add-to-cart]').forEach((button) => {
             button.addEventListener('click', () => {
-                add(Number(button.dataset.addToCart), 1);
-                flashAdded(button);
+                addWithLock(Number(button.dataset.addToCart), 1, button);
             });
         });
     }
 
-    window.BajaSolarCart = { read, add, setQuantity, remove, clear, count, flashAdded, maxUnitsPerKit: MAX_UNITS_PER_KIT };
+    /** The floating cart is pointless on the cart itself and on the order confirmation. */
+    function setUpFloatingCart() {
+        const fab = document.querySelector('.cart-fab');
+        if (!fab) {
+            return;
+        }
+        const path = window.location.pathname;
+        if (path.startsWith('/carrito') || path.startsWith('/pedido')) {
+            fab.remove();
+        } else {
+            document.body.classList.add('has-cart-fab');
+        }
+    }
+
+    window.BajaSolarCart = { read, add, addWithLock, setQuantity, remove, clear, count, flashAdded, maxUnitsPerKit: MAX_UNITS_PER_KIT };
 
     document.addEventListener('DOMContentLoaded', () => {
+        setUpFloatingCart();
         renderBadge();
         wireAddButtons();
     });

@@ -108,6 +108,14 @@
         </div>
     </nav>
 
+    <!-- Phones and tablets: the header's cart sits inside the collapsed menu, so the cart also
+         floats at the bottom center (cart.js hides it on the cart and order pages). -->
+    <a href="/carrito" class="cart-fab d-lg-none" aria-label="Ver carrito">
+        <i class="bi bi-cart3" aria-hidden="true"></i>
+        <span class="cart-fab-label">Carrito</span>
+        <span class="badge rounded-pill cart-count-badge d-none" data-cart-count>0</span>
+    </a>
+
 </th:block>
 
 
