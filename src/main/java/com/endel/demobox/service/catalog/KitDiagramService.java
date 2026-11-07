@@ -613,7 +613,9 @@ public class KitDiagramService {
     }
 
     private static double ampacity(WiringSegmentDto run) {
-        WireGauge gauge = run.getCableGauge() != null ? run.getCableGauge() : run.getGauge();
+        // The thinnest cable the kit really uses on the run, else the one shown for it.
+        WireGauge gauge = run.getWeakestCableGauge() != null ? run.getWeakestCableGauge()
+                : run.getCableGauge() != null ? run.getCableGauge() : run.getGauge();
         return gauge == null ? 0 : gauge.getAmpacityA();
     }
 

@@ -125,7 +125,7 @@ public class KitProtectionPlanner {
         WiringSegmentDto batteryRun = in.batteryRun();
         if (batteryRun != null && batteryRun.getGauge() != null && in.battery() != null) {
             double designA = batteryRun.getDesignCurrentA();
-            double cableA = batteryRun.getGauge().getAmpacityA();
+            double cableA = cableAmpacity(batteryRun);
             Battery battery = in.battery();
             boolean lithium = battery.getChemistry().hasBms();
             // A lithium bank's very low internal resistance makes its short-circuit current huge (thousands of
@@ -164,7 +164,7 @@ public class KitProtectionPlanner {
         WiringSegmentDto controllerRun = in.controllerRun();
         if (controllerRun != null && controllerRun.getGauge() != null) {
             requirements.add(new Requirement(ProtectionSlot.CONTROLLER, "Protección controlador – batería", 1, EnumSet.of(ProtectionType.FUSE, ProtectionType.DC_BREAKER),
-                    controllerRun.getDesignCurrentA(), controllerRun.getGauge().getAmpacityA(), chargeVolts, 1, BATTERY_FUSES, Run.CONTROLLER));
+                    controllerRun.getDesignCurrentA(), cableAmpacity(controllerRun), chargeVolts, 1, BATTERY_FUSES, Run.CONTROLLER));
         }
 
         WiringSegmentDto pvRun = in.pvRun();
@@ -176,7 +176,7 @@ public class KitProtectionPlanner {
             if (pvRun.getFuseA() != null && in.pvStringsPerInput() >= KitCompatibilityService.MIN_PARALLEL_STRINGS_NEEDING_FUSE
                     && pvRun.getGauge() != null) {
                 requirements.add(new Requirement(ProtectionSlot.PV_STRING_FUSE, "Fusible por cadena de paneles", in.pvStrings(), EnumSet.of(ProtectionType.FUSE),
-                        pvRun.getFuseA(), pvRun.getGauge().getAmpacityA(), round1(in.pvColdStringVoc()), 1, PV_FUSES));
+                        pvRun.getFuseA(), cableAmpacity(pvRun), round1(in.pvColdStringVoc()), 1, PV_FUSES));
             }
         }
 
@@ -282,6 +282,14 @@ public class KitProtectionPlanner {
                 target.add(protection);
             }
         }
+    }
+
+    /**
+     * What a fuse on this run may be at most: the ampacity of the cable the kit actually uses (its thinnest piece),
+     * or the minimum cable the run needs while the kit doesn't include enough cable for it.
+     */
+    private static double cableAmpacity(WiringSegmentDto run) {
+        return (run.getWeakestCableGauge() != null ? run.getWeakestCableGauge() : run.getGauge()).getAmpacityA();
     }
 
     private static ProtectionCheckDto coveredRow(ProtectionSlot slot, String label, String coveredBy, int quantity) {

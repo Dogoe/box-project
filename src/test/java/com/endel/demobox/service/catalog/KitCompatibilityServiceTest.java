@@ -267,6 +267,51 @@ class KitCompatibilityServiceTest {
     }
 
     @Test
+    void theFuseWindowFollowsTheCableTheKitActuallyIncludes() {
+        Protection classT125 = protection("Clase T 125 A", ProtectionType.FUSE, FuseClass.CLASS_T, 125, 125, 1, 1400);
+        catalogHas(classT110, classT125);
+
+        // Without cable in the kit the run needs 2 AWG (115 A): the fuse is 101.3-115 A, so only the 110 A one fits.
+        KitCompatibilityReportDto bare = service.analyze(midSystem(), lengths);
+        ProtectionCheckDto bareFuse = protectionRow(bare, "Fusible principal de batería");
+        assertEquals("de 101.3 a 115 A, 57.6 V DC o más, Clase T", bareFuse.getRequirement());
+        assertEquals("Clase T 110 A", bareFuse.getSuggestion().getName());
+
+        // With 1/0 AWG (150 A) covering the run, the 125 A fuse protects it too; here it is also the cheaper one (1400 vs 1500).
+        KitCompatibilityReportDto thick = service.analyze(midSystem(new KitLine(cable("CAB-1/0", WireGauge.AWG_1_0, 20), 1)), lengths);
+        ProtectionCheckDto thickFuse = protectionRow(thick, "Fusible principal de batería");
+        assertEquals("de 101.3 a 150 A, 57.6 V DC o más, Clase T", thickFuse.getRequirement());
+        assertEquals("Clase T 125 A", thickFuse.getSuggestion().getName());
+        // ...and a 125 A fuse that is already in the kit now covers the requirement instead of being called too big.
+        catalogHas(classT125);
+        KitCompatibilityReportDto only125 = service.analyze(midSystem(new KitLine(cable("CAB-1/0", WireGauge.AWG_1_0, 20), 1),
+                new KitLine(classT125, 1)), lengths);
+        assertTrue(protectionRow(only125, "Fusible principal de batería").isCovered(), only125.getProtections().toString());
+    }
+
+    @Test
+    void theFuseWindowUsesTheThinnestCableUsedOnTheRun() {
+        Protection classT125 = protection("Clase T 125 A", ProtectionType.FUSE, FuseClass.CLASS_T, 125, 125, 1, 1400);
+        catalogHas(classT110, classT125);
+
+        // The 4 m the run needs come half from 1/0 and half from 2 AWG: the 2 AWG piece (115 A) limits the fuse.
+        KitCompatibilityReportDto mixed = service.analyze(midSystem(
+                new KitLine(cable("CAB-2", WireGauge.AWG_2, 2), 1),
+                new KitLine(cable("CAB-1/0", WireGauge.AWG_1_0, 2), 1)), lengths);
+        assertEquals(WireGauge.AWG_2, segment(mixed, "Batería").getWeakestCableGauge());
+        assertEquals("de 101.3 a 115 A, 57.6 V DC o más, Clase T", protectionRow(mixed, "Fusible principal de batería").getRequirement());
+    }
+
+    @Test
+    void aKitThatDoesNotFullyCoverTheRunKeepsTheMinimumCableForTheFuseWindow() {
+        catalogHas(classT110);
+        // Only 2 m of 1/0 for a run that needs 4 m: not covered, so the cable that gets bought is the minimum (2 AWG).
+        KitCompatibilityReportDto partial = service.analyze(midSystem(new KitLine(cable("CAB-1/0", WireGauge.AWG_1_0, 2), 1)), lengths);
+        assertNull(segment(partial, "Batería").getWeakestCableGauge());
+        assertEquals("de 101.3 a 115 A, 57.6 V DC o más, Clase T", protectionRow(partial, "Fusible principal de batería").getRequirement());
+    }
+
+    @Test
     void aSingleTwentyFourVoltLithiumStringCanUseAnMrbf_butFortyEightVoltsNeedsClassT() {
         Protection mrbf60 = protection("MRBF 60 A 58 V", ProtectionType.FUSE, FuseClass.MRBF, 60, 58, 1, 200);
         Protection classT60 = protection("Clase T 60 A 125 V", ProtectionType.FUSE, FuseClass.CLASS_T, 60, 125, 1, 1300);

@@ -27,6 +27,11 @@ public class WiringSegmentDto {
     private String connector;
     /** Gauge of the cable the kit actually uses for this run (or the one suggested); terminals follow it. */
     private WireGauge cableGauge;
+    /**
+     * Thinnest of the kit's own cables used on this run, set only when the kit's cables fully cover it. A fuse on
+     * the run has to protect that one, so it (not the minimum the run needs) limits the fuse size.
+     */
+    private WireGauge weakestCableGauge;
     /** Cheapest catalog cable that would cover what the kit's own cables don't, when something is missing. */
     private SuggestedItemDto suggestion;
 
