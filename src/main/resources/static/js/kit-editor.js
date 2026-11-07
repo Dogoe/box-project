@@ -603,8 +603,8 @@
 
     // ---- Section status and subtotals ----
 
-    function badge(cls, text) {
-        return '<span class="badge ' + cls + '">' + esc(text) + '</span>';
+    function badge(cls, text, icon) {
+        return '<span class="badge ' + cls + '">' + (icon ? '<i class="bi ' + icon + ' me-1"></i>' : '') + esc(text) + '</span>';
     }
 
     /** { tone, html }: tone is 'ok' (green), 'warn', 'error', 'info', 'muted', or null when the section has no status. */
@@ -615,7 +615,9 @@
         }
         const st = (tone, text) => ({
             tone: tone,
-            html: badge({ ok: 'text-bg-success', warn: 'text-bg-warning', error: 'text-bg-danger', info: 'text-bg-info', muted: 'text-bg-secondary' }[tone], text)
+            // Green ones carry a check mark.
+            html: badge({ ok: 'text-bg-success', warn: 'text-bg-warning', error: 'text-bg-danger', info: 'text-bg-info', muted: 'text-bg-secondary' }[tone],
+                text, tone === 'ok' ? 'bi-check-lg' : null)
         });
         const checks = checksOf(sec);
         const worst = checks.reduce((max, c) => Math.max(max, SEVERITY_RANK[c.severity]), 0);
@@ -658,13 +660,12 @@
         return st('ok', 'Listo');
     }
 
-    function statusFor(sec) {
-        return statusInfo(sec).html;
-    }
-
     function renderStatuses() {
         SECTIONS.forEach((sec) => {
-            sectionsEl.querySelector('[data-status="' + sec.key + '"]').innerHTML = statusFor(sec);
+            const info = statusInfo(sec);
+            sectionsEl.querySelector('[data-status="' + sec.key + '"]').innerHTML = info.html;
+            // The section's colored bar follows its state (see .editor-section[data-tone] in the page).
+            sectionEl(sec.key).dataset.tone = info.tone || '';
         });
     }
 
@@ -1051,7 +1052,7 @@
 
         titleEl.textContent = kit ? kit.name : 'Nuevo kit';
         document.title = (kit ? kit.name : 'Nuevo kit') + ' | Panel de administración | Baja Solar Supply';
-        sectionsEl.innerHTML = '<div class="card">' + SECTIONS.map((sec) => sectionHtml(sec, kit)).join('') + '</div>';
+        sectionsEl.innerHTML = '<div class="card editor-card">' + SECTIONS.map((sec) => sectionHtml(sec, kit)).join('') + '</div>';
         Object.keys(rows).forEach(renderRows);
         initPhotoManager('kit-photos', kit ? kit.imageUrls : []);
         // The photo list changes by itself (uploads, removals): keep the closed "Más datos" hint current.

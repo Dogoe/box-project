@@ -15,7 +15,14 @@
             .editor-side { position: sticky; top: 1rem; }
             .editor-review { max-height: calc(100vh - 22rem); min-height: 8rem; overflow-y: auto; }
         }
-        .editor-section { padding: .6rem .9rem .7rem; scroll-margin-top: 1rem; }
+        .editor-card { overflow: hidden; }
+        /* A colored bar on the left of each section shows its state: green ok, yellow check, red error, blue missing, grey optional. */
+        .editor-section { padding: .6rem .9rem .7rem .7rem; scroll-margin-top: 1rem; border-left: 4px solid transparent; }
+        .editor-section[data-tone="ok"] { border-left-color: var(--bs-success); }
+        .editor-section[data-tone="warn"] { border-left-color: var(--bs-warning); }
+        .editor-section[data-tone="error"] { border-left-color: var(--bs-danger); }
+        .editor-section[data-tone="info"] { border-left-color: var(--bs-info); }
+        .editor-section[data-tone="muted"] { border-left-color: var(--bs-gray-500, #adb5bd); }
         .editor-section + .editor-section { border-top: 1px solid var(--bs-border-color); }
         .section-head { margin-bottom: .4rem; min-height: 1.4rem; }
         .section-title {
