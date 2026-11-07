@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
 @Entity
 @Table(name = "inverters")
@@ -85,6 +86,20 @@ public class Inverter extends Product {
 
     // Datasheet PV limits typically run 1.25-1.5x charge power, since surplus feeds loads directly.
     public static final double ESTIMATED_PV_TO_CHARGE_POWER_RATIO = 1.30;
+
+    @Override
+    protected String codeType() {
+        return "INVERSOR";
+    }
+
+    /** Power, battery (DC) voltage, AC output voltage (always 120 V here) and "MPPT" when it brings its own solar charger. */
+    @Override
+    protected List<String> codeSpecs() {
+        return java.util.Arrays.asList(ProductCode.num(ratedPowerKw * 1000) + "W",
+                batteryVoltage == null ? null : ProductCode.num(batteryVoltage) + "V",
+                "120V",
+                hasBuiltInCharger() ? "MPPT" : null);
+    }
 
     public boolean hasBuiltInCharger() {
         return !Boolean.FALSE.equals(builtInCharger);

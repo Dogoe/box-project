@@ -71,6 +71,7 @@ public class ConnectionCableService {
         ConnectionCableDto dto = new ConnectionCableDto();
         dto.setId(cable.getId());
         dto.setSku(cable.getSku());
+        dto.setCode(cable.getCode());
         dto.setName(cable.getName());
         dto.setBrand(cable.getBrand());
         dto.setDescription(cable.getDescription());

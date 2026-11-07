@@ -66,6 +66,7 @@ public class TerminalService {
         TerminalDto dto = new TerminalDto();
         dto.setId(terminal.getId());
         dto.setSku(terminal.getSku());
+        dto.setCode(terminal.getCode());
         dto.setName(terminal.getName());
         dto.setBrand(terminal.getBrand());
         dto.setDescription(terminal.getDescription());

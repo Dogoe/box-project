@@ -26,7 +26,7 @@ En el admin, en **Configuración → Catálogo: exportar / importar**, puedes:
 }
 ```
 
-`format` y `version` son opcionales en un archivo hecho a mano. `exportedAt` (la fecha de exportación) se ignora al importar. En el admin, **Descargar ejemplo** te da un archivo completo para copiar.
+`format` y `version` son opcionales en un archivo hecho a mano. `exportedAt` (la fecha de exportación) se ignora al importar. Cada producto también tiene un **código** (por ejemplo `INVERSOR-1000W-12V-120V-$3000`) que la app calcula con su tipo, especificaciones y precio para mostrarlo en el editor de kits; no se exporta y, si lo pones en el archivo, se ignora. En el admin, **Descargar ejemplo** te da un archivo completo para copiar.
 
 ### Campos de todos los productos
 

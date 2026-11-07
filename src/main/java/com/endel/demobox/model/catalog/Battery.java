@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
 @Entity
 @Table(name = "batteries")
@@ -62,6 +63,24 @@ public class Battery extends Product {
 
     public TerminalSize getTerminalSize() {
         return TerminalSize.orDefault(terminalSize);
+    }
+
+    @Override
+    protected String codeType() {
+        return "BATERIA";
+    }
+
+    /** Chemistry, voltage and capacity. */
+    @Override
+    protected List<String> codeSpecs() {
+        String chem = chemistry == null ? null : switch (chemistry) {
+            case LIFEPO4 -> "LFP";
+            case LITHIUM_ION -> "LION";
+            case LEAD_ACID -> "PLOMO";
+            case GEL -> "GEL";
+            case AGM -> "AGM";
+        };
+        return java.util.Arrays.asList(chem, ProductCode.num(voltage) + "V", capacityAh == null ? null : ProductCode.num(capacityAh) + "Ah");
     }
 
     public double getCapacityKwh() {

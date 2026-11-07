@@ -49,18 +49,21 @@
     const MAX_PHOTOS = 8;
     const photoLists = new Map();
 
-    function photoManagerHtml(id, folder) {
-        return '<div class="photo-manager" id="' + id + '" data-folder="' + folder + '">' +
+    /** {@code options.compact}: small tiles, no help text (it goes in a tooltip), for tight forms. */
+    function photoManagerHtml(id, folder, options) {
+        const compact = Boolean(options && options.compact);
+        const help = 'La primera es la principal. Máximo ' + MAX_PHOTOS + ' fotos (JPG, PNG o WebP).';
+        return '<div class="photo-manager' + (compact ? ' photo-compact' : '') + '" id="' + id + '" data-folder="' + folder + '">' +
             '<div class="d-flex flex-wrap gap-2 photo-list"></div>' +
             '<div class="d-flex flex-wrap gap-2 mt-2 align-items-center">' +
-            '<button type="button" class="btn btn-sm btn-outline-secondary photo-upload-btn"><i class="bi bi-upload"></i> Subir fotos</button>' +
+            '<button type="button" class="btn btn-sm btn-outline-secondary photo-upload-btn"' + (compact ? ' title="' + help + '"' : '') + '><i class="bi bi-upload"></i> Subir fotos</button>' +
             '<div class="input-group input-group-sm" style="max-width: 380px;">' +
             // type="text": a half-typed link must not block the form's Guardar (we validate it ourselves).
-            '<input type="text" inputmode="url" class="form-control photo-link-input" placeholder="o pega un link https://...">' +
+            '<input type="text" inputmode="url" class="form-control photo-link-input" placeholder="' + (compact ? 'o pega un link' : 'o pega un link https://...') + '">' +
             '<button type="button" class="btn btn-outline-secondary photo-link-add">Agregar</button></div>' +
             '</div>' +
             '<input type="file" class="d-none photo-file-input" accept="image/jpeg,image/png,image/webp" multiple>' +
-            '<div class="form-text">La primera es la principal. Máximo ' + MAX_PHOTOS + ' fotos (JPG, PNG o WebP).</div>' +
+            (compact ? '' : '<div class="form-text">' + help + '</div>') +
             '<div class="small text-danger photo-error d-none"></div>' +
             '</div>';
     }
@@ -99,24 +102,32 @@
 
         function render(pending) {
             const photos = photoLists.get(id);
+            const compact = root.classList.contains('photo-compact');
+            const tileWidth = compact ? 116 : 112;
+            const imgBox = compact ? 'width: 108px; height: 48px;' : 'width: 100px; height: 80px;';
             listEl.innerHTML = photos.map((url, index) =>
-                '<div class="photo-tile border rounded p-1 text-center bg-white" data-index="' + index + '" style="width: 112px;">' +
-                '<img src="' + escapeAttr(url) + '" alt="" style="width: 100px; height: 80px; object-fit: contain;">' +
-                (index === 0 ? '<div class="small fw-semibold text-success">Principal</div>'
-                    : '<div class="small"><a href="#" data-action="main">Hacer principal</a></div>') +
+                '<div class="photo-tile border rounded p-1 text-center bg-white" data-index="' + index + '" style="width: ' + tileWidth + 'px;">' +
+                '<img src="' + escapeAttr(url) + '" alt="" style="' + imgBox + ' object-fit: contain;">' +
+                (compact
+                    ? ''
+                    : index === 0 ? '<div class="small fw-semibold text-success">Principal</div>'
+                        : '<div class="small"><a href="#" data-action="main">Hacer principal</a></div>') +
                 '<div class="d-flex justify-content-center gap-1 mt-1">' +
+                (compact ? (index === 0
+                    ? '<span class="btn btn-light btn-sm py-0 px-1 border text-success disabled" title="Foto principal"><i class="bi bi-star-fill"></i></span>'
+                    : tileButton('main', 'bi-star', 'Hacer principal')) : '') +
                 (index > 0 ? tileButton('left', 'bi-arrow-left', 'Mover a la izquierda') : '') +
                 (index < photos.length - 1 ? tileButton('right', 'bi-arrow-right', 'Mover a la derecha') : '') +
                 tileButton('remove', 'bi-x-lg', 'Quitar foto') +
                 '</div></div>'
             ).join('') + (pending
-                ? '<div class="border rounded d-flex align-items-center justify-content-center text-muted small" style="width: 112px; height: 132px;">' +
+                ? '<div class="border rounded d-flex align-items-center justify-content-center text-muted small" style="width: ' + tileWidth + 'px; height: ' + (compact ? 80 : 132) + 'px;">' +
                   '<span class="spinner-border spinner-border-sm me-1"></span>' + pending + '</div>'
                 : '');
             listEl.querySelectorAll('.photo-tile img').forEach((img) => {
                 img.onerror = () => img.replaceWith(Object.assign(document.createElement('div'), {
                     className: 'small text-danger d-flex align-items-center justify-content-center',
-                    style: 'width: 100px; height: 80px;',
+                    style: compact ? 'width: 108px; height: 48px;' : 'width: 100px; height: 80px;',
                     textContent: 'No carga'
                 }));
             });

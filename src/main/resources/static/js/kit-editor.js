@@ -20,7 +20,6 @@
     const rootEl = document.getElementById('editor-root');
     const sectionsEl = document.getElementById('editor-sections');
     const sideEl = document.getElementById('editor-side');
-    const jumpNav = document.getElementById('jump-nav');
     const titleEl = document.getElementById('editor-title');
 
     // ---- What each kind of product is ----
@@ -139,8 +138,70 @@
         return parts.filter(Boolean).join(' · ');
     }
 
+    /** What the selectors show: the product's code (type, specs and price); the SKU only if the server sent none. */
+    function codeOf(p) {
+        return p.code || (p.sku + ' — ' + p.name);
+    }
+
     function optionLabel(p) {
-        return p.sku + ' — ' + p.name + ' ($' + moneyFormat.format(p.price) + ')' + (p.active === false ? ' · inactivo' : '');
+        return codeOf(p) + (p.active === false ? ' · inactivo' : '');
+    }
+
+    /** Name, brand and specs, shown under a selector. */
+    function detailOf(kind, p) {
+        return [p.name, p.brand, specOf(kind, p)].filter(Boolean).join(' · ');
+    }
+
+    function productCode(productId, fallback) {
+        const entry = byId.get(productId);
+        return entry ? codeOf(entry.dto) : fallback;
+    }
+
+    // ---- Compatible products first (worked out in the browser from the catalog already loaded) ----
+
+    // Same tolerance as the review: a bank of N batteries in series may be 10 % off the inverter's voltage.
+    const BANK_VOLTAGE_TOLERANCE = 0.10;
+    // A panel's open-circuit voltage rises in the cold; the review leaves 25 % for that.
+    const PV_COLD_VOC_FACTOR = 1.25;
+
+    function selectedDto(kind) {
+        const id = single[kind] ? single[kind].productId : null;
+        const entry = id == null ? null : byId.get(id);
+        return entry ? entry.dto : null;
+    }
+
+    /** { label, test } for the kinds that can be told apart by the chosen inverter/controller, else null. */
+    function compatibility(kind) {
+        const inverter = selectedDto('inverter');
+        const busVolts = inverter && inverter.batteryVoltage ? Number(inverter.batteryVoltage) : 0;
+        if (kind === 'battery' && busVolts > 0) {
+            return {
+                label: 'Compatibles con el inversor de ' + fmt(busVolts) + ' V',
+                test: (p) => {
+                    const series = Math.round(busVolts / p.voltage);
+                    return series >= 1 && Math.abs(series * p.voltage - busVolts) / busVolts <= BANK_VOLTAGE_TOLERANCE;
+                }
+            };
+        }
+        if (kind === 'controller' && busVolts > 0) {
+            return { label: 'Compatibles con el banco de ' + fmt(busVolts) + ' V', test: (p) => (p.supportedBatteryVoltages || []).includes(busVolts) };
+        }
+        if (kind === 'panel' && inverter) {
+            // The MPPT that takes the panels: the inverter's own, or the chosen controller's.
+            const charger = inverter.builtInCharger !== false ? inverter : selectedDto('controller');
+            const maxVolts = charger ? Number(charger.maxInputVoltage) : 0;
+            if (maxVolts > 0) {
+                return {
+                    label: 'Compatibles con el MPPT (máx. ' + fmt(maxVolts) + ' V)',
+                    test: (p) => p.voc > 0 && p.voc * PV_COLD_VOC_FACTOR <= maxVolts
+                };
+            }
+        }
+        return null;
+    }
+
+    function optionHtml(p, selectedId) {
+        return '<option value="' + p.id + '"' + (p.id === selectedId ? ' selected' : '') + '>' + esc(optionLabel(p)) + '</option>';
     }
 
     function productOptions(kind, selectedId) {
@@ -149,8 +210,30 @@
         if (selectedId != null && !list.some((p) => p.id === selectedId) && byId.has(selectedId)) {
             list.push(byId.get(selectedId).dto);
         }
-        return list.map((p) =>
-            '<option value="' + p.id + '"' + (p.id === selectedId ? ' selected' : '') + '>' + esc(optionLabel(p)) + '</option>').join('');
+        const rule = compatibility(kind);
+        if (rule) {
+            const fits = list.filter(rule.test);
+            const others = list.filter((p) => !rule.test(p));
+            // Only worth grouping when it actually separates something.
+            if (fits.length && others.length) {
+                return '<optgroup label="' + escapeAttr(rule.label) + '">' + fits.map((p) => optionHtml(p, selectedId)).join('') + '</optgroup>' +
+                    '<optgroup label="Otros">' + others.map((p) => optionHtml(p, selectedId)).join('') + '</optgroup>';
+            }
+        }
+        return list.map((p) => optionHtml(p, selectedId)).join('');
+    }
+
+    /** Rebuilds the one-model selectors whose order depends on the inverter/controller (keeps what is chosen). */
+    function refreshSingleOptions() {
+        ['controller', 'battery', 'panel'].forEach((kind) => {
+            const select = sectionsEl.querySelector('[data-single="' + kind + '"]');
+            if (!select) {
+                return;
+            }
+            const sec = SECTIONS.find((x) => x.key === kind);
+            select.innerHTML = '<option value="">— ' + esc(sec.blank) + ' —</option>' + productOptions(kind, single[kind].productId);
+            select.value = single[kind].productId == null ? '' : String(single[kind].productId);
+        });
     }
 
     // ---- Kit <-> state ----
@@ -227,20 +310,20 @@
     // ---- Page skeleton ----
 
     function generalHtml(kit) {
-        return '<div class="mb-3"><label class="form-label" for="kit-name">Nombre</label>' +
-            '<input type="text" class="form-control" id="kit-name" maxlength="255" value="' + escapeAttr(kit ? kit.name : '') + '" required></div>' +
-            '<div class="mb-3"><label class="form-label" for="kit-description">Descripción</label>' +
-            '<textarea class="form-control" id="kit-description" rows="3">' + esc(kit && kit.description ? kit.description : '') + '</textarea></div>' +
-            '<div class="row g-3 mb-3"><div class="col-md-8"><label class="form-label" for="kit-price-override">Precio manual (opcional)</label>' +
-            '<input type="number" step="0.01" min="0" class="form-control" id="kit-price-override" value="' +
-            escapeAttr(kit && kit.priceOverride != null ? kit.priceOverride : '') + '">' +
-            '<div class="form-text">Si lo dejas vacío, se calcula sumando sus productos más el margen.</div></div>' +
-            '<div class="col-md-4 d-flex align-items-center"><div class="form-check mt-md-4">' +
+        return '<div class="row g-2 align-items-end">' +
+            '<div class="col-md-6"><label class="form-label small mb-1" for="kit-name">Nombre</label>' +
+            '<input type="text" class="form-control form-control-sm" id="kit-name" maxlength="255" value="' + escapeAttr(kit ? kit.name : '') + '" required></div>' +
+            '<div class="col-md-4"><label class="form-label small mb-1" for="kit-price-override" ' +
+            'title="Si lo dejas vacío, se calcula sumando sus productos más el margen.">Precio manual (opcional)</label>' +
+            '<input type="number" step="0.01" min="0" class="form-control form-control-sm" id="kit-price-override" placeholder="automático" value="' +
+            escapeAttr(kit && kit.priceOverride != null ? kit.priceOverride : '') + '"></div>' +
+            '<div class="col-md-2"><div class="form-check mb-1" title="Se vende en la tienda">' +
             '<input type="checkbox" class="form-check-input" id="kit-active"' + (!kit || kit.active ? ' checked' : '') + '>' +
-            '<label class="form-check-label" for="kit-active">Activo (se vende en la tienda)</label></div></div></div>' +
-            '<label class="form-label">Fotos del kit</label>' +
-            photoManagerHtml('kit-photos', 'kits') +
-            '<div class="form-text">Opcional. Sin fotos se arma un collage con las de sus productos.</div>';
+            '<label class="form-check-label small" for="kit-active">Activo</label></div></div>' +
+            '<div class="col-12"><label class="form-label small mb-1" for="kit-description">Descripción</label>' +
+            '<textarea class="form-control form-control-sm" id="kit-description" rows="2">' + esc(kit && kit.description ? kit.description : '') + '</textarea></div>' +
+            '<div class="col-12"><label class="form-label small mb-1" title="Sin fotos se arma un collage con las de sus productos.">Fotos del kit (opcional)</label>' +
+            photoManagerHtml('kit-photos', 'kits', { compact: true }) + '</div></div>';
     }
 
     function singleHtml(sec) {
@@ -248,13 +331,13 @@
         const empty = catalog[sec.key].length === 0;
         return (empty ? '<p class="text-secondary small mb-2">No hay ' + KIND_NAMES[sec.key] + ' en el catálogo. Dalos de alta en su pestaña del admin.</p>' : '') +
             '<div class="row g-2 align-items-center"><div class="' + (cfg.quantity ? 'col-md-9' : 'col-12') + '">' +
-            '<select class="form-select" data-single="' + sec.key + '" aria-label="' + esc(sec.title) + '">' +
+            '<select class="form-select form-select-sm" data-single="' + sec.key + '" aria-label="' + esc(sec.title) + '">' +
             '<option value="">— ' + esc(sec.blank) + ' —</option>' + productOptions(sec.key, single[sec.key].productId) + '</select></div>' +
             (cfg.quantity
-                ? '<div class="col-md-3"><div class="input-group"><span class="input-group-text">Cantidad</span>' +
+                ? '<div class="col-md-3"><div class="input-group input-group-sm"><span class="input-group-text">Cantidad</span>' +
                   '<input type="number" min="1" class="form-control" data-single-qty="' + sec.key + '" value="' + single[sec.key].quantity + '"></div></div>'
                 : '') +
-            '</div><div class="small text-secondary mt-2" data-spec="' + sec.key + '"></div>';
+            '</div><div class="small text-secondary mt-1" data-spec="' + sec.key + '"></div>';
     }
 
     function multiHtml(sec) {
@@ -268,14 +351,12 @@
 
     function sectionHtml(sec, kit) {
         const body = sec.key === 'general' ? generalHtml(kit) : single[sec.key] ? singleHtml(sec) : multiHtml(sec);
-        return '<section class="card mb-3 editor-section" id="sec-' + sec.key + '">' +
-            '<div class="card-header d-flex align-items-center gap-2 flex-wrap">' +
-            '<span class="section-num">' + sec.num + '</span>' +
-            '<h3 class="h6 fw-semibold mb-0 me-auto">' + esc(sec.title) + '</h3>' +
+        return '<section class="editor-section" id="sec-' + sec.key + '">' +
+            '<div class="d-flex align-items-center gap-2 flex-wrap section-head">' +
+            '<h3 class="section-title mb-0 me-auto">' + esc(sec.title) + '</h3>' +
             '<span class="small text-secondary" data-subtotal="' + sec.key + '"></span>' +
             '<span data-status="' + sec.key + '"></span></div>' +
-            '<div class="card-body">' + body +
-            '<div data-info="' + sec.key + '"></div><div data-review="' + sec.key + '"></div></div></section>';
+            body + '<div data-info="' + sec.key + '"></div><div data-review="' + sec.key + '"></div></section>';
     }
 
     function rowHtml(kind, r) {
@@ -283,7 +364,7 @@
         return '<div class="row g-2 mb-2 align-items-start" data-row="' + r.uid + '" data-kind="' + kind + '">' +
             '<div class="col-8 col-md-9"><select class="form-select form-select-sm" data-row-product aria-label="Producto">' +
             productOptions(kind, r.productId) + '</select>' +
-            '<div class="small text-secondary mt-1" data-row-spec>' + esc(entry ? specOf(kind, entry.dto) : '') + '</div></div>' +
+            '<div class="small text-secondary mt-1" data-row-spec>' + esc(entry ? detailOf(kind, entry.dto) : '') + '</div></div>' +
             '<div class="col-3 col-md-2"><input type="number" min="1" class="form-control form-control-sm" data-row-qty aria-label="Cantidad" value="' + r.quantity + '"></div>' +
             '<div class="col-1"><button type="button" class="btn btn-sm btn-outline-danger" data-row-remove aria-label="Quitar"><i class="bi bi-trash"></i></button></div>' +
             '</div>';
@@ -313,20 +394,13 @@
     function renderSpec(kind) {
         const host = sectionsEl.querySelector('[data-spec="' + kind + '"]');
         const entry = single[kind].productId == null ? null : byId.get(single[kind].productId);
-        host.textContent = entry ? specOf(kind, entry.dto) : '';
+        host.textContent = entry ? detailOf(kind, entry.dto) : '';
     }
 
     // ---- Review under each section ----
 
     function checksOf(sec) {
         return report ? report.checks.filter((c) => c.section === sec.review) : [];
-    }
-
-    function checksHtml(checks) {
-        return checks.length
-            ? '<ul class="list-unstyled review-note mb-0 mt-2">' + checks.map((c) =>
-                '<li class="mb-1"><i class="bi ' + SEVERITY_ICONS[c.severity] + ' me-1"></i>' + esc(c.message) + '</li>').join('') + '</ul>'
-            : '';
     }
 
     function suggestionButton(suggestion, label) {
@@ -337,7 +411,7 @@
     }
 
     function suggestionLabel(s) {
-        return 'Sugerido: ' + s.quantity + ' × ' + s.name + ' (' + money(Number(s.unitPrice) * s.quantity) + ')';
+        return 'Sugerido: ' + s.quantity + ' × ' + productCode(s.productId, s.name) + (s.quantity > 1 ? ' (' + money(Number(s.unitPrice) * s.quantity) + ')' : '');
     }
 
     function protectionsReviewHtml(list) {
@@ -407,20 +481,6 @@
             '<div class="form-text">Es informativo: no cuenta las de tierra ni las punteras.</div>';
     }
 
-    /** Messages the tables already say (a missing protection or cable), so they aren't shown twice. */
-    function isShownInTable(sec, check) {
-        if (check.severity === 'OK') {
-            return sec.key === 'cable' && /el kit incluye cable suficiente/.test(check.message);
-        }
-        if (sec.key === 'protection') {
-            return /^Falta /.test(check.message);
-        }
-        if (sec.key === 'cable') {
-            return /se necesitan [\d.]+ m de cable/.test(check.message);
-        }
-        return false;
-    }
-
     function infoFor(sec) {
         if (!report) {
             return '';
@@ -449,16 +509,6 @@
         return entry ? entry.dto.builtInCharger !== false : null;
     }
 
-    function noteFor(sec) {
-        if (sec.key === 'controller' && single.controller.productId == null && inverterHasCharger() === true) {
-            return '<div class="mt-2 small text-secondary"><i class="bi bi-info-circle me-1"></i>El inversor elegido ya trae su cargador solar (MPPT), así que no hace falta un controlador.</div>';
-        }
-        if (sec.key === 'controller' && single.controller.productId == null && inverterHasCharger() === false && single.panel.productId != null) {
-            return '<div class="mt-2 small text-warning-emphasis"><i class="bi bi-exclamation-triangle me-1"></i>Este inversor no tiene cargador solar: elige un controlador para conectar los paneles.</div>';
-        }
-        return '';
-    }
-
     function renderReview() {
         suggestions = [];
         SECTIONS.forEach((sec) => {
@@ -467,7 +517,7 @@
             if (sec.key === 'general' || sec.key === 'structure') {
                 return;
             }
-            infoHost.innerHTML = infoFor(sec) + noteFor(sec);
+            infoHost.innerHTML = infoFor(sec);
             let html = '';
             if (report) {
                 if (sec.key === 'protection') {
@@ -477,7 +527,6 @@
                 } else if (sec.key === 'terminal') {
                     html += terminalsReviewHtml(report.terminals);
                 }
-                html += checksHtml(checksOf(sec).filter((c) => !isShownInTable(sec, c)));
             }
             reviewHost.innerHTML = html;
         });
@@ -574,10 +623,12 @@
         const errors = problems.filter((c) => c.severity === 'ERROR').length;
         const warnings = problems.length - errors;
         const summary = errors === 0 && warnings === 0
-            ? '<div class="small"><i class="bi ' + SEVERITY_ICONS.OK + ' me-1"></i>Todo en orden.</div>'
+            ? '<div class="small mb-2"><i class="bi ' + SEVERITY_ICONS.OK + ' me-1"></i>Todo en orden.</div>'
             : '<div class="small mb-2">' + (errors ? '<span class="badge text-bg-danger me-1">' + errors + (errors === 1 ? ' error' : ' errores') + '</span>' : '') +
               (warnings ? '<span class="badge text-bg-warning">' + warnings + (warnings === 1 ? ' aviso' : ' avisos') + '</span>' : '') + '</div>';
-        const list = problems.map((c) => {
+        // Errors first, then warnings, then what is fine; each with a link to the part of the kit it is about.
+        const rank = { ERROR: 0, WARNING: 1, OK: 2 };
+        const list = report.checks.slice().sort((a, b) => rank[a.severity] - rank[b.severity]).map((c) => {
             const sec = SECTION_BY_REVIEW[c.section];
             return '<li class="mb-2"><i class="bi ' + SEVERITY_ICONS[c.severity] + ' me-1"></i>' + esc(c.message) +
                 (sec ? ' <a href="#sec-' + sec.key + '" class="text-nowrap">(' + esc(sec.title) + ')</a>' : '') + '</li>';
@@ -667,6 +718,9 @@
     function applySuggestion(suggestion) {
         const kind = addItem(suggestion.productId, suggestion.quantity);
         syncSection(kind);
+        if (kind === 'inverter' || kind === 'controller') {
+            refreshSingleOptions();
+        }
     }
 
     sectionsEl.addEventListener('change', (event) => {
@@ -675,12 +729,16 @@
             const kind = target.dataset.single;
             single[kind].productId = target.value === '' ? null : Number(target.value);
             renderSpec(kind);
+            if (kind === 'inverter' || kind === 'controller') {
+                refreshSingleOptions();
+                Object.keys(single).forEach(renderSpec);
+            }
             changed();
         } else if (target.matches('[data-row-product]')) {
             const rowEl = target.closest('[data-row]');
             const row = rows[rowEl.dataset.kind].find((r) => r.uid === Number(rowEl.dataset.row));
             row.productId = Number(target.value);
-            rowEl.querySelector('[data-row-spec]').textContent = specOf(rowEl.dataset.kind, byId.get(row.productId).dto);
+            rowEl.querySelector('[data-row-spec]').textContent = detailOf(rowEl.dataset.kind, byId.get(row.productId).dto);
             changed();
         }
     });
@@ -900,8 +958,7 @@
 
         titleEl.textContent = kit ? kit.name : 'Nuevo kit';
         document.title = (kit ? kit.name : 'Nuevo kit') + ' | Panel de administración | Baja Solar Supply';
-        jumpNav.innerHTML = SECTIONS.map((sec) => '<a href="#sec-' + sec.key + '">' + sec.num + '. ' + esc(sec.title) + '</a>').join('');
-        sectionsEl.innerHTML = SECTIONS.map((sec) => sectionHtml(sec, kit)).join('');
+        sectionsEl.innerHTML = '<div class="card">' + SECTIONS.map((sec) => sectionHtml(sec, kit)).join('') + '</div>';
         Object.keys(rows).forEach(renderRows);
         Object.keys(single).forEach(renderSpec);
         initPhotoManager('kit-photos', kit ? kit.imageUrls : []);

@@ -93,6 +93,7 @@ public class InverterService {
         InverterDto dto = new InverterDto();
         dto.setId(inverter.getId());
         dto.setSku(inverter.getSku());
+        dto.setCode(inverter.getCode());
         dto.setName(inverter.getName());
         dto.setBrand(inverter.getBrand());
         dto.setDescription(inverter.getDescription());

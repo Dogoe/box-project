@@ -76,6 +76,7 @@ public class SolarPanelService {
         SolarPanelDto dto = new SolarPanelDto();
         dto.setId(panel.getId());
         dto.setSku(panel.getSku());
+        dto.setCode(panel.getCode());
         dto.setName(panel.getName());
         dto.setBrand(panel.getBrand());
         dto.setDescription(panel.getDescription());

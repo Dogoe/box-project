@@ -297,6 +297,28 @@ class AdminCatalogControllerTest {
     }
 
     @Test
+    void theProductCodeIsComputedNotExportedAndIgnoredOnImport() throws Exception {
+        // A file that carries a (stale) "code" is still accepted: it is computed, never read.
+        JsonNode saved = importFile("""
+                { "products": [
+                    { "type": "BATTERY", "sku": "T-COD-BAT", "name": "Batería código", "price": 8900, "code": "LO-QUE-SEA",
+                      "capacityAh": 100, "voltage": 12.8, "chemistry": "LIFEPO4" },
+                    { "type": "PROTECTION", "sku": "T-COD-FUS", "name": "ANL 80 A", "price": 150.5, "code": "OTRO",
+                      "protectionType": "FUSE", "fuseClass": "ANL", "ratedCurrentA": 80, "maxVoltage": 32 } ] }
+                """, false);
+        assertThat(errorsOf(saved)).isEmpty();
+
+        for (JsonNode product : testPart(export()).get("products")) {
+            assertThat(product.has("code")).as("the code isn't exported").isFalse();
+        }
+        String token = adminToken();
+        mockMvc.perform(get("/api/catalog/batteries").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$[?(@.sku=='T-COD-BAT')].code").value("BATERIA-LFP-12.8V-100Ah-$8900"));
+        mockMvc.perform(get("/api/catalog/protections").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$[?(@.sku=='T-COD-FUS')].code").value("FUSIBLE-ANL-80A-32V-$150.5"));
+    }
+
+    @Test
     void terminalsAndStudSizesImportAndExport() throws Exception {
         JsonNode saved = importFile("""
                 { "products": [

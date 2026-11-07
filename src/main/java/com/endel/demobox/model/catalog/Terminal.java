@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
 /**
  * Crimp cable lugs, sold apart from the cables: a barrel for one wire gauge and an eye for one stud
@@ -38,6 +39,17 @@ public class Terminal extends Product {
     @Positive
     @Column(nullable = false)
     private int piecesPerPack = 1;
+
+    @Override
+    protected String codeType() {
+        return "TERMINAL";
+    }
+
+    /** Wire gauge, stud size and pieces per pack. */
+    @Override
+    protected List<String> codeSpecs() {
+        return java.util.Arrays.asList(ProductCode.gauge(gauge), TerminalSize.orDefault(terminalSize).getLabel(), "x" + piecesPerPack);
+    }
 
     /** e.g. "2 AWG · M8 · bolsa de 10". */
     public String getSpecLabel() {

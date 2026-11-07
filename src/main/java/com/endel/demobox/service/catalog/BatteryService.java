@@ -78,6 +78,7 @@ public class BatteryService {
         BatteryDto dto = new BatteryDto();
         dto.setId(battery.getId());
         dto.setSku(battery.getSku());
+        dto.setCode(battery.getCode());
         dto.setName(battery.getName());
         dto.setBrand(battery.getBrand());
         dto.setDescription(battery.getDescription());

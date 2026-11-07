@@ -20,6 +20,9 @@ public class ProtectionDto {
     @NotBlank
     private String sku;
 
+    /** Short identifier built from the type, specs and price (computed by the server), e.g. "PANEL-550W-49.5Voc-MC4-$2450". */
+    private String code;
+
     @NotBlank
     private String name;
 

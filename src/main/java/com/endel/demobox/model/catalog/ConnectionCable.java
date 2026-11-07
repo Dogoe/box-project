@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
 @Entity
 @Table(name = "connection_cables")
@@ -26,4 +27,15 @@ public class ConnectionCable extends Product {
     // Nullable at the DB level so ddl-auto can add it to existing rows.
     @Enumerated(EnumType.STRING)
     private WireGauge gauge;
+
+    @Override
+    protected String codeType() {
+        return "CABLE";
+    }
+
+    /** Gauge and length. */
+    @Override
+    protected List<String> codeSpecs() {
+        return java.util.Arrays.asList(ProductCode.gauge(gauge), ProductCode.num(lengthMeters) + "M");
+    }
 }

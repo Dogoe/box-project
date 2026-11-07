@@ -74,6 +74,7 @@ public class ProtectionService {
         ProtectionDto dto = new ProtectionDto();
         dto.setId(protection.getId());
         dto.setSku(protection.getSku());
+        dto.setCode(protection.getCode());
         dto.setName(protection.getName());
         dto.setBrand(protection.getBrand());
         dto.setDescription(protection.getDescription());
