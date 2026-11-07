@@ -134,7 +134,7 @@ Ejemplo:
 
 Qué pide la revisión del kit:
 
-- **Fusible principal de batería**: entre la corriente de diseño del tramo batería–inversor y lo que aguanta su cable, con voltaje de al menos 1.2 × el del banco (14.4 / 28.8 / 57.6 V). **Clase T** si es litio con baterías en paralelo o más de 300 A.
+- **Fusible principal de batería**: entre la corriente de diseño del tramo batería–inversor y lo que aguanta su cable, con voltaje de al menos 1.2 × el del banco (14.4 / 28.8 / 57.6 V). **Clase T** si es litio en **24 o 48 V**; en 12 V el litio puede usar MRBF o ANL, salvo con baterías en paralelo o más de 300 A (ahí también Clase T). Plomo-ácido: cualquier clase que aguante el voltaje.
 - **Interruptor / breaker DC de batería**: al menos la corriente de diseño de ese tramo.
 - **Protección controlador – batería** (solo con controlador aparte): fusible o breaker DC, como el fusible principal.
 - **Desconectador DC de paneles**: 2 polos, al menos el voltaje de la cadena en frío y 1.25 × su corriente.

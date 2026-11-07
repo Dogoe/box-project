@@ -165,6 +165,7 @@ class KitCompatibilityServiceTest {
     private final Protection mrbf125 = protection("MRBF 125 A 58 V", ProtectionType.FUSE, FuseClass.MRBF, 125, 58, 1, 300);
     private final Protection anl110 = protection("ANL 110 A 32 V", ProtectionType.FUSE, FuseClass.ANL, 110, 32, 1, 200);
     private final Protection classT110 = protection("Clase T 110 A", ProtectionType.FUSE, FuseClass.CLASS_T, 110, 125, 1, 1500);
+    private final Protection classT110m10 = protection("Clase T 110 A (pernos M10)", ProtectionType.FUSE, FuseClass.CLASS_T, 110, 125, 1, 1500);
     private final Protection mrbf175 = protection("MRBF 175 A 58 V", ProtectionType.FUSE, FuseClass.MRBF, 175, 58, 1, 300);
     private final Protection classT175 = protection("Clase T 175 A", ProtectionType.FUSE, FuseClass.CLASS_T, 175, 125, 1, 1500);
     private final Protection dcBreaker125 = protection("Breaker DC 125 A 63 V", ProtectionType.DC_BREAKER, null, 125, 63, 1, 700);
@@ -189,6 +190,18 @@ class KitCompatibilityServiceTest {
         return lines;
     }
 
+    /** Same system with 4 x 12 V AGM batteries: lead-acid has no BMS, so any battery fuse class rated for 48 V works. */
+    private List<KitLine> midSystemLeadAcid(KitLine... extra) {
+        Battery agm = battery(12.0, 100);
+        agm.setChemistry(BatteryChemistry.AGM);
+        List<KitLine> lines = new java.util.ArrayList<>(List.of(
+                new KitLine(inverter(3.5, 48.0, InverterType.HYBRID), 1),
+                new KitLine(agm, 4),
+                new KitLine(panel(), 6)));
+        lines.addAll(List.of(extra));
+        return lines;
+    }
+
     private static ProtectionCheckDto protectionRow(KitCompatibilityReportDto report, String label) {
         return report.getProtections().stream().filter(p -> p.getLabel().equals(label)).findFirst().orElseThrow();
     }
@@ -204,9 +217,9 @@ class KitCompatibilityServiceTest {
                 report.getProtections().stream().map(ProtectionCheckDto::getLabel).toList());
         assertTrue(report.getProtections().stream().noneMatch(ProtectionCheckDto::isCovered));
 
-        // ANL is cheaper but only takes 32 V; the 125 A MRBF is cheaper but more than the 2 AWG cable carries.
-        assertEquals("de 101.3 a 115 A, 57.6 V DC o más", protectionRow(report, "Fusible principal de batería").getRequirement());
-        assertEquals("MRBF 110 A 58 V", protectionRow(report, "Fusible principal de batería").getSuggestion().getName());
+        // LiFePO4: only Class T qualifies, even though the MRBF and ANL fuses are cheaper.
+        assertEquals("de 101.3 a 115 A, 57.6 V DC o más, Clase T", protectionRow(report, "Fusible principal de batería").getRequirement());
+        assertEquals("Clase T 110 A", protectionRow(report, "Fusible principal de batería").getSuggestion().getName());
         assertEquals("Breaker DC 125 A 63 V", protectionRow(report, "Interruptor / breaker DC de batería").getSuggestion().getName());
         // Cold string voltage 6 x 49.5 x 1.25 = 371.3 V: the 150 V disconnect doesn't qualify.
         assertEquals("17.4 A o más, 371.3 V DC o más, 2 polos", protectionRow(report, "Desconectador DC de paneles").getRequirement());
@@ -215,32 +228,32 @@ class KitCompatibilityServiceTest {
         assertEquals("de 40 a 45 A, 120 V AC o más", protectionRow(report, "Breaker AC de salida del inversor").getRequirement());
         assertEquals("Breaker AC 40 A con caja", protectionRow(report, "Breaker AC de salida del inversor").getSuggestion().getName());
 
-        assertEquals(List.of("MRBF 110 A 58 V", "Breaker DC 125 A 63 V", "Desconectador 2P 500 V", "Breaker AC 40 A con caja"),
+        assertEquals(List.of("Clase T 110 A", "Breaker DC 125 A 63 V", "Desconectador 2P 500 V", "Breaker AC 40 A con caja"),
                 report.getSuggestedItems().stream().map(SuggestedItemDto::getName).toList());
         assertTrue(hasCheck(report, CompatibilitySeverity.WARNING,
-                "Falta fusible principal de batería (de 101.3 a 115 A, 57.6 V DC o más). Sugerencia: MRBF 110 A 58 V."), report.getChecks().toString());
+                "Falta fusible principal de batería (de 101.3 a 115 A, 57.6 V DC o más, Clase T). Sugerencia: Clase T 110 A."), report.getChecks().toString());
     }
 
     @Test
     void aProtectionThatDoesNotQualifyIsExplainedAndTheRightOneCoversIt() {
-        catalogHas(mrbf110, anl110, dcBreaker125, pv500, ac40);
+        catalogHas(classT110, anl110, dcBreaker125, pv500, ac40);
         KitCompatibilityReportDto withAnl = service.analyze(midSystem(new KitLine(anl110, 1)), lengths);
         ProtectionCheckDto fuse = protectionRow(withAnl, "Fusible principal de batería");
         assertFalse(fuse.isCovered());
-        assertEquals("ANL 110 A 32 V: aguanta 32 V y se necesitan 57.6 V o más", fuse.getProblem());
+        assertEquals("ANL 110 A 32 V: se necesita fusible Clase T y es ANL", fuse.getProblem());
         assertTrue(hasCheck(withAnl, CompatibilitySeverity.WARNING, "1 × ANL 110 A 32 V no corresponde a ninguna protección"),
                 withAnl.getChecks().toString());
 
-        KitCompatibilityReportDto complete = service.analyze(midSystem(new KitLine(mrbf110, 1), new KitLine(dcBreaker125, 1),
+        KitCompatibilityReportDto complete = service.analyze(midSystem(new KitLine(classT110, 1), new KitLine(dcBreaker125, 1),
                 new KitLine(pv500, 1), new KitLine(ac40, 1)), lengths);
         assertTrue(complete.getProtections().stream().allMatch(ProtectionCheckDto::isCovered), complete.getProtections().toString());
-        assertEquals("1 × MRBF 110 A 58 V", protectionRow(complete, "Fusible principal de batería").getCoveredBy());
+        assertEquals("1 × Clase T 110 A", protectionRow(complete, "Fusible principal de batería").getCoveredBy());
         assertTrue(complete.getSuggestedItems().isEmpty());
         assertFalse(hasCheck(complete, CompatibilitySeverity.WARNING, "Falta"), complete.getChecks().toString());
     }
 
     @Test
-    void lithiumBatteriesInParallelNeedAClassTFuse() {
+    void lithiumBanksNeedAClassTFuse_alsoInParallelOnTwentyFourVolts() {
         catalogHas(mrbf175, classT175, dcBreaker200);
         // 3000 / (24 x 0.9) = 138.9 A -> 173.6 A design -> 175 A fuse -> 2/0 (175 A). 4 x 12.8 V on 24 V = 2S x 2P.
         KitCompatibilityReportDto report = service.analyze(List.of(
@@ -250,6 +263,34 @@ class KitCompatibilityServiceTest {
         ProtectionCheckDto fuse = protectionRow(report, "Fusible principal de batería");
         assertEquals("de 173.6 a 175 A, 28.8 V DC o más, Clase T", fuse.getRequirement());
         assertEquals("Clase T 175 A", fuse.getSuggestion().getName()); // the cheaper MRBF can't interrupt a parallel lithium bank
+    }
+
+    @Test
+    void aSingleTwelveVoltLithiumStringCanUseAnMrbf_butBatteriesInParallelNeedClassT() {
+        Protection classT125 = protection("Clase T 125 A", ProtectionType.FUSE, FuseClass.CLASS_T, 125, 125, 1, 1400);
+        catalogHas(mrbf125, anl110, classT175, classT125);
+        // 115.7 A design -> 125 A fuse -> 1/0 (150 A). The ANL is too small; the cheaper MRBF qualifies on 12 V.
+        KitCompatibilityReportDto single = service.analyze(List.of(
+                new KitLine(inverter(1.0, 12.0, InverterType.OFF_GRID), 1),
+                new KitLine(battery(12.8, 100), 1)), lengths);
+        ProtectionCheckDto fuse = protectionRow(single, "Fusible principal de batería");
+        assertEquals("de 115.7 a 150 A, 14.4 V DC o más", fuse.getRequirement());
+        assertEquals("MRBF 125 A 58 V", fuse.getSuggestion().getName());
+
+        // Two 12.8 V batteries in parallel on 12 V: Class T again (the 175 A one is more than the cable carries).
+        KitCompatibilityReportDto parallel = service.analyze(List.of(
+                new KitLine(inverter(1.0, 12.0, InverterType.OFF_GRID), 1),
+                new KitLine(battery(12.8, 100), 2)), lengths);
+        assertEquals("Clase T 125 A", protectionRow(parallel, "Fusible principal de batería").getSuggestion().getName());
+    }
+
+    @Test
+    void leadAcidBanksCanUseTheCheaperMrbf() {
+        catalogHas(mrbf110, classT110, dcBreaker125);
+        KitCompatibilityReportDto report = service.analyze(midSystemLeadAcid(), lengths);
+        ProtectionCheckDto fuse = protectionRow(report, "Fusible principal de batería");
+        assertEquals("de 101.3 a 115 A, 57.6 V DC o más", fuse.getRequirement());
+        assertEquals("MRBF 110 A 58 V", fuse.getSuggestion().getName());
     }
 
     @Test
@@ -310,8 +351,8 @@ class KitCompatibilityServiceTest {
     @Test
     void terminalsForTheBatteryRun_mrbfAddsNoneAndTheBreakerAddsTwo() {
         catalogHas(mrbf110, dcBreaker125, pv500, ac40);
-        // Protections only suggested (not in the kit yet): the count already assumes them.
-        KitCompatibilityReportDto report = service.analyze(midSystem(), lengths);
+        // Lead-acid, so the MRBF qualifies. Protections only suggested (not in the kit yet): the count already assumes them.
+        KitCompatibilityReportDto report = service.analyze(midSystemLeadAcid(), lengths);
 
         assertEquals(List.of("6 × 2 AWG M8 (2 lado batería, 2 lado inversor, 2 breaker DC)"), terminalRows(report));
         assertFalse(report.getTerminals().get(0).isCovered());
@@ -320,12 +361,13 @@ class KitCompatibilityServiceTest {
 
     @Test
     void anInverterWithAnotherStudGetsItsOwnRow() {
-        catalogHas(mrbf110, dcBreaker125);
+        catalogHas(classT110, dcBreaker125);
         List<KitLine> lines = midSystem();
         ((Inverter) lines.get(0).product()).setTerminalSize(TerminalSize.M6);
         KitCompatibilityReportDto report = service.analyze(lines, lengths);
 
-        assertEquals(List.of("4 × 2 AWG M8 (2 lado batería, 2 breaker DC)", "2 × 2 AWG M6 (2 lado inversor)"), terminalRows(report));
+        assertEquals(List.of("6 × 2 AWG M8 (2 lado batería, 2 portafusible Clase T, 2 breaker DC)", "2 × 2 AWG M6 (2 lado inversor)"),
+                terminalRows(report));
     }
 
     @Test
@@ -334,27 +376,34 @@ class KitCompatibilityServiceTest {
         KitCompatibilityReportDto report = service.analyze(midSystem(), lengths);
 
         assertEquals(List.of("8 × 2 AWG M8 (2 lado batería, 2 lado inversor, 2 portafusible Clase T, 2 breaker DC)"), terminalRows(report));
+
+        // Class T holders often have 3/8" (M10) studs: those two lugs go on their own row.
+        classT110m10.setTerminalSize(TerminalSize.M10);
+        catalogHas(classT110m10, dcBreaker125);
+        KitCompatibilityReportDto m10 = service.analyze(midSystem(), lengths);
+        assertEquals(List.of("6 × 2 AWG M8 (2 lado batería, 2 lado inversor, 2 breaker DC)", "2 × 2 AWG M10 (2 portafusible Clase T)"),
+                terminalRows(m10));
     }
 
     @Test
     void terminalsFollowTheCableTheKitActuallyUses() {
-        catalogHas(mrbf110, dcBreaker125);
+        catalogHas(classT110, dcBreaker125);
         // The run needs 2 AWG, but the kit brings thicker 1/0 cable: the lugs must fit 1/0.
         KitCompatibilityReportDto report = service.analyze(midSystem(new KitLine(cable("CAB-1/0", WireGauge.AWG_1_0, 2), 2)), lengths);
 
-        assertEquals(List.of("6 × 1/0 AWG M8 (2 lado batería, 2 lado inversor, 2 breaker DC)"), terminalRows(report));
+        assertEquals(List.of("8 × 1/0 AWG M8 (2 lado batería, 2 lado inversor, 2 portafusible Clase T, 2 breaker DC)"), terminalRows(report));
     }
 
     @Test
     void terminalSuggestionIsRoundedToPacks_andAPackInTheKitCoversThem() {
-        catalogHas(mrbf110, dcBreaker125);
+        catalogHas(classT110, dcBreaker125);
         Terminal bagOf10 = terminal("Terminal 2 AWG M8 (bolsa de 10)", WireGauge.AWG_2, TerminalSize.M8, 10, 80);
         Terminal loose = terminal("Terminal 2 AWG M8 suelta", WireGauge.AWG_2, TerminalSize.M8, 1, 15);
         Terminal wrongStud = terminal("Terminal 2 AWG M10 (bolsa de 10)", WireGauge.AWG_2, TerminalSize.M10, 10, 50);
         when(terminalRepository.findAll()).thenReturn(List.of(bagOf10, loose, wrongStud));
 
         KitCompatibilityReportDto report = service.analyze(midSystem(), lengths);
-        // 6 needed: one bag ($80) beats 6 loose ($90); the cheaper M10 bag doesn't fit M8 studs.
+        // 8 needed: one bag ($80) beats 8 loose ($120); the cheaper M10 bag doesn't fit M8 studs.
         assertEquals("Terminal 2 AWG M8 (bolsa de 10)", report.getTerminals().get(0).getSuggestion().getName());
         assertEquals(1, report.getTerminals().get(0).getSuggestion().getQuantity());
         assertTrue(report.getSuggestedItems().stream().anyMatch(i -> i.getName().equals("Terminal 2 AWG M8 (bolsa de 10)") && i.getQuantity() == 1));
