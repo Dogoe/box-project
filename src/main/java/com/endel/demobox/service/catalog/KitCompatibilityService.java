@@ -725,6 +725,7 @@ public class KitCompatibilityService {
                     .sorted(Comparator.comparing(p -> p.cable.getGauge()))
                     .toList();
             WireGauge usedGauge = null;
+            WireGauge thinnestUsed = null;
             for (CablePool pool : candidates) {
                 if (covered >= needed) {
                     break;
@@ -734,11 +735,13 @@ public class KitCompatibilityService {
                 covered += take;
                 usedNames.add(pool.cable.getName());
                 usedGauge = thicker(usedGauge, pool.cable.getGauge());
+                thinnestUsed = thinnestUsed == null || pool.cable.getGauge().compareTo(thinnestUsed) < 0 ? pool.cable.getGauge() : thinnestUsed;
             }
             segment.setCableGauge(usedGauge != null ? usedGauge : segment.getGauge());
 
             if (covered + 1e-6 >= needed) {
                 segment.setCoveredBy(String.join(", ", usedNames));
+                segment.setWeakestCableGauge(thinnestUsed);
                 report.ok(String.format(Locale.US, "%s: el kit incluye cable suficiente (%s m de %s o más grueso).",
                         segment.getSegment(), fmt(needed), segment.getGaugeLabel()));
             } else {
