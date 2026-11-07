@@ -31,7 +31,7 @@ public class KitProtectionPlanner {
 
     /** A lithium bank's charge voltage is about 1.2 x its nominal voltage (14.4 / 28.8 / 57.6 V). */
     static final double CHARGE_VOLTAGE_FACTOR = 1.2;
-    /** Above this a 12 V lithium bank also needs a Class T fuse. */
+    /** Above this a lithium bank on 12 or 24 V also needs a Class T fuse. */
     static final double CLASS_T_ABOVE_A = 300;
     /** The inverter's AC output in Mexico. */
     static final double AC_VOLTS = 120;
@@ -129,9 +129,10 @@ public class KitProtectionPlanner {
             Battery battery = in.battery();
             boolean lithium = battery.getChemistry().hasBms();
             // A lithium bank's very low internal resistance makes its short-circuit current huge (thousands of
-            // amps). On 24/48 V, MRBF and ANL fuses can't interrupt that safely, so it needs Class T; on 12 V a
-            // single string is fine with MRBF/ANL, but batteries in parallel or a very high current still need Class T.
-            boolean classT = lithium && (in.busVolts() >= 24 || in.parallelStrings() >= 2 || designA > CLASS_T_ABOVE_A);
+            // amps). On 48 V, MRBF and ANL fuses can't interrupt that safely, so it needs Class T. On 12 and 24 V a
+            // single string is fine with MRBF/ANL (they are inside their voltage and interrupt ratings), but batteries
+            // in parallel (the short grows with each string) or a very high current still need Class T.
+            boolean classT = lithium && (in.busVolts() >= 48 || in.parallelStrings() >= 2 || designA > CLASS_T_ABOVE_A);
             Set<FuseClass> fuseClasses = classT ? CLASS_T_ONLY : BATTERY_FUSES;
             Double builtIn = battery.getIntegratedBreakerA();
 

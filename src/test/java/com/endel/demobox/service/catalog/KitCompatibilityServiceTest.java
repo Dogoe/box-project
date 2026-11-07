@@ -254,7 +254,7 @@ class KitCompatibilityServiceTest {
     }
 
     @Test
-    void lithiumBanksNeedAClassTFuse_alsoInParallelOnTwentyFourVolts() {
+    void lithiumBanksInParallelNeedAClassTFuse_alsoOnTwentyFourVolts() {
         catalogHas(mrbf175, classT175, dcBreaker200);
         // 3000 / (24 x 0.9) = 138.9 A -> 173.6 A design -> 175 A fuse -> 2/0 (175 A). 4 x 12.8 V on 24 V = 2S x 2P.
         KitCompatibilityReportDto report = service.analyze(List.of(
@@ -264,6 +264,32 @@ class KitCompatibilityServiceTest {
         ProtectionCheckDto fuse = protectionRow(report, "Fusible principal de batería");
         assertEquals("de 173.6 a 175 A, 28.8 V DC o más, Clase T", fuse.getRequirement());
         assertEquals("Clase T 175 A", fuse.getSuggestion().getName()); // the cheaper MRBF can't interrupt a parallel lithium bank
+    }
+
+    @Test
+    void aSingleTwentyFourVoltLithiumStringCanUseAnMrbf_butFortyEightVoltsNeedsClassT() {
+        Protection mrbf60 = protection("MRBF 60 A 58 V", ProtectionType.FUSE, FuseClass.MRBF, 60, 58, 1, 200);
+        Protection classT60 = protection("Clase T 60 A 125 V", ProtectionType.FUSE, FuseClass.CLASS_T, 60, 125, 1, 1300);
+        Protection mrbf30 = protection("MRBF 30 A 58 V", ProtectionType.FUSE, FuseClass.MRBF, 30, 58, 1, 150);
+        Protection classT30 = protection("Clase T 30 A 125 V", ProtectionType.FUSE, FuseClass.CLASS_T, 30, 125, 1, 1200);
+        catalogHas(mrbf60, classT60, mrbf30, classT30);
+
+        // 1000 W / (24 V x 0.9) = 46.3 A -> 57.9 A design -> 60 A fuse -> 6 AWG (65 A): one 25.6 V string on 24 V.
+        KitCompatibilityReportDto at24 = service.analyze(List.of(
+                new KitLine(inverter(1.0, 24.0, InverterType.OFF_GRID), 1),
+                new KitLine(battery(25.6, 100), 1)), lengths);
+        ProtectionCheckDto fuse24 = protectionRow(at24, "Fusible principal de batería");
+        assertEquals("de 57.9 a 65 A, 28.8 V DC o más", fuse24.getRequirement());
+        assertEquals("MRBF 60 A 58 V", fuse24.getSuggestion().getName()); // the cheaper one qualifies now
+
+        // The same on 48 V (an inverter without a solar charger, so only the discharge counts):
+        // 1000 W / (48 V x 0.9) = 23.1 A -> 28.9 A design -> 30 A fuse -> 10 AWG (30 A).
+        KitCompatibilityReportDto at48 = service.analyze(List.of(
+                new KitLine(inverterWithoutCharger(1.0, 48.0), 1),
+                new KitLine(battery(51.2, 100), 1)), lengths);
+        ProtectionCheckDto fuse48 = protectionRow(at48, "Fusible principal de batería");
+        assertEquals("de 28.9 a 30 A, 57.6 V DC o más, Clase T", fuse48.getRequirement());
+        assertEquals("Clase T 30 A 125 V", fuse48.getSuggestion().getName());
     }
 
     @Test

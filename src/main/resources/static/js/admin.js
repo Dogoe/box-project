@@ -292,7 +292,7 @@
                 { key: 'referenceUrl', label: 'URL de referencia (Amazon, Mercado Libre...; solo admin)', type: 'url', placeholder: 'https://' },
                 { key: 'protectionType', label: 'Tipo', type: 'select', required: true, options: PROTECTION_TYPES, defaultValue: 'FUSE' },
                 { key: 'fuseClass', label: 'Clase de fusible (solo fusibles)', type: 'select', options: FUSE_CLASSES, defaultValue: 'MRBF',
-                    help: 'Clase T: obligatorio con litio en 24 y 48 V (y en 12 V con baterías en paralelo). MRBF hasta 58 V; ANL solo 12/24 V (32 V); gPV para cadenas de paneles.' },
+                    help: 'Clase T: obligatorio con litio en 48 V (y en 12 o 24 V con baterías en paralelo). MRBF hasta 58 V; ANL solo 12/24 V (32 V); gPV para cadenas de paneles.' },
                 { key: 'ratedCurrentA', label: 'Corriente nominal (A)', type: 'number', step: '0.1', required: true },
                 { key: 'maxVoltage', label: 'Voltaje máximo (V; DC, o AC en breakers AC)', type: 'number', step: '0.1', required: true,
                     help: 'Lo que dice la pieza: p. ej. 58 V DC un MRBF, 500 V DC un desconectador, 120 V AC un breaker AC.' },
