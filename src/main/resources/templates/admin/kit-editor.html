@@ -23,6 +23,23 @@
             color: var(--bs-secondary-color);
         }
         .review-note { font-size: .85rem; }
+        /* Folding sections: the title is a button; while closed it also shows what is chosen. */
+        .section-toggle, .more-toggle {
+            background: none; border: 0; padding: 0; color: inherit; text-align: left; cursor: pointer;
+            display: flex; align-items: center; gap: .4rem; min-width: 0;
+        }
+        .section-toggle { flex: 1 1 0; }
+        .more-toggle { font-size: .85rem; color: var(--bs-secondary-color); }
+        .more-toggle:hover, .section-toggle:hover .section-title { color: var(--bs-body-color); }
+        .chev { font-size: .75rem; transition: transform .15s; flex: none; }
+        [aria-expanded="true"] > .chev { transform: rotate(90deg); }
+        .section-summary {
+            display: none; font-size: .8rem; color: var(--bs-secondary-color); font-weight: 400;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+        }
+        .section-toggle[aria-expanded="false"] .section-summary { display: block; }
+        .section-title { white-space: nowrap; }
+        .section-cost { white-space: nowrap; flex-shrink: 0; }
     </style>
 </head>
 

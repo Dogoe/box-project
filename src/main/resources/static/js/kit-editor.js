@@ -10,7 +10,7 @@
         return; // no admin session: admin-common.js already sent the visitor to the login page
     }
     const { authFetch, errorMessage, escapeHtml, escapeAttr, photoManagerHtml, photoManagerValue, photoUploadInProgress,
-        initPhotoManager, WIRE_GAUGE_LABELS } = Common;
+        initPhotoManager } = Common;
 
     const kitIdAttr = document.body.dataset.kitId;
     let kitId = kitIdAttr ? Number(kitIdAttr) : null;
@@ -55,8 +55,6 @@
     ];
     const SECTION_BY_REVIEW = Object.fromEntries(SECTIONS.filter((s) => s.review).map((s) => [s.review, s]));
 
-    const CHEMISTRY = { LIFEPO4: 'LiFePO4', LITHIUM_ION: 'Litio-ion', LEAD_ACID: 'Plomo-ácido', GEL: 'Gel', AGM: 'AGM' };
-    const INVERTER_TYPES = { STRING: 'On-grid', HYBRID: 'Híbrido', MICRO: 'Microinversor', OFF_GRID: 'Off-grid' };
     const SEVERITY_ICONS = {
         OK: 'bi-check-circle-fill text-success',
         WARNING: 'bi-exclamation-triangle-fill text-warning',
@@ -107,37 +105,6 @@
 
     // ---- Product labels ----
 
-    function specOf(kind, p) {
-        const parts = [];
-        switch (kind) {
-            case 'inverter':
-                parts.push(fmt(p.ratedPowerKw) + ' kW', p.batteryVoltage != null ? fmt(p.batteryVoltage) + ' V' : null,
-                    INVERTER_TYPES[p.inverterType] || p.inverterType,
-                    p.builtInCharger === false ? 'sin cargador solar' : 'MPPT integrado');
-                break;
-            case 'controller':
-                parts.push(fmt(p.maxChargeCurrentA) + ' A de carga', (p.supportedBatteryVoltages || []).join('/') + ' V', 'PV máx ' + fmt(p.maxInputVoltage) + ' V');
-                break;
-            case 'battery':
-                parts.push(fmt(p.voltage) + ' V', p.capacityAh != null ? fmt(p.capacityAh) + ' Ah' : null, CHEMISTRY[p.chemistry] || p.chemistry,
-                    fmt(p.capacityKwh) + ' kWh', p.integratedBreakerA != null ? 'breaker integrado ' + fmt(p.integratedBreakerA) + ' A' : null);
-                break;
-            case 'panel':
-                parts.push(fmt(p.wattage) + ' W', 'Voc ' + fmt(p.voc) + ' V', 'Isc ' + fmt(p.isc) + ' A', p.connector);
-                break;
-            case 'protection':
-            case 'terminal':
-                parts.push(p.specLabel);
-                break;
-            case 'cable':
-                parts.push(WIRE_GAUGE_LABELS[p.gauge] || p.gauge, fmt(p.lengthMeters) + ' m');
-                break;
-            default:
-                break;
-        }
-        return parts.filter(Boolean).join(' · ');
-    }
-
     /** What the selectors show: the product's code (type, specs and price); the SKU only if the server sent none. */
     function codeOf(p) {
         return p.code || (p.sku + ' — ' + p.name);
@@ -145,11 +112,6 @@
 
     function optionLabel(p) {
         return codeOf(p) + (p.active === false ? ' · inactivo' : '');
-    }
-
-    /** Name, brand and specs, shown under a selector. */
-    function detailOf(kind, p) {
-        return [p.name, p.brand, specOf(kind, p)].filter(Boolean).join(' · ');
     }
 
     function productCode(productId, fallback) {
@@ -310,20 +272,52 @@
     // ---- Page skeleton ----
 
     function generalHtml(kit) {
-        return '<div class="row g-2 align-items-end">' +
-            '<div class="col-md-6"><label class="form-label small mb-1" for="kit-name">Nombre</label>' +
+        return '<div class="d-flex gap-2 align-items-end">' +
+            '<div class="flex-grow-1" style="min-width: 0;"><label class="form-label small mb-1" for="kit-name">Nombre</label>' +
             '<input type="text" class="form-control form-control-sm" id="kit-name" maxlength="255" value="' + escapeAttr(kit ? kit.name : '') + '" required></div>' +
+            '<div class="form-check mb-1 flex-shrink-0" title="Se vende en la tienda">' +
+            '<input type="checkbox" class="form-check-input" id="kit-active"' + (!kit || kit.active ? ' checked' : '') + '>' +
+            '<label class="form-check-label small" for="kit-active">Activo</label></div></div>' +
+            '<button type="button" class="more-toggle mt-2" data-more aria-expanded="false" aria-controls="kit-more">' +
+            '<i class="bi bi-chevron-right chev"></i> Más datos <span class="text-secondary" data-more-summary></span></button>' +
+            '<div id="kit-more" class="row g-2 mt-0" hidden>' +
             '<div class="col-md-4"><label class="form-label small mb-1" for="kit-price-override" ' +
             'title="Si lo dejas vacío, se calcula sumando sus productos más el margen.">Precio manual (opcional)</label>' +
             '<input type="number" step="0.01" min="0" class="form-control form-control-sm" id="kit-price-override" placeholder="automático" value="' +
             escapeAttr(kit && kit.priceOverride != null ? kit.priceOverride : '') + '"></div>' +
-            '<div class="col-md-2"><div class="form-check mb-1" title="Se vende en la tienda">' +
-            '<input type="checkbox" class="form-check-input" id="kit-active"' + (!kit || kit.active ? ' checked' : '') + '>' +
-            '<label class="form-check-label small" for="kit-active">Activo</label></div></div>' +
             '<div class="col-12"><label class="form-label small mb-1" for="kit-description">Descripción</label>' +
             '<textarea class="form-control form-control-sm" id="kit-description" rows="2">' + esc(kit && kit.description ? kit.description : '') + '</textarea></div>' +
             '<div class="col-12"><label class="form-label small mb-1" title="Sin fotos se arma un collage con las de sus productos.">Fotos del kit (opcional)</label>' +
             photoManagerHtml('kit-photos', 'kits', { compact: true }) + '</div></div>';
+    }
+
+    /** What the closed "Más datos" block holds, so filled-in data isn't hidden without a hint. */
+    function refreshMoreSummary() {
+        const host = sectionsEl.querySelector('[data-more-summary]');
+        if (!host) {
+            return;
+        }
+        const parts = [];
+        const override = priceOverride();
+        if (override != null) {
+            parts.push('Precio manual ' + money(override));
+        }
+        const description = document.getElementById('kit-description');
+        if (description && description.value.trim()) {
+            parts.push('Descripción');
+        }
+        const photos = photoManagerValue('kit-photos').length;
+        if (photos > 0) {
+            parts.push(photos + (photos === 1 ? ' foto' : ' fotos'));
+        }
+        host.textContent = parts.length ? '· ' + parts.join(' · ') : '';
+    }
+
+    function toggleMore() {
+        const button = sectionsEl.querySelector('[data-more]');
+        const open = button.getAttribute('aria-expanded') !== 'true';
+        button.setAttribute('aria-expanded', String(open));
+        document.getElementById('kit-more').hidden = !open;
     }
 
     function singleHtml(sec) {
@@ -337,7 +331,7 @@
                 ? '<div class="col-md-3"><div class="input-group input-group-sm"><span class="input-group-text">Cantidad</span>' +
                   '<input type="number" min="1" class="form-control" data-single-qty="' + sec.key + '" value="' + single[sec.key].quantity + '"></div></div>'
                 : '') +
-            '</div><div class="small text-secondary mt-1" data-spec="' + sec.key + '"></div>';
+            '</div>';
     }
 
     function multiHtml(sec) {
@@ -350,21 +344,98 @@
     }
 
     function sectionHtml(sec, kit) {
+        const foldable = sec.key !== 'general';
         const body = sec.key === 'general' ? generalHtml(kit) : single[sec.key] ? singleHtml(sec) : multiHtml(sec);
+        // A foldable section's title is a button (chevron + title + what is chosen, shown while it is closed).
+        const title = foldable
+            ? '<button type="button" class="section-toggle me-auto" data-toggle="' + sec.key + '" aria-expanded="true" aria-controls="body-' + sec.key + '">' +
+              '<i class="bi bi-chevron-right chev"></i><span class="section-title">' + esc(sec.title) + '</span>' +
+              '<span class="section-summary" data-summary="' + sec.key + '"></span></button>'
+            : '<h3 class="section-title mb-0 me-auto">' + esc(sec.title) + '</h3>';
         return '<section class="editor-section" id="sec-' + sec.key + '">' +
-            '<div class="d-flex align-items-center gap-2 flex-wrap section-head">' +
-            '<h3 class="section-title mb-0 me-auto">' + esc(sec.title) + '</h3>' +
-            '<span class="small text-secondary" data-subtotal="' + sec.key + '"></span>' +
-            '<span data-status="' + sec.key + '"></span></div>' +
-            body + '<div data-info="' + sec.key + '"></div><div data-review="' + sec.key + '"></div></section>';
+            '<div class="d-flex align-items-center gap-2 section-head">' + title +
+            '<span class="small text-secondary section-cost" data-subtotal="' + sec.key + '"></span>' +
+            '<span class="flex-shrink-0" data-status="' + sec.key + '"></span></div>' +
+            '<div class="section-body" id="body-' + sec.key + '">' +
+            body + '<div data-info="' + sec.key + '"></div><div data-review="' + sec.key + '"></div></div></section>';
+    }
+
+    // ---- Folding: only the sections marked green start closed ----
+
+    function sectionEl(key) {
+        return document.getElementById('sec-' + key);
+    }
+
+    function isOpen(key) {
+        return !document.getElementById('body-' + key).hidden;
+    }
+
+    function setOpen(key, open) {
+        const body = document.getElementById('body-' + key);
+        const button = sectionEl(key).querySelector('[data-toggle]');
+        if (!body || !button) {
+            return;
+        }
+        body.hidden = !open;
+        button.setAttribute('aria-expanded', String(open));
+    }
+
+    /** One line for a closed section: the codes it holds. */
+    function summaryOf(sec) {
+        if (single[sec.key]) {
+            const s = single[sec.key];
+            return s.productId == null ? '' : (s.quantity > 1 ? s.quantity + ' × ' : '') + productCode(s.productId, '');
+        }
+        return rows[sec.key].map((r) => (r.quantity > 1 ? r.quantity + ' × ' : '') + productCode(r.productId, '')).join(', ');
+    }
+
+    function renderSummaries() {
+        SECTIONS.forEach((sec) => {
+            const host = sectionsEl.querySelector('[data-summary="' + sec.key + '"]');
+            if (host) {
+                host.textContent = summaryOf(sec);
+            }
+        });
+    }
+
+    let foldingStarted = false;
+    const lastTone = {};
+
+    /**
+     * First review: green sections close, everything else stays open. From then on nothing closes by itself,
+     * but a section that changes to something other than green opens (so a new warning is never hidden).
+     */
+    function applyFolding() {
+        SECTIONS.forEach((sec) => {
+            if (sec.key === 'general') {
+                return;
+            }
+            const tone = statusInfo(sec).tone;
+            if (!foldingStarted) {
+                setOpen(sec.key, tone !== 'ok');
+            } else if (tone !== lastTone[sec.key] && tone !== 'ok' && tone != null) {
+                setOpen(sec.key, true);
+            }
+            lastTone[sec.key] = tone;
+        });
+        foldingStarted = true;
+    }
+
+    /** A link from the review: open the section it points to and bring it into view. */
+    function goToSection(key) {
+        if (sectionEl(key) && sectionEl(key).querySelector('[data-toggle]')) {
+            setOpen(key, true);
+        }
+        const target = sectionEl(key);
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
 
     function rowHtml(kind, r) {
-        const entry = byId.get(r.productId);
-        return '<div class="row g-2 mb-2 align-items-start" data-row="' + r.uid + '" data-kind="' + kind + '">' +
+        return '<div class="row g-2 mb-2 align-items-center" data-row="' + r.uid + '" data-kind="' + kind + '">' +
             '<div class="col-8 col-md-9"><select class="form-select form-select-sm" data-row-product aria-label="Producto">' +
-            productOptions(kind, r.productId) + '</select>' +
-            '<div class="small text-secondary mt-1" data-row-spec>' + esc(entry ? detailOf(kind, entry.dto) : '') + '</div></div>' +
+            productOptions(kind, r.productId) + '</select></div>' +
             '<div class="col-3 col-md-2"><input type="number" min="1" class="form-control form-control-sm" data-row-qty aria-label="Cantidad" value="' + r.quantity + '"></div>' +
             '<div class="col-1"><button type="button" class="btn btn-sm btn-outline-danger" data-row-remove aria-label="Quitar"><i class="bi bi-trash"></i></button></div>' +
             '</div>';
@@ -385,16 +456,9 @@
             if (qty) {
                 qty.value = single[kind].quantity;
             }
-            renderSpec(kind);
         } else {
             renderRows(kind);
         }
-    }
-
-    function renderSpec(kind) {
-        const host = sectionsEl.querySelector('[data-spec="' + kind + '"]');
-        const entry = single[kind].productId == null ? null : byId.get(single[kind].productId);
-        host.textContent = entry ? detailOf(kind, entry.dto) : '';
     }
 
     // ---- Review under each section ----
@@ -531,7 +595,9 @@
             reviewHost.innerHTML = html;
         });
         renderStatuses();
+        applyFolding();
         renderSubtotals();
+        renderSummaries();
         renderSide();
     }
 
@@ -541,10 +607,16 @@
         return '<span class="badge ' + cls + '">' + esc(text) + '</span>';
     }
 
-    function statusFor(sec) {
+    /** { tone, html }: tone is 'ok' (green), 'warn', 'error', 'info', 'muted', or null when the section has no status. */
+    function statusInfo(sec) {
+        const none = { tone: null, html: '' };
         if (sec.key === 'general' || sec.key === 'structure' || !report) {
-            return '';
+            return none;
         }
+        const st = (tone, text) => ({
+            tone: tone,
+            html: badge({ ok: 'text-bg-success', warn: 'text-bg-warning', error: 'text-bg-danger', info: 'text-bg-info', muted: 'text-bg-secondary' }[tone], text)
+        });
         const checks = checksOf(sec);
         const worst = checks.reduce((max, c) => Math.max(max, SEVERITY_RANK[c.severity]), 0);
         const empty = single[sec.key] ? single[sec.key].productId == null : rows[sec.key].length === 0;
@@ -552,38 +624,42 @@
         if (sec.key === 'protection') {
             const missing = (report.protections || []).filter((r) => !r.covered).length;
             if (worst === 2) {
-                return badge('text-bg-danger', 'Error');
+                return st('error', 'Error');
             }
-            return missing > 0 ? badge('text-bg-warning', 'Faltan ' + missing) : (report.protections || []).length ? badge('text-bg-success', 'Cubiertas') : '';
+            return missing > 0 ? st('warn', 'Faltan ' + missing) : (report.protections || []).length ? st('ok', 'Cubiertas') : none;
         }
         if (sec.key === 'cable') {
             const missing = (report.wiring || []).filter((w) => !w.coveredBy).length;
             if (worst === 2 || (report.wiring || []).some((w) => !w.gauge)) {
-                return badge('text-bg-danger', 'Error');
+                return st('error', 'Error');
             }
-            return missing > 0 ? badge('text-bg-warning', 'Faltan ' + missing + (missing === 1 ? ' tramo' : ' tramos'))
-                : (report.wiring || []).length ? badge('text-bg-success', 'Cubiertos') : '';
+            return missing > 0 ? st('warn', 'Faltan ' + missing + (missing === 1 ? ' tramo' : ' tramos'))
+                : (report.wiring || []).length ? st('ok', 'Cubiertos') : none;
         }
         if (sec.key === 'terminal') {
             const missing = (report.terminals || []).filter((t) => !t.covered).length;
-            return missing > 0 ? badge('text-bg-info', 'Faltan ' + missing) : (report.terminals || []).length ? badge('text-bg-success', 'Cubiertas') : '';
+            return missing > 0 ? st('info', 'Faltan ' + missing) : (report.terminals || []).length ? st('ok', 'Cubiertas') : none;
         }
         if (worst === 2) {
-            return badge('text-bg-danger', 'Error');
+            return st('error', 'Error');
         }
         if (worst === 1) {
-            return badge('text-bg-warning', 'Revisar');
+            return st('warn', 'Revisar');
         }
         if (empty) {
             if (sec.key === 'inverter') {
-                return badge('text-bg-danger', 'Falta');
+                return st('error', 'Falta');
             }
             if (sec.key === 'controller' && inverterHasCharger() === true) {
-                return badge('text-bg-secondary', 'No hace falta');
+                return st('muted', 'No hace falta');
             }
-            return badge('text-bg-secondary', 'Opcional');
+            return st('muted', 'Opcional');
         }
-        return badge('text-bg-success', 'Listo');
+        return st('ok', 'Listo');
+    }
+
+    function statusFor(sec) {
+        return statusInfo(sec).html;
     }
 
     function renderStatuses() {
@@ -676,6 +752,8 @@
         dirty = true;
         hideAlert();
         renderSubtotals();
+        renderSummaries();
+        refreshMoreSummary();
         renderSide();
         scheduleReview();
     }
@@ -728,17 +806,14 @@
         if (target.matches('[data-single]')) {
             const kind = target.dataset.single;
             single[kind].productId = target.value === '' ? null : Number(target.value);
-            renderSpec(kind);
             if (kind === 'inverter' || kind === 'controller') {
                 refreshSingleOptions();
-                Object.keys(single).forEach(renderSpec);
             }
             changed();
         } else if (target.matches('[data-row-product]')) {
             const rowEl = target.closest('[data-row]');
             const row = rows[rowEl.dataset.kind].find((r) => r.uid === Number(rowEl.dataset.row));
             row.productId = Number(target.value);
-            rowEl.querySelector('[data-row-spec]').textContent = detailOf(rowEl.dataset.kind, byId.get(row.productId).dto);
             changed();
         }
     });
@@ -758,12 +833,24 @@
             dirty = true;
         } else if (target.id === 'kit-price-override') {
             changed();
-        } else if (target.matches('#kit-description, #kit-active')) {
+        } else if (target.id === 'kit-description') {
+            dirty = true;
+            refreshMoreSummary();
+        } else if (target.id === 'kit-active') {
             dirty = true;
         }
     });
 
     sectionsEl.addEventListener('click', (event) => {
+        const fold = event.target.closest('[data-toggle]');
+        if (fold) {
+            setOpen(fold.dataset.toggle, !isOpen(fold.dataset.toggle));
+            return;
+        }
+        if (event.target.closest('[data-more]')) {
+            toggleMore();
+            return;
+        }
         const add = event.target.closest('[data-add-row]');
         if (add) {
             const kind = add.dataset.addRow;
@@ -798,6 +885,12 @@
     });
 
     sideEl.addEventListener('click', (event) => {
+        const link = event.target.closest('a[href^="#sec-"]');
+        if (link) {
+            event.preventDefault();
+            goToSection(link.getAttribute('href').slice('#sec-'.length));
+            return;
+        }
         if (event.target.closest('[data-suggest-all]')) {
             (report && report.suggestedItems ? report.suggestedItems : []).forEach(applySuggestion);
             changed();
@@ -960,12 +1053,15 @@
         document.title = (kit ? kit.name : 'Nuevo kit') + ' | Panel de administración | Baja Solar Supply';
         sectionsEl.innerHTML = '<div class="card">' + SECTIONS.map((sec) => sectionHtml(sec, kit)).join('') + '</div>';
         Object.keys(rows).forEach(renderRows);
-        Object.keys(single).forEach(renderSpec);
         initPhotoManager('kit-photos', kit ? kit.imageUrls : []);
+        // The photo list changes by itself (uploads, removals): keep the closed "Más datos" hint current.
+        new MutationObserver(refreshMoreSummary).observe(document.querySelector('#kit-photos .photo-list'), { childList: true });
 
         loadingEl.classList.add('d-none');
         rootEl.classList.remove('d-none');
         renderSubtotals();
+        renderSummaries();
+        refreshMoreSummary();
         renderSide();
         runReview();
     }
