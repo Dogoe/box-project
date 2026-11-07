@@ -1,11 +1,11 @@
 (function () {
     'use strict';
 
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-        window.location.href = '/admin/login';
-        return;
+    const Common = window.AdminCommon;
+    if (!Common) {
+        return; // no admin session: admin-common.js already sent the visitor to the login page
     }
+    const { authFetch, errorMessage, escapeHtml, escapeAttr, photoManagerHtml, photoManagerValue, photoUploadInProgress, initPhotoManager, WIRE_GAUGES, WIRE_GAUGE_LABELS } = Common;
 
     const listAlert = document.getElementById('list-alert');
     const tableHead = document.getElementById('entity-table-head');
@@ -24,7 +24,6 @@
     const modalFieldsEl = document.getElementById('entity-form-fields');
     const modalTitleEl = document.getElementById('entity-modal-title');
     const modalErrorEl = document.getElementById('entity-modal-error');
-    const modalDialogEl = modalEl.querySelector('.modal-dialog');
     const wiringError = document.getElementById('wiring-error');
     const storeError = document.getElementById('store-error');
     const storeSuccess = document.getElementById('store-success');
@@ -40,47 +39,7 @@
 
     let currentEntity = null;
     let editingId = null;
-    let allProducts = [];
 
-    document.getElementById('logout-btn').addEventListener('click', () => {
-        localStorage.removeItem('adminToken');
-        window.location.href = '/admin/login';
-    });
-
-    async function authFetch(url, options) {
-        const response = await fetch(url, Object.assign({}, options, {
-            headers: Object.assign({}, (options && options.headers) || {}, {
-                'Authorization': 'Bearer ' + token
-            })
-        }));
-
-        if (response.status === 401 || response.status === 403) {
-            localStorage.removeItem('adminToken');
-            window.location.href = '/admin/login';
-            throw new Error('No autorizado');
-        }
-
-        return response;
-    }
-
-    async function errorMessage(response, fallback) {
-        const body = await response.json().catch(() => null);
-        return (body && body.message) || fallback;
-    }
-
-    const WIRE_GAUGES = [
-        { value: 'AWG_14', label: '14 AWG' },
-        { value: 'AWG_12', label: '12 AWG' },
-        { value: 'AWG_10', label: '10 AWG' },
-        { value: 'AWG_8', label: '8 AWG' },
-        { value: 'AWG_6', label: '6 AWG' },
-        { value: 'AWG_4', label: '4 AWG' },
-        { value: 'AWG_2', label: '2 AWG' },
-        { value: 'AWG_1_0', label: '1/0 AWG' },
-        { value: 'AWG_2_0', label: '2/0 AWG' },
-        { value: 'AWG_4_0', label: '4/0 AWG' }
-    ];
-    const WIRE_GAUGE_LABELS = Object.fromEntries(WIRE_GAUGES.map((g) => [g.value, g.label]));
     const PROTECTION_TYPES = [
         { value: 'FUSE', label: 'Fusible' },
         { value: 'DC_BREAKER', label: 'Breaker / interruptor DC de batería' },
@@ -465,13 +424,9 @@
 
     /** Kits also get a link to their wiring diagram (opens in a new tab, ready to print). */
     function kitActionButtonsHtml(id) {
-        return actionButtonsHtml(id).replace('<td class="text-end">', '<td class="text-end text-nowrap">' + kitDiagramLinkHtml(id, true) + ' ');
-    }
-
-    function kitDiagramLinkHtml(id, iconOnly) {
-        return '<a class="btn btn-sm btn-outline-primary" href="/admin/kits/' + encodeURIComponent(id) + '/diagrama" target="_blank" rel="noopener"' +
-            ' title="Diagrama de conexión (guardado)" aria-label="Diagrama de conexión"><i class="bi bi-diagram-3"></i>' +
-            (iconOnly ? '' : ' Diagrama de conexión') + '</a>';
+        const diagram = '<a class="btn btn-sm btn-outline-primary" href="/admin/kits/' + encodeURIComponent(id) + '/diagrama" target="_blank" rel="noopener"' +
+            ' title="Diagrama de conexión" aria-label="Diagrama de conexión"><i class="bi bi-diagram-3"></i></a>';
+        return actionButtonsHtml(id).replace('<td class="text-end">', '<td class="text-end text-nowrap">' + diagram + ' ');
     }
 
     function wireRowActions(onEdit, onDelete) {
@@ -553,170 +508,6 @@
         return '<input type="' + field.type + '" class="form-control" id="' + id + '" value="' + escapeAttr(val) + '"' + step + placeholder + ' ' + requiredAttr + '>';
     }
 
-    // ---- Photo lists (uploaded to Cloudflare R2, or pasted links); the first photo is the main one ----
-
-    const MAX_PHOTOS = 8;
-    const photoLists = new Map();
-
-    function photoManagerHtml(id, folder) {
-        return '<div class="photo-manager" id="' + id + '" data-folder="' + folder + '">' +
-            '<div class="d-flex flex-wrap gap-2 photo-list"></div>' +
-            '<div class="d-flex flex-wrap gap-2 mt-2 align-items-center">' +
-            '<button type="button" class="btn btn-sm btn-outline-secondary photo-upload-btn"><i class="bi bi-upload"></i> Subir fotos</button>' +
-            '<div class="input-group input-group-sm" style="max-width: 380px;">' +
-            // type="text": a half-typed link must not block the form's Guardar (we validate it ourselves).
-            '<input type="text" inputmode="url" class="form-control photo-link-input" placeholder="o pega un link https://...">' +
-            '<button type="button" class="btn btn-outline-secondary photo-link-add">Agregar</button></div>' +
-            '</div>' +
-            '<input type="file" class="d-none photo-file-input" accept="image/jpeg,image/png,image/webp" multiple>' +
-            '<div class="form-text">La primera es la principal. Máximo ' + MAX_PHOTOS + ' fotos (JPG, PNG o WebP).</div>' +
-            '<div class="small text-danger photo-error d-none"></div>' +
-            '</div>';
-    }
-
-    /** The photos to save; a valid link left in the box without pressing "Agregar" is included too. */
-    function photoManagerValue(id) {
-        const photos = (photoLists.get(id) || []).slice();
-        const pending = document.querySelector('#' + id + ' .photo-link-input');
-        const url = pending ? pending.value.trim() : '';
-        if (/^https?:\/\/\S+$/i.test(url) && !photos.includes(url) && photos.length < MAX_PHOTOS) {
-            photos.push(url);
-        }
-        return photos;
-    }
-
-    function photoUploadInProgress() {
-        return document.querySelector('.photo-manager[data-busy]') !== null;
-    }
-
-    function initPhotoManager(id, urls) {
-        const root = document.getElementById(id);
-        const listEl = root.querySelector('.photo-list');
-        const errorEl = root.querySelector('.photo-error');
-        const fileInput = root.querySelector('.photo-file-input');
-        const uploadBtn = root.querySelector('.photo-upload-btn');
-        const linkInput = root.querySelector('.photo-link-input');
-        photoLists.set(id, (urls || []).slice());
-
-        const showError = (message) => {
-            errorEl.textContent = message || '';
-            errorEl.classList.toggle('d-none', !message);
-        };
-        const tileButton = (action, icon, title) =>
-            '<button type="button" class="btn btn-light btn-sm py-0 px-1 border" data-action="' + action + '" title="' + title + '" aria-label="' + title + '">' +
-            '<i class="bi ' + icon + '"></i></button>';
-
-        function render(pending) {
-            const photos = photoLists.get(id);
-            listEl.innerHTML = photos.map((url, index) =>
-                '<div class="photo-tile border rounded p-1 text-center bg-white" data-index="' + index + '" style="width: 112px;">' +
-                '<img src="' + escapeAttr(url) + '" alt="" style="width: 100px; height: 80px; object-fit: contain;">' +
-                (index === 0 ? '<div class="small fw-semibold text-success">Principal</div>'
-                    : '<div class="small"><a href="#" data-action="main">Hacer principal</a></div>') +
-                '<div class="d-flex justify-content-center gap-1 mt-1">' +
-                (index > 0 ? tileButton('left', 'bi-arrow-left', 'Mover a la izquierda') : '') +
-                (index < photos.length - 1 ? tileButton('right', 'bi-arrow-right', 'Mover a la derecha') : '') +
-                tileButton('remove', 'bi-x-lg', 'Quitar foto') +
-                '</div></div>'
-            ).join('') + (pending
-                ? '<div class="border rounded d-flex align-items-center justify-content-center text-muted small" style="width: 112px; height: 132px;">' +
-                  '<span class="spinner-border spinner-border-sm me-1"></span>' + pending + '</div>'
-                : '');
-            listEl.querySelectorAll('.photo-tile img').forEach((img) => {
-                img.onerror = () => img.replaceWith(Object.assign(document.createElement('div'), {
-                    className: 'small text-danger d-flex align-items-center justify-content-center',
-                    style: 'width: 100px; height: 80px;',
-                    textContent: 'No carga'
-                }));
-            });
-            uploadBtn.disabled = Boolean(pending) || photos.length >= MAX_PHOTOS;
-        }
-
-        listEl.addEventListener('click', (event) => {
-            const target = event.target.closest('[data-action]');
-            if (!target) {
-                return;
-            }
-            event.preventDefault();
-            const photos = photoLists.get(id);
-            const index = Number(target.closest('.photo-tile').dataset.index);
-            const move = (from, to) => photos.splice(to, 0, photos.splice(from, 1)[0]);
-            if (target.dataset.action === 'remove') {
-                photos.splice(index, 1);
-            } else if (target.dataset.action === 'left') {
-                move(index, index - 1);
-            } else if (target.dataset.action === 'right') {
-                move(index, index + 1);
-            } else if (target.dataset.action === 'main') {
-                move(index, 0);
-            }
-            showError('');
-            render();
-        });
-
-        root.querySelector('.photo-link-add').addEventListener('click', () => {
-            const url = linkInput.value.trim();
-            const photos = photoLists.get(id);
-            if (!/^https?:\/\/\S+$/i.test(url)) {
-                showError('El link debe empezar con http:// o https://');
-            } else if (photos.length >= MAX_PHOTOS) {
-                showError('Máximo ' + MAX_PHOTOS + ' fotos; quita alguna.');
-            } else if (photos.includes(url)) {
-                showError('Esa foto ya está en la lista.');
-            } else {
-                photos.push(url);
-                linkInput.value = '';
-                showError('');
-                render();
-            }
-        });
-        linkInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                root.querySelector('.photo-link-add').click();
-            }
-        });
-
-        uploadBtn.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', async () => {
-            const photos = photoLists.get(id);
-            const files = Array.from(fileInput.files).slice(0, MAX_PHOTOS - photos.length);
-            const skipped = fileInput.files.length - files.length;
-            fileInput.value = '';
-            showError('');
-            const errors = [];
-            root.dataset.busy = '1';
-            for (let i = 0; i < files.length; i++) {
-                render('Subiendo ' + (i + 1) + ' de ' + files.length);
-                try {
-                    const form = new FormData();
-                    form.append('file', files[i]);
-                    form.append('folder', root.dataset.folder);
-                    const response = await authFetch('/api/admin/images', { method: 'POST', body: form });
-                    if (!response.ok) {
-                        throw new Error(await errorMessage(response, 'No se pudo subir la foto.'));
-                    }
-                    photos.push((await response.json()).url);
-                } catch (err) {
-                    errors.push(files[i].name + ': ' + (err.message || 'No se pudo subir.'));
-                }
-            }
-            delete root.dataset.busy;
-            if (skipped > 0) {
-                errors.push(skipped + ' foto(s) no se subieron: el máximo es ' + MAX_PHOTOS + '.');
-            }
-            render();
-            showError(errors.join(' '));
-        });
-
-        render();
-    }
-
-    function escapeAttr(text) {
-        return String(text == null ? '' : text)
-            .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-
     function renderGenericForm(config, item) {
         modalFieldsEl.innerHTML = config.fields.map((field) =>
             '<div class="mb-3" data-field="' + field.key + '">' +
@@ -774,7 +565,6 @@
         const config = ENTITY_CONFIGS[currentEntity];
         editingId = id || null;
         modalErrorEl.classList.add('d-none');
-        modalDialogEl.classList.remove('modal-lg');
 
         if (id) {
             modalTitleEl.textContent = 'Editar producto';
@@ -809,210 +599,7 @@
         update();
     }
 
-    // ---- Kits (own logic: nested items referencing existing products) ----
-
-    async function loadAllProducts() {
-        const [panels, batteries, inverters, controllers, structures, cables, protections, terminals] = await Promise.all([
-            authFetch('/api/catalog/panels').then((r) => r.json()),
-            authFetch('/api/catalog/batteries').then((r) => r.json()),
-            authFetch('/api/catalog/inverters').then((r) => r.json()),
-            authFetch('/api/catalog/charge-controllers').then((r) => r.json()),
-            authFetch('/api/catalog/structures').then((r) => r.json()),
-            authFetch('/api/catalog/cables').then((r) => r.json()),
-            authFetch('/api/catalog/protections').then((r) => r.json()),
-            authFetch('/api/catalog/terminals').then((r) => r.json())
-        ]);
-        allProducts = panels.concat(batteries, inverters, controllers, structures, cables, protections, terminals).map((p) => ({
-            id: p.id,
-            label: p.sku + ' — ' + p.name + ' ($' + p.price + ')'
-        }));
-    }
-
-    function productOptionsHtml(selectedId) {
-        return allProducts.map((p) =>
-            '<option value="' + p.id + '"' + (p.id === selectedId ? ' selected' : '') + '>' + p.label + '</option>'
-        ).join('');
-    }
-
-    function kitItemRowHtml(item) {
-        const productId = item ? item.productId : (allProducts[0] && allProducts[0].id);
-        const quantity = item ? item.quantity : 1;
-        return '<div class="row g-2 mb-2 kit-item-row align-items-center">' +
-            '<div class="col-7"><select class="form-select form-select-sm kit-item-product">' + productOptionsHtml(productId) + '</select></div>' +
-            '<div class="col-3"><input type="number" class="form-control form-control-sm kit-item-qty" min="1" value="' + quantity + '"></div>' +
-            '<div class="col-2"><button type="button" class="btn btn-sm btn-outline-danger remove-kit-item"><i class="bi bi-trash"></i></button></div>' +
-            '</div>';
-    }
-
-    function wireKitItemRemoveButtons() {
-        document.querySelectorAll('.remove-kit-item').forEach((btn) => {
-            btn.onclick = () => {
-                btn.closest('.kit-item-row').remove();
-                scheduleCompatibilityCheck();
-            };
-        });
-    }
-
-    function collectKitItems() {
-        return Array.from(document.querySelectorAll('.kit-item-row')).map((row) => ({
-            productId: Number(row.querySelector('.kit-item-product').value),
-            quantity: Number(row.querySelector('.kit-item-qty').value)
-        }));
-    }
-
-    // ---- Kit compatibility (live, while editing) ----
-
-    const SEVERITY_ICONS = {
-        OK: 'bi-check-circle-fill text-success',
-        WARNING: 'bi-exclamation-triangle-fill text-warning',
-        ERROR: 'bi-x-circle-fill text-danger'
-    };
-    let compatibilityTimer = null;
-    let compatibilityRequestId = 0;
-
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text == null ? '' : String(text);
-        return div.innerHTML;
-    }
-
-    function scheduleCompatibilityCheck() {
-        clearTimeout(compatibilityTimer);
-        compatibilityTimer = setTimeout(runCompatibilityCheck, 300);
-    }
-
-    async function runCompatibilityCheck() {
-        const panel = document.getElementById('kit-compat-panel');
-        if (!panel) {
-            return;
-        }
-        const items = collectKitItems();
-        if (items.length === 0 || items.some((i) => !i.productId || !(i.quantity > 0))) {
-            panel.innerHTML = '';
-            return;
-        }
-
-        const requestId = ++compatibilityRequestId;
-        const response = await authFetch('/api/catalog/kits/validate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(items)
-        });
-        if (requestId !== compatibilityRequestId) {
-            return;
-        }
-        if (!response.ok) {
-            panel.innerHTML = '<p class="small text-muted mb-0">No se pudo revisar la compatibilidad.</p>';
-            return;
-        }
-        const report = await response.json();
-        panel.innerHTML = compatibilityHtml(report);
-        const addButton = document.getElementById('kit-add-suggested-btn');
-        if (addButton) {
-            addButton.addEventListener('click', () => addSuggestedItems(report.suggestedItems));
-        }
-    }
-
-    /** Puts the review's missing cables and protections into the kit form (not saved until "Guardar"). */
-    function addSuggestedItems(suggestions) {
-        const container = document.getElementById('kit-items-container');
-        if (!container || !suggestions || suggestions.length === 0) {
-            return;
-        }
-        suggestions.forEach((suggestion) => {
-            const existing = Array.from(container.querySelectorAll('.kit-item-row'))
-                .find((row) => Number(row.querySelector('.kit-item-product').value) === suggestion.productId);
-            if (existing) {
-                const qty = existing.querySelector('.kit-item-qty');
-                qty.value = Number(qty.value || 0) + suggestion.quantity;
-            } else {
-                container.insertAdjacentHTML('beforeend', kitItemRowHtml({ productId: suggestion.productId, quantity: suggestion.quantity }));
-            }
-        });
-        wireKitItemRemoveButtons();
-        runCompatibilityCheck();
-    }
-
-    function protectionsHtml(protections) {
-        if (!protections || protections.length === 0) {
-            return '';
-        }
-        return '<h6 class="fw-semibold mt-3 mb-1"><i class="bi bi-shield-check"></i> Protecciones</h6>' +
-            '<table class="table table-sm small mb-0"><thead><tr><th>Protección</th><th>Requisito</th><th>Cant.</th><th>En el kit</th></tr></thead><tbody>' +
-            protections.map((p) => {
-                const status = p.covered
-                    ? '<i class="bi bi-check-circle-fill text-success me-1"></i>' + escapeHtml(p.coveredBy || 'Sí')
-                    : '<i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>Falta' +
-                      (p.problem ? '<div class="text-secondary">' + escapeHtml(p.problem) + '</div>' : '') +
-                      (p.suggestion
-                          ? '<div class="text-secondary">Sugerencia: ' + escapeHtml(p.suggestion.name) + ' ($' + p.suggestion.unitPrice + ')</div>'
-                          : '<div class="text-secondary">No hay una en tu catálogo que cumpla; dala de alta en Protecciones.</div>');
-                return '<tr><td>' + escapeHtml(p.label) + '</td><td>' + escapeHtml(p.requirement) + '</td><td>' + p.quantity + '</td><td>' + status + '</td></tr>';
-            }).join('') + '</tbody></table>';
-    }
-
-    function terminalsHtml(terminals) {
-        if (!terminals || terminals.length === 0) {
-            return '';
-        }
-        return '<h6 class="fw-semibold mt-3 mb-1"><i class="bi bi-nut"></i> Terminales</h6>' +
-            '<table class="table table-sm small mb-0"><thead><tr><th>Terminal</th><th>Cant.</th><th>Dónde</th><th>En el kit</th></tr></thead><tbody>' +
-            terminals.map((t) => {
-                const status = t.covered
-                    ? '<i class="bi bi-check-circle-fill text-success me-1"></i>' + escapeHtml(t.coveredBy)
-                    : '<span class="text-secondary">' + (t.coveredBy ? escapeHtml(t.coveredBy) + ' (no alcanzan) · ' : '') +
-                      (t.suggestion
-                          ? 'Sugerencia: ' + t.suggestion.quantity + ' × ' + escapeHtml(t.suggestion.name) + ' ($' + t.suggestion.unitPrice + ')'
-                          : 'No hay en tu catálogo; dalas de alta en Terminales.') + '</span>';
-                return '<tr><td class="text-nowrap">' + escapeHtml(t.gaugeLabel) + ' · ' + escapeHtml(t.sizeLabel) + '</td><td>' + t.quantity +
-                    '</td><td>' + escapeHtml(t.places) + '</td><td>' + status + '</td></tr>';
-            }).join('') + '</tbody></table>';
-    }
-
-    function suggestedItemsHtml(items) {
-        if (!items || items.length === 0) {
-            return '';
-        }
-        const total = items.reduce((sum, i) => sum + Number(i.unitPrice) * i.quantity, 0);
-        return '<div class="d-flex flex-wrap align-items-center gap-2 mt-3">' +
-            '<button type="button" class="btn btn-sm btn-success" id="kit-add-suggested-btn"><i class="bi bi-magic"></i> Agregar sugeridos</button>' +
-            '<span class="small text-secondary">' + items.map((i) => i.quantity + ' × ' + escapeHtml(i.name)).join(' · ') +
-            ' — suma $' + total.toFixed(2) + ' al costo</span></div>';
-    }
-
-    function compatibilityHtml(report) {
-        const summary = [
-            report.solarCharger ? '<div><strong>Cargador solar:</strong> ' + escapeHtml(report.solarCharger) + '</div>' : '',
-            report.batteryBank ? '<div><strong>Banco de baterías:</strong> ' + escapeHtml(report.batteryBank) + '</div>' : '',
-            report.panelArray ? '<div><strong>Paneles:</strong> ' + escapeHtml(report.panelArray) + '</div>' : ''
-        ].join('');
-
-        const checks = report.checks.length
-            ? '<ul class="list-unstyled small mb-0">' + report.checks.map((c) =>
-                '<li class="mb-1"><i class="bi ' + SEVERITY_ICONS[c.severity] + ' me-1"></i>' + escapeHtml(c.message) + '</li>'
-            ).join('') + '</ul>'
-            : '<p class="small text-muted mb-0">Agrega inversor, baterías y paneles para revisar compatibilidad.</p>';
-
-        const wiring = report.wiring.length
-            ? '<table class="table table-sm small mt-3 mb-0"><thead><tr><th>Tramo</th><th title="A la potencia nominal del equipo; el arranque (pico) dura segundos y no define el cable">Corriente máx. continua</th><th>Calibre</th><th>Caída</th><th>Fusible</th></tr></thead><tbody>' +
-              report.wiring.map((w) =>
-                  '<tr><td>' + escapeHtml(w.segment) +
-                  (w.connector ? '<div class="text-secondary">Cable con conector ' + escapeHtml(w.connector) + '</div>' : '') + '</td>' +
-                  '<td>' + w.operatingCurrentA + ' A' +
-                  (w.currentNote ? '<div class="text-secondary">' + escapeHtml(w.currentNote) + '</div>' : '') + '</td>' +
-                  '<td>' + (w.gaugeLabel ? escapeHtml(w.gaugeLabel) : '—') + ' · ' + w.lengthMeters + ' m</td>' +
-                  '<td>' + (w.gaugeLabel ? w.voltageDropPercent + ' %' : '—') + '</td>' +
-                  '<td>' + (w.fuseA ? w.fuseA + ' A' : '—') + '</td></tr>'
-              ).join('') + '</tbody></table>'
-            : '';
-
-        return '<div class="border rounded p-3 bg-body-tertiary">' +
-            '<h6 class="fw-semibold mb-2"><i class="bi bi-plug"></i> Revisión de compatibilidad</h6>' +
-            (summary ? '<div class="small mb-2">' + summary + '</div>' : '') +
-            checks + expansionHtml(report.expansion) + wiring + protectionsHtml(report.protections) + terminalsHtml(report.terminals) +
-            suggestedItemsHtml(report.suggestedItems) +
-            '</div>';
-    }
+    // ---- Kits: the list. Editing happens on its own page (/admin/kits/{id}/editar, kit-editor.js) ----
 
     const EXPANSION_BADGE_CLASSES = { EXPANDABLE: 'bg-success', LIMITED: 'bg-warning text-dark', MAXED: 'bg-secondary' };
 
@@ -1020,21 +607,6 @@
         return expansion
             ? '<span class="badge ' + EXPANSION_BADGE_CLASSES[expansion.level] + '">' + escapeHtml(expansion.label) + '</span>'
             : '<span class="text-muted small">—</span>';
-    }
-
-    function expansionHtml(expansion) {
-        if (!expansion) {
-            return '<p class="small text-muted mt-2 mb-0"><strong>Ampliación:</strong> no se puede calcular (revisa los avisos de arriba).</p>';
-        }
-        const line = (name, aspect) => aspect
-            ? '<li><strong>' + name + ':</strong> ' + escapeHtml(aspect.label) + ' — ' + escapeHtml(aspect.detail) + '</li>'
-            : '';
-        return '<div class="small mt-3"><strong>Ampliación</strong> ' + expansionBadgeHtml(expansion) +
-            '<ul class="list-unstyled mt-1 mb-0">' +
-            line('Paneles', expansion.panels) +
-            line('Baterías', expansion.batteries) +
-            '<li><strong>Potencia:</strong> fija en ' + expansion.inverterKw + ' kW (un solo inversor por kit).</li>' +
-            '</ul></div>';
     }
 
     async function loadKits() {
@@ -1046,7 +618,6 @@
         const seq = startListLoad();
 
         try {
-            await loadAllProducts();
             const [kits, compatibilityById] = await Promise.all([
                 authFetch('/api/catalog/kits').then((r) => r.json()),
                 authFetch('/api/catalog/kits/compatibility').then((r) => r.json())
@@ -1066,7 +637,7 @@
                     '<td>' + (kit.active ? 'Sí' : 'No') + '</td>' + kitActionButtonsHtml(kit.id) + '</tr>';
             }).join('');
 
-            wireRowActions((id) => openKitModal(id), (id) => deleteItem(id));
+            wireRowActions((id) => { window.location.href = '/admin/kits/' + encodeURIComponent(id) + '/editar'; }, (id) => deleteItem(id));
         } catch (err) {
             if (isStale(seq)) {
                 return;
@@ -1075,72 +646,6 @@
             listAlert.textContent = 'No se pudo cargar la lista de kits.';
             listAlert.classList.remove('d-none');
         }
-    }
-
-    async function openKitModal(id) {
-        editingId = id || null;
-        modalErrorEl.classList.add('d-none');
-        await loadAllProducts();
-
-        let kit = null;
-        if (id) {
-            const response = await authFetch('/api/catalog/kits/' + id);
-            kit = await response.json();
-        }
-
-        modalTitleEl.textContent = id ? 'Editar kit' : 'Nuevo kit';
-
-        const itemsHtml = kit && kit.items.length
-            ? kit.items.map((item) => kitItemRowHtml(item)).join('')
-            : kitItemRowHtml(null);
-
-        modalFieldsEl.innerHTML =
-            '<div class="mb-3"><label class="form-label">Nombre</label>' +
-            '<input type="text" class="form-control" id="kit-name" value="' + (kit ? kit.name : '') + '" required></div>' +
-            '<div class="mb-3"><label class="form-label">Descripción</label>' +
-            '<textarea class="form-control" id="kit-description">' + (kit && kit.description ? kit.description : '') + '</textarea></div>' +
-            '<div class="mb-3"><label class="form-label">Precio manual (opcional; si se deja vacío se calcula sumando sus productos)</label>' +
-            '<input type="number" step="0.01" class="form-control" id="kit-price-override" value="' + (kit && kit.priceOverride != null ? kit.priceOverride : '') + '"></div>' +
-            '<div class="mb-3"><label class="form-label">Fotos del kit (opcional; sin fotos se arma un collage con las de sus productos)</label>' +
-            photoManagerHtml('kit-photos', 'kits') + '</div>' +
-            '<div class="form-check mb-3"><input type="checkbox" class="form-check-input" id="kit-active"' + (!kit || kit.active ? ' checked' : '') + '>' +
-            '<label class="form-check-label" for="kit-active">Activo</label></div>' +
-            '<label class="form-label">Productos incluidos</label>' +
-            '<div id="kit-items-container">' + itemsHtml + '</div>' +
-            '<button type="button" class="btn btn-sm btn-outline-success mt-2" id="add-kit-item-btn">' +
-            '<i class="bi bi-plus-lg"></i> Agregar producto</button>' +
-            '<div id="kit-compat-panel" class="mt-3"></div>' +
-            (id ? '<div class="mt-2 small">' + kitDiagramLinkHtml(id, false) +
-                ' <span class="text-secondary">Muestra el kit guardado; guarda primero si hiciste cambios.</span></div>' : '');
-
-        initPhotoManager('kit-photos', kit ? kit.imageUrls : []);
-        const itemsContainer = document.getElementById('kit-items-container');
-        itemsContainer.addEventListener('change', scheduleCompatibilityCheck);
-        itemsContainer.addEventListener('input', scheduleCompatibilityCheck);
-        document.getElementById('add-kit-item-btn').addEventListener('click', () => {
-            itemsContainer.insertAdjacentHTML('beforeend', kitItemRowHtml(null));
-            wireKitItemRemoveButtons();
-            scheduleCompatibilityCheck();
-        });
-        wireKitItemRemoveButtons();
-
-        modalDialogEl.classList.add('modal-lg');
-        modal.show();
-        runCompatibilityCheck();
-    }
-
-    function collectKitFormData() {
-        const items = collectKitItems();
-        const priceOverrideInput = document.getElementById('kit-price-override').value;
-
-        return {
-            name: document.getElementById('kit-name').value,
-            description: document.getElementById('kit-description').value,
-            active: document.getElementById('kit-active').checked,
-            priceOverride: priceOverrideInput === '' ? null : Number(priceOverrideInput),
-            imageUrls: photoManagerValue('kit-photos'),
-            items: items
-        };
     }
 
     // ---- Settings (exchange rate) ----
@@ -1729,7 +1234,6 @@
             if (result) {
                 renderCatalogResult(result);
                 if (result.saved) {
-                    allProducts = [];
                     catalogFileInput.value = '';
                     catalogFileText = null;
                 }
@@ -1764,7 +1268,7 @@
             return;
         }
 
-        const data = currentEntity === 'kits' ? collectKitFormData() : collectGenericFormData(ENTITY_CONFIGS[currentEntity]);
+        const data = collectGenericFormData(ENTITY_CONFIGS[currentEntity]);
         const url = editingId ? currentEndpoint() + '/' + editingId : currentEndpoint();
         const method = editingId ? 'PUT' : 'POST';
 
@@ -1776,7 +1280,7 @@
 
         if (response.ok) {
             modal.hide();
-            currentEntity === 'kits' ? loadKits() : loadEntity(currentEntity);
+            loadEntity(currentEntity);
         } else {
             modalErrorEl.textContent = await errorMessage(response, 'No se pudo guardar el producto. Revisa los datos ingresados.');
             modalErrorEl.classList.remove('d-none');
@@ -1784,7 +1288,11 @@
     });
 
     newBtn.addEventListener('click', () => {
-        currentEntity === 'kits' ? openKitModal(null) : openModal(null);
+        if (currentEntity === 'kits') {
+            window.location.href = '/admin/kits/nuevo';
+        } else {
+            openModal(null);
+        }
     });
 
     document.querySelectorAll('.entity-tab').forEach((tab) => {

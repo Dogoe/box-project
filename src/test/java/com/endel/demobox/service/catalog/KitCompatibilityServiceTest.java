@@ -21,6 +21,7 @@ import com.endel.demobox.model.dto.WiringSettingsDto;
 import com.endel.demobox.model.dto.catalog.compatibility.CompatibilitySeverity;
 import com.endel.demobox.model.dto.catalog.compatibility.ExpansionLevel;
 import com.endel.demobox.model.dto.catalog.compatibility.KitCompatibilityReportDto;
+import com.endel.demobox.model.dto.catalog.compatibility.KitSection;
 import com.endel.demobox.model.dto.catalog.compatibility.WiringSegmentDto;
 import com.endel.demobox.repository.catalog.ConnectionCableRepository;
 import com.endel.demobox.repository.catalog.ProtectionRepository;
@@ -957,5 +958,59 @@ class KitCompatibilityServiceTest {
                 new KitLine(inverter(2.0, 12.0, InverterType.OFF_GRID), 1),
                 new KitLine(battery(12.8, 200), 1)), lengths);
         assertTrue(hasCheck(at12, CompatibilitySeverity.WARNING, "llega a 185.2 A en 12 V; considera un banco de 24 V o 48 V."), at12.getChecks().toString());
+    }
+
+    // ---- Which part of the kit each message is about (the kit editor shows them under that section) ----
+
+    private static java.util.Set<KitSection> sectionsOf(KitCompatibilityReportDto report, String messageFragment) {
+        return report.getChecks().stream().filter(c -> c.getMessage().contains(messageFragment))
+                .map(c -> c.getSection()).collect(java.util.stream.Collectors.toSet());
+    }
+
+    @Test
+    void reviewMessagesAreTaggedWithTheKitPartTheyAreAbout() {
+        KitCompatibilityReportDto report = service.analyze(midSystem(), lengths);
+
+        assertEquals(java.util.Set.of(KitSection.BATTERIES), sectionsOf(report, "Banco de baterías compatible"));
+        assertEquals(java.util.Set.of(KitSection.PANELS), sectionsOf(report, "Acomodo de paneles"));
+        assertEquals(java.util.Set.of(KitSection.PROTECTIONS), sectionsOf(report, "Falta fusible principal"));
+        assertEquals(java.util.Set.of(KitSection.CABLES), sectionsOf(report, "se necesitan"));
+        assertTrue(report.getChecks().stream().noneMatch(c -> c.getSection() == null));
+    }
+
+    @Test
+    void separateControllerMessagesBelongToTheController() {
+        KitCompatibilityReportDto report = service.analyze(List.of(
+                new KitLine(inverterWithoutCharger(0.6, 12), 1),
+                new KitLine(controller(50, 10, 12), 1),
+                new KitLine(battery(12.8, 100), 1),
+                new KitLine(panel(), 1)), lengths);
+
+        assertEquals(java.util.Set.of(KitSection.CONTROLLER), sectionsOf(report, "carga el banco de 12 V"));
+    }
+
+    @Test
+    void missingCableIsSuggestedOnTheRunThatNeedsIt() {
+        when(cableRepository.findAll()).thenReturn(List.of(cable("CAB-2/0", WireGauge.AWG_2_0, 20)));
+
+        KitCompatibilityReportDto report = service.analyze(midSystem(), lengths);
+
+        WiringSegmentDto batteryRun = segment(report, "Batería");
+        assertEquals("CAB-2/0", batteryRun.getSuggestion().getSku());
+        // 2 m per side x 2 = 4 m, from one 20 m roll
+        assertEquals(1, batteryRun.getSuggestion().getQuantity());
+        // the review's merged list is a different object: merging runs there must not change the run's own suggestion
+        assertEquals(1, report.getSuggestedItems().stream().filter(i -> i.getSku().equals("CAB-2/0")).count());
+        assertTrue(report.getSuggestedItems().get(0).getQuantity() >= batteryRun.getSuggestion().getQuantity());
+    }
+
+    @Test
+    void coveredRunHasNoCableSuggestion() {
+        when(cableRepository.findAll()).thenReturn(List.of(cable("CAB-2/0", WireGauge.AWG_2_0, 20)));
+
+        KitCompatibilityReportDto report = service.analyze(midSystem(new KitLine(cable("CAB-4/0", WireGauge.AWG_4_0, 40), 1)), lengths);
+
+        assertNull(segment(report, "Batería").getSuggestion());
+        assertNotNull(segment(report, "Batería").getCoveredBy());
     }
 }

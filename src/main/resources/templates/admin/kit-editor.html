@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Kit | Panel de administración | Baja Solar Supply</title>
+
+    <th:block th:replace="~{fragments/layout :: commonHead}"></th:block>
+    <style>
+        .editor-side { position: static; }
+        .editor-review { max-height: none; overflow-y: visible; }
+        @media (min-width: 992px) {
+            .editor-side { position: sticky; top: 1rem; }
+            .editor-review { max-height: calc(100vh - 22rem); min-height: 8rem; overflow-y: auto; }
+        }
+        .section-num {
+            width: 1.9rem; height: 1.9rem; border-radius: 50%; display: inline-flex; align-items: center;
+            justify-content: center; font-weight: 700; font-size: .9rem; background: var(--bs-secondary-bg); flex: none;
+        }
+        .editor-section { scroll-margin-top: 1rem; }
+        .review-note { font-size: .85rem; }
+        .jump-nav a { text-decoration: none; }
+    </style>
+</head>
+
+<body class="admin" th:attr="data-kit-id=${kitId}">
+
+<nav class="navbar navbar-expand-lg site-nav">
+    <div class="container-fluid px-3 px-lg-4">
+        <a class="navbar-brand fw-bold fs-4" href="/admin">Baja Solar<span>Supply</span> Admin</a>
+        <div class="d-flex gap-2">
+            <th:block th:replace="~{fragments/layout :: themeToggle}"></th:block>
+            <button type="button" class="btn btn-ghost btn-sm" id="logout-btn">
+                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+            </button>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <a href="/admin" class="btn btn-outline-secondary btn-sm" id="back-link"><i class="bi bi-arrow-left"></i> Kits</a>
+        <h2 class="fw-bold mb-0 me-auto" id="editor-title">Kit</h2>
+    </div>
+
+    <div id="editor-alert" class="alert alert-danger d-none" role="alert"></div>
+
+    <div id="editor-loading" class="text-center text-secondary py-5">
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Cargando...
+    </div>
+
+    <div id="editor-root" class="row g-4 d-none">
+        <div class="col-lg-8">
+            <nav class="jump-nav small mb-3 d-flex flex-wrap gap-3" id="jump-nav" aria-label="Secciones"></nav>
+            <div id="editor-sections"></div>
+        </div>
+        <div class="col-lg-4">
+            <div class="editor-side" id="editor-side"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/theme.js}"></script>
+<script th:src="@{/js/admin-common.js}"></script>
+<script th:src="@{/js/kit-editor.js}"></script>
+
+</body>
+</html>

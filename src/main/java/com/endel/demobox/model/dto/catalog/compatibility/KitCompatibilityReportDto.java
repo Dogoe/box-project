@@ -47,15 +47,30 @@ public class KitCompatibilityReportDto {
                 .orElse(CompatibilitySeverity.OK);
     }
 
+    /** The kit part the next ok/warn/error messages are about (until changed again). */
+    @JsonIgnore
+    private KitSection currentSection = KitSection.GENERAL;
+
+    public KitCompatibilityReportDto about(KitSection section) {
+        this.currentSection = section;
+        return this;
+    }
+
     public void ok(String message) {
-        checks.add(new CompatibilityCheckDto(CompatibilitySeverity.OK, message));
+        add(CompatibilitySeverity.OK, message);
     }
 
     public void warn(String message) {
-        checks.add(new CompatibilityCheckDto(CompatibilitySeverity.WARNING, message));
+        add(CompatibilitySeverity.WARNING, message);
     }
 
     public void error(String message) {
-        checks.add(new CompatibilityCheckDto(CompatibilitySeverity.ERROR, message));
+        add(CompatibilitySeverity.ERROR, message);
+    }
+
+    private void add(CompatibilitySeverity severity, String message) {
+        CompatibilityCheckDto check = new CompatibilityCheckDto(severity, message);
+        check.setSection(currentSection);
+        checks.add(check);
     }
 }
