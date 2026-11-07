@@ -86,6 +86,22 @@ public abstract class Product {
         imageUrl = photos.isEmpty() ? null : photos.get(0);
     }
 
+    /**
+     * Short identifier built from the type, the main specs and the price, e.g. "INVERSOR-1000W-12V-120V-$3000".
+     * Computed, never stored: it follows the product's current data (so a price change changes it).
+     */
+    public String getCode() {
+        return ProductCode.join(codeType(), codeSpecs(), getPrice());
+    }
+
+    /** First part of {@link #getCode()}, e.g. "INVERSOR". */
+    protected abstract String codeType();
+
+    /** The specs that follow the type in {@link #getCode()}, in order; blank ones are skipped. */
+    protected List<String> codeSpecs() {
+        return List.of();
+    }
+
     /** Optional link to a reference listing (Amazon, Mercado Libre...); admin-only. */
     @Column(length = 2000)
     private String referenceUrl;

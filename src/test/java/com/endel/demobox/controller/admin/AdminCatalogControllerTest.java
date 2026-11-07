@@ -225,7 +225,7 @@ class AdminCatalogControllerTest {
         assertThat(errorsOf(result)).containsExactly(
                 "T-NO-AH: Falta «capacityAh».",
                 "T-CHEM: «chemistry»: «NUCLEAR» no es válido; usa uno de: LIFEPO4, LITHIUM_ION, LEAD_ACID, GEL, AGM.",
-                "T-TYPE: El tipo «PANEL» no existe; usa uno de: SOLAR_PANEL, BATTERY, INVERTER, CHARGE_CONTROLLER, CABLE, STRUCTURE.",
+                "T-TYPE: El tipo «PANEL» no existe; usa uno de: SOLAR_PANEL, BATTERY, INVERTER, CHARGE_CONTROLLER, CABLE, STRUCTURE, PROTECTION, TERMINAL.",
                 "T-TYPO: Campos desconocidos para panel solar: «potencia».",
                 "T-OK: El SKU «T-OK» está repetido en el archivo (también en el producto 1).",
                 "TEST Kit roto: Producto 1 del kit: no existe un producto con SKU «T-NO-EXISTE» (ni en el archivo ni en la tienda).",
@@ -257,6 +257,102 @@ class AdminCatalogControllerTest {
         assertThat(errorsOf(saved)).isEmpty();
         assertThat(((com.endel.demobox.model.catalog.SolarPanel) productRepository.findBySku("T-PNL-50-SAE").orElseThrow())
                 .getConnector().name()).isEqualTo("SAE");
+    }
+
+    @Test
+    void protectionsImportExportAndAFuseNeedsItsClass() throws Exception {
+        JsonNode result = importFile("""
+                { "products": [
+                    { "type": "PROTECTION", "sku": "T-FUS-110", "name": "MRBF 110 A", "price": 350,
+                      "protectionType": "FUSE", "fuseClass": "MRBF", "ratedCurrentA": 110, "maxVoltage": 58 },
+                    { "type": "PROTECTION", "sku": "T-PV-500", "name": "Desconectador 2P 500 V", "price": 450,
+                      "protectionType": "PV_DISCONNECT", "ratedCurrentA": 32, "maxVoltage": 500, "poles": 2 },
+                    { "type": "PROTECTION", "sku": "T-FUS-NOCLASS", "name": "Fusible sin clase", "price": 1,
+                      "protectionType": "FUSE", "ratedCurrentA": 10, "maxVoltage": 32 } ] }
+                """, true);
+        assertThat(errorsOf(result)).containsExactly(
+                "T-FUS-NOCLASS: Elige la clase del fusible (MRBF, ANL, Clase T, gPV u otro).");
+
+        JsonNode saved = importFile("""
+                { "products": [
+                    { "type": "PROTECTION", "sku": "T-FUS-110", "name": "MRBF 110 A", "price": 350,
+                      "protectionType": "FUSE", "fuseClass": "MRBF", "ratedCurrentA": 110, "maxVoltage": 58 },
+                    { "type": "PROTECTION", "sku": "T-PV-500", "name": "Desconectador 2P 500 V", "price": 450,
+                      "protectionType": "PV_DISCONNECT", "fuseClass": "MRBF", "ratedCurrentA": 32, "maxVoltage": 500, "poles": 2 } ] }
+                """, false);
+        assertThat(errorsOf(saved)).isEmpty();
+
+        JsonNode exported = testPart(export());
+        JsonNode fuse = exported.get("products").get(0);
+        assertThat(fuse.get("type").asText()).isEqualTo("PROTECTION");
+        assertThat(fuse.has("specLabel")).as("computed label isn't exported").isFalse();
+        JsonNode disconnect = exported.get("products").get(1);
+        assertThat(disconnect.has("fuseClass")).as("only fuses keep a fuse class").isFalse();
+        assertThat(disconnect.get("poles").asInt()).isEqualTo(2);
+
+        mockMvc.perform(get("/api/catalog/protections")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/catalog/protections").header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.sku=='T-FUS-110')].specLabel").value("110 A · 58 V DC · MRBF"));
+    }
+
+    @Test
+    void theProductCodeIsComputedNotExportedAndIgnoredOnImport() throws Exception {
+        // A file that carries a (stale) "code" is still accepted: it is computed, never read.
+        JsonNode saved = importFile("""
+                { "products": [
+                    { "type": "BATTERY", "sku": "T-COD-BAT", "name": "Batería código", "price": 8900, "code": "LO-QUE-SEA",
+                      "capacityAh": 100, "voltage": 12.8, "chemistry": "LIFEPO4" },
+                    { "type": "PROTECTION", "sku": "T-COD-FUS", "name": "ANL 80 A", "price": 150.5, "code": "OTRO",
+                      "protectionType": "FUSE", "fuseClass": "ANL", "ratedCurrentA": 80, "maxVoltage": 32 } ] }
+                """, false);
+        assertThat(errorsOf(saved)).isEmpty();
+
+        for (JsonNode product : testPart(export()).get("products")) {
+            assertThat(product.has("code")).as("the code isn't exported").isFalse();
+        }
+        String token = adminToken();
+        mockMvc.perform(get("/api/catalog/batteries").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$[?(@.sku=='T-COD-BAT')].code").value("BATERIA-LFP-12.8V-100Ah-$8900"));
+        mockMvc.perform(get("/api/catalog/protections").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$[?(@.sku=='T-COD-FUS')].code").value("FUSIBLE-ANL-80A-32V-$150.5"));
+    }
+
+    @Test
+    void terminalsAndStudSizesImportAndExport() throws Exception {
+        JsonNode saved = importFile("""
+                { "products": [
+                    { "type": "TERMINAL", "sku": "T-TER-2-M8", "name": "Terminal 2 AWG M8 (bolsa de 10)", "price": 120,
+                      "gauge": "AWG_2", "piecesPerPack": 10 },
+                    { "type": "BATTERY", "sku": "T-BAT-M10", "name": "Batería M10", "price": 1, "capacityAh": 100, "voltage": 12.8,
+                      "terminalSize": "M10" },
+                    { "type": "BATTERY", "sku": "T-BAT-DEF", "name": "Batería sin borne", "price": 1, "capacityAh": 100, "voltage": 12.8 } ] }
+                """, false);
+        assertThat(errorsOf(saved)).isEmpty();
+
+        JsonNode exported = testPart(export());
+        JsonNode battery10 = null;
+        JsonNode batteryDefault = null;
+        JsonNode terminal = null;
+        for (JsonNode p : exported.get("products")) {
+            switch (p.get("sku").asText()) {
+                case "T-BAT-M10" -> battery10 = p;
+                case "T-BAT-DEF" -> batteryDefault = p;
+                case "T-TER-2-M8" -> terminal = p;
+                default -> { }
+            }
+        }
+        assertThat(battery10.get("terminalSize").asText()).isEqualTo("M10");
+        assertThat(batteryDefault.get("terminalSize").asText()).as("missing -> M8").isEqualTo("M8");
+        assertThat(terminal.get("type").asText()).isEqualTo("TERMINAL");
+        assertThat(terminal.get("terminalSize").asText()).isEqualTo("M8");
+        assertThat(terminal.get("piecesPerPack").asInt()).isEqualTo(10);
+        assertThat(terminal.has("specLabel")).isFalse();
+
+        mockMvc.perform(get("/api/catalog/terminals")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/catalog/terminals").header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.sku=='T-TER-2-M8')].specLabel").value("2 AWG · M8 · bolsa de 10"));
     }
 
     @Test

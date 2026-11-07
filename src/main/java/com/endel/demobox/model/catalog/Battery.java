@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
 @Entity
 @Table(name = "batteries")
@@ -43,6 +44,44 @@ public class Battery extends Product {
     @Positive
     @Column(name = "bms_max_discharge_a")
     private Double bmsMaxDischargeA;
+
+    /**
+     * Rating of the output breaker built into the battery (rack batteries usually have one), in amps.
+     * When set, the kit doesn't need a separate main fuse and battery switch for it.
+     */
+    @Positive
+    @Column(name = "integrated_breaker_a")
+    private Double integratedBreakerA;
+
+    /**
+     * Stud size of its battery terminals (M8 unless set). Nullable so rows saved before this column existed
+     * still load; {@link #getTerminalSize()} reads them as M8.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "terminal_size", length = 10)
+    private TerminalSize terminalSize = TerminalSize.M8;
+
+    public TerminalSize getTerminalSize() {
+        return TerminalSize.orDefault(terminalSize);
+    }
+
+    @Override
+    protected String codeType() {
+        return "BATERIA";
+    }
+
+    /** Chemistry, voltage and capacity. */
+    @Override
+    protected List<String> codeSpecs() {
+        String chem = chemistry == null ? null : switch (chemistry) {
+            case LIFEPO4 -> "LFP";
+            case LITHIUM_ION -> "LION";
+            case LEAD_ACID -> "PLOMO";
+            case GEL -> "GEL";
+            case AGM -> "AGM";
+        };
+        return java.util.Arrays.asList(chem, ProductCode.num(voltage) + "V", capacityAh == null ? null : ProductCode.num(capacityAh) + "Ah");
+    }
 
     public double getCapacityKwh() {
         return capacityAh == null ? 0 : capacityAh * voltage / 1000.0;

@@ -79,6 +79,7 @@ public class ChargeControllerService {
         ChargeControllerDto dto = new ChargeControllerDto();
         dto.setId(controller.getId());
         dto.setSku(controller.getSku());
+        dto.setCode(controller.getCode());
         dto.setName(controller.getName());
         dto.setBrand(controller.getBrand());
         dto.setDescription(controller.getDescription());

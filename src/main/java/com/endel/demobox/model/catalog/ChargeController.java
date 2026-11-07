@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.List;
 
 /**
  * Stand-alone solar charge controller (MPPT), for kits whose inverter has no built-in solar
@@ -57,6 +58,20 @@ public class ChargeController extends Product {
     private Double maxPvInputPowerW;
 
     private Integer mpptChannels;
+
+    @Override
+    protected String codeType() {
+        return "CONTROLADOR";
+    }
+
+    /** Charge current, the battery voltages it supports, and the max PV voltage. */
+    @Override
+    protected List<String> codeSpecs() {
+        return java.util.Arrays.asList(ProductCode.num(maxChargeCurrentA) + "A",
+                supportedBatteryVoltages.isEmpty() ? null
+                        : supportedBatteryVoltages.stream().sorted().map(String::valueOf).collect(java.util.stream.Collectors.joining("/")) + "V",
+                "PV" + ProductCode.num(maxInputVoltage) + "V");
+    }
 
     public boolean supportsBatteryVoltage(double volts) {
         return supportedBatteryVoltages.contains((int) Math.round(volts));

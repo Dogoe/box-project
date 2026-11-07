@@ -69,6 +69,7 @@ public class AluminumStructureService {
         AluminumStructureDto dto = new AluminumStructureDto();
         dto.setId(structure.getId());
         dto.setSku(structure.getSku());
+        dto.setCode(structure.getCode());
         dto.setName(structure.getName());
         dto.setBrand(structure.getBrand());
         dto.setDescription(structure.getDescription());

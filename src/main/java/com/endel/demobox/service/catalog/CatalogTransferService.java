@@ -10,6 +10,8 @@ import com.endel.demobox.model.catalog.ConnectionCable;
 import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.catalog.Kit;
 import com.endel.demobox.model.catalog.Product;
+import com.endel.demobox.model.catalog.Protection;
+import com.endel.demobox.model.catalog.Terminal;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.dto.catalog.AluminumStructureDto;
 import com.endel.demobox.model.dto.catalog.BatteryDto;
@@ -18,6 +20,8 @@ import com.endel.demobox.model.dto.catalog.ConnectionCableDto;
 import com.endel.demobox.model.dto.catalog.InverterDto;
 import com.endel.demobox.model.dto.catalog.KitDto;
 import com.endel.demobox.model.dto.catalog.KitItemDto;
+import com.endel.demobox.model.dto.catalog.ProtectionDto;
+import com.endel.demobox.model.dto.catalog.TerminalDto;
 import com.endel.demobox.model.dto.catalog.SolarPanelDto;
 import com.endel.demobox.model.dto.catalog.transfer.CatalogImportResultDto;
 import com.endel.demobox.model.dto.catalog.transfer.CatalogImportResultDto.Action;
@@ -92,7 +96,9 @@ public class CatalogTransferService {
                                   SolarPanelService solarPanelService, BatteryService batteryService,
                                   InverterService inverterService, ChargeControllerService chargeControllerService,
                                   ConnectionCableService connectionCableService,
-                                  AluminumStructureService aluminumStructureService) {
+                                  AluminumStructureService aluminumStructureService,
+                                  ProtectionService protectionService,
+                                  TerminalService terminalService) {
         this.objectMapper = objectMapper;
         // Exact decimals for prices; the numbers are only converted when mapped onto each DTO field.
         this.reader = objectMapper.reader().with(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
@@ -104,22 +110,28 @@ public class CatalogTransferService {
 
         register(new ProductType<>("SOLAR_PANEL", "Panel solar", SolarPanelDto.class, SolarPanel.class,
                 solarPanelService::findAll, solarPanelService::getById, solarPanelService::create, solarPanelService::update,
-                Set.of()));
+                Set.of("code")));
         register(new ProductType<>("BATTERY", "Batería", BatteryDto.class, Battery.class,
                 batteryService::findAll, batteryService::getById, batteryService::create, batteryService::update,
-                Set.of("capacityKwh", "depthOfDischargePercent", "maxDischargeCurrentA")));
+                Set.of("code", "capacityKwh", "depthOfDischargePercent", "maxDischargeCurrentA")));
         register(new ProductType<>("INVERTER", "Inversor", InverterDto.class, Inverter.class,
                 inverterService::findAll, inverterService::getById, inverterService::create, inverterService::update,
-                Set.of("maxChargePowerW", "effectiveMaxPvPowerW", "maxPvPowerEstimated")));
+                Set.of("code", "maxChargePowerW", "effectiveMaxPvPowerW", "maxPvPowerEstimated")));
         register(new ProductType<>("CHARGE_CONTROLLER", "Controlador MPPT", ChargeControllerDto.class, ChargeController.class,
                 chargeControllerService::findAll, chargeControllerService::getById, chargeControllerService::create,
-                chargeControllerService::update, Set.of()));
+                chargeControllerService::update, Set.of("code")));
         register(new ProductType<>("CABLE", "Cable", ConnectionCableDto.class, ConnectionCable.class,
                 connectionCableService::findAll, connectionCableService::getById, connectionCableService::create,
-                connectionCableService::update, Set.of()));
+                connectionCableService::update, Set.of("code")));
         register(new ProductType<>("STRUCTURE", "Estructura", AluminumStructureDto.class, AluminumStructure.class,
                 aluminumStructureService::findAll, aluminumStructureService::getById, aluminumStructureService::create,
-                aluminumStructureService::update, Set.of()));
+                aluminumStructureService::update, Set.of("code")));
+        register(new ProductType<>("PROTECTION", "Protección", ProtectionDto.class, Protection.class,
+                protectionService::findAll, protectionService::getById, protectionService::create,
+                protectionService::update, Set.of("code", "specLabel")));
+        register(new ProductType<>("TERMINAL", "Terminal", TerminalDto.class, Terminal.class,
+                terminalService::findAll, terminalService::getById, terminalService::create,
+                terminalService::update, Set.of("code", "specLabel")));
     }
 
     private void register(ProductType<?> type) {

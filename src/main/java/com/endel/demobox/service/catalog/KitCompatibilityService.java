@@ -6,6 +6,8 @@ import com.endel.demobox.model.catalog.ConnectionCable;
 import com.endel.demobox.model.catalog.Inverter;
 import com.endel.demobox.model.catalog.InverterType;
 import com.endel.demobox.model.catalog.Product;
+import com.endel.demobox.model.catalog.Protection;
+import com.endel.demobox.model.catalog.Terminal;
 import com.endel.demobox.model.catalog.SolarPanel;
 import com.endel.demobox.model.catalog.WireGauge;
 import com.endel.demobox.model.dto.WiringSettingsDto;
@@ -14,6 +16,9 @@ import com.endel.demobox.model.dto.catalog.compatibility.ExpansionAspectDto;
 import com.endel.demobox.model.dto.catalog.compatibility.ExpansionLevel;
 import com.endel.demobox.model.dto.catalog.compatibility.KitCompatibilityReportDto;
 import com.endel.demobox.model.dto.catalog.compatibility.KitExpansionDto;
+import com.endel.demobox.model.dto.catalog.compatibility.KitLayoutDto;
+import com.endel.demobox.model.dto.catalog.compatibility.KitSection;
+import com.endel.demobox.model.dto.catalog.compatibility.SuggestedItemDto;
 import com.endel.demobox.model.dto.catalog.compatibility.WiringSegmentDto;
 import com.endel.demobox.repository.catalog.ConnectionCableRepository;
 import org.springframework.stereotype.Service;
@@ -61,9 +66,14 @@ public class KitCompatibilityService {
             225, 250, 300, 350, 400, 450, 500};
 
     private final ConnectionCableRepository cableRepository;
+    private final KitProtectionPlanner protectionPlanner;
+    private final KitTerminalPlanner terminalPlanner;
 
-    public KitCompatibilityService(ConnectionCableRepository cableRepository) {
+    public KitCompatibilityService(ConnectionCableRepository cableRepository, KitProtectionPlanner protectionPlanner,
+                                   KitTerminalPlanner terminalPlanner) {
         this.cableRepository = cableRepository;
+        this.protectionPlanner = protectionPlanner;
+        this.terminalPlanner = terminalPlanner;
     }
 
     public KitCompatibilityReportDto analyze(List<KitLine> lines, WiringSettingsDto lengths) {
@@ -75,6 +85,7 @@ public class KitCompatibilityService {
         List<KitLine> controllers = ofType(lines, ChargeController.class);
 
         checkSanityLimits(report, panels, batteries, inverters);
+        report.about(KitSection.GENERAL);
 
         // A kit with mixed models isn't valid (and can't be saved), so there's nothing sound to size.
         List<String> compositionErrors = compositionErrors(lines);
@@ -85,34 +96,84 @@ public class KitCompatibilityService {
 
         if (inverters.isEmpty()) {
             if (!panels.isEmpty() || !batteries.isEmpty() || !controllers.isEmpty()) {
-                report.warn("El kit no incluye inversor; no se puede validar la compatibilidad ni calcular el cableado.");
+                report.about(KitSection.INVERTER).warn("El kit no incluye inversor; no se puede validar la compatibilidad ni calcular el cableado.");
             }
             return report;
         }
 
         Inverter inverter = (Inverter) inverters.get(0).product();
 
-        SolarCharger charger = resolveCharger(report, inverter, controllers, !panels.isEmpty());
-        BatteryBank bank = analyzeBatteryBank(report, batteries, inverter);
-        PvArray pv = charger == null ? null : analyzePanels(report, panels, charger);
+        SolarCharger charger = resolveCharger(report.about(KitSection.CONTROLLER), inverter, controllers, !panels.isEmpty());
+        BatteryBank bank = analyzeBatteryBank(report.about(KitSection.BATTERIES), batteries, inverter);
+        PvArray pv = charger == null ? null : analyzePanels(report.about(KitSection.PANELS), panels, charger);
 
         List<WiringSegmentDto> segments = new ArrayList<>();
+        WiringSegmentDto batteryRun = null;
+        WiringSegmentDto controllerRun = null;
+        WiringSegmentDto pvRun = null;
+        report.about(KitSection.CABLES);
         if (bank != null) {
-            segments.add(batteryToInverterSegment(report, inverter, charger, bank, lengths.getBatteryToInverterMeters()));
+            batteryRun = batteryToInverterSegment(report, inverter, charger, bank, lengths.getBatteryToInverterMeters());
+            segments.add(batteryRun);
             if (charger != null && !charger.builtIn()) {
-                segments.add(controllerToBatterySegment(report, charger, lengths.getControllerToBatteryMeters()));
+                controllerRun = controllerToBatterySegment(report, charger, lengths.getControllerToBatteryMeters());
+                segments.add(controllerRun);
             }
         }
         if (pv != null) {
-            segments.add(pvSegment(report, pv, charger, lengths.getPvToInverterMeters()));
+            pvRun = pvSegment(report, pv, charger, lengths.getPvToInverterMeters());
+            segments.add(pvRun);
         }
         report.setWiring(segments);
-        checkKitCables(report, cables, segments);
+        checkKitCables(report.about(KitSection.CABLES), cables, segments);
+
+        double busVolts = inverter.getBatteryVoltage() == null ? 0 : inverter.getBatteryVoltage();
+        KitProtectionPlanner.ProtectionPlan protectionPlan = protectionPlanner.plan(report.about(KitSection.PROTECTIONS), new KitProtectionPlanner.Input(busVolts,
+                batteryRun, bank == null ? null : bank.battery(), bank == null ? 0 : bank.parallel(),
+                controllerRun,
+                pvRun, pv == null ? 0 : pv.strings(), pv == null ? 0 : pv.stringsPerChannel(), pv == null ? 0 : pv.channels(),
+                pv == null ? 0 : pv.series() * pv.panel().getVoc() * PV_COLD_VOC_FACTOR,
+                pv == null ? 0 : pv.panelIscA(),
+                inverter.getRatedPowerKw()), ofType(lines, Protection.class));
+        terminalPlanner.plan(report.about(KitSection.TERMINALS), bank == null ? null : bank.battery(), inverter, batteryRun, controllerRun,
+                protectionPlan, ofType(lines, Terminal.class));
+        report.about(KitSection.GENERAL);
+        report.setLayout(layout(inverter, charger, controllers, bank, pv, batteryRun, controllerRun, pvRun));
 
         if (report.getStatus() != CompatibilitySeverity.ERROR) {
             report.setExpansion(expansion(inverter, charger, !panels.isEmpty(), !batteries.isEmpty(), pv, bank));
         }
         return report;
+    }
+
+    private static KitLayoutDto layout(Inverter inverter, SolarCharger charger, List<KitLine> controllers, BatteryBank bank, PvArray pv,
+                                       WiringSegmentDto batteryRun, WiringSegmentDto controllerRun, WiringSegmentDto pvRun) {
+        KitLayoutDto layout = new KitLayoutDto();
+        layout.setInverter(inverter);
+        layout.setBusVolts(inverter.getBatteryVoltage() == null ? 0 : inverter.getBatteryVoltage());
+        layout.setBuiltInCharger(charger != null && charger.builtIn());
+        if (charger != null && !charger.builtIn() && !controllers.isEmpty()) {
+            layout.setController((ChargeController) controllers.get(0).product());
+        }
+        if (bank != null) {
+            layout.setBattery(bank.battery());
+            layout.setBatterySeries(bank.series());
+            layout.setBatteryParallel(bank.parallel());
+            layout.setBatteryCount(bank.series() * bank.parallel());
+        }
+        if (pv != null) {
+            layout.setPanel(pv.panel());
+            layout.setPanelCount(pv.count());
+            layout.setPvSeries(pv.series());
+            layout.setPvStrings(pv.strings());
+            layout.setPvInputs(Math.max(1, Math.min(pv.strings(), pv.channels())));
+            layout.setPvStringsPerInput(pv.stringsPerChannel());
+            layout.setPvColdStringVoc(round1(pv.series() * pv.panel().getVoc() * PV_COLD_VOC_FACTOR));
+        }
+        layout.setBatteryRun(batteryRun);
+        layout.setControllerRun(controllerRun);
+        layout.setPvRun(pvRun);
+        return layout;
     }
 
     // ---- Solar charger ----
@@ -231,17 +292,17 @@ public class KitCompatibilityService {
         double panelKwp = panels.stream().mapToDouble(l -> ((SolarPanel) l.product()).getWattage() * l.quantity() / 1000.0).sum();
 
         if (batteryKwh > SANITY_LIMIT) {
-            report.warn(String.format(Locale.US,
+            report.about(KitSection.BATTERIES).warn(String.format(Locale.US,
                     "El banco de baterías suma %s kWh, demasiado para un kit (máx. habitual %s kWh); revisa que la capacidad (Ah) y el voltaje estén bien capturados.",
                     fmt(batteryKwh), fmt(SANITY_LIMIT)));
         }
         if (inverterKw > SANITY_LIMIT) {
-            report.warn(String.format(Locale.US,
+            report.about(KitSection.INVERTER).warn(String.format(Locale.US,
                     "Los inversores suman %s kW, demasiado para un kit (máx. habitual %s kW); revisa que la potencia esté en kW y no en W.",
                     fmt(inverterKw), fmt(SANITY_LIMIT)));
         }
         if (panelKwp > SANITY_LIMIT) {
-            report.warn(String.format(Locale.US,
+            report.about(KitSection.PANELS).warn(String.format(Locale.US,
                     "Los paneles suman %s kWp, demasiado para un kit (máx. habitual %s kWp); revisa que la potencia de cada panel esté en W.",
                     fmt(panelKwp), fmt(SANITY_LIMIT)));
         }
@@ -512,8 +573,9 @@ public class KitCompatibilityService {
         double chargeA = 0;
         if (charger != null && charger.builtIn()) {
             if (charger.chargeCurrentA() == null) {
-                report.warn("Falta la corriente de carga del MPPT del inversor " + inverter.getName()
+                report.about(KitSection.INVERTER).warn("Falta la corriente de carga del MPPT del inversor " + inverter.getName()
                         + "; el cable de batería se calculó solo con la descarga.");
+                report.about(KitSection.CABLES);
             } else {
                 chargeA = charger.chargeCurrentA();
             }
@@ -534,22 +596,23 @@ public class KitCompatibilityService {
 
         if (operatingA > HIGH_CURRENT_WARNING_A && busVolts < 48) {
             // Only suggest voltages above the current one: a 12 V system can go to 24 or 48 V, a 24 V one only to 48 V.
-            report.warn(String.format(Locale.US,
+            report.about(KitSection.BATTERIES).warn(String.format(Locale.US,
                     "La corriente batería–inversor llega a %s A en %s V; considera un banco de %s.",
                     fmt(operatingA), fmt(busVolts), busVolts < 24 ? "24 V o 48 V" : "48 V"));
         }
         if (bank.maxDischargeA() > 0 && dischargeA > bank.maxDischargeA()) {
-            report.warn(String.format(Locale.US,
+            report.about(KitSection.BATTERIES).warn(String.format(Locale.US,
                     "El banco entrega máx. ~%s A continuos y el inversor puede pedir %s A; agrega baterías en paralelo o usa un inversor menor.%s",
                     fmt(bank.maxDischargeA()), fmt(dischargeA),
                     limitedByBms ? " El cable batería–inversor se calculó con esos " + fmt(bank.maxDischargeA()) + " A, porque el BMS corta antes." : ""));
             if (battery.isBmsCurrentAssumed()) {
-                report.warn(String.format(Locale.US,
+                report.about(KitSection.BATTERIES).warn(String.format(Locale.US,
                         "La batería %s no tiene capturada la corriente máxima de su BMS; se supuso %s A (igual a su capacidad en Ah). "
                                 + "Revisa su ficha: si su BMS permite más, el fusible se botará antes de que el cable se caliente.",
                         battery.getName(), fmt(battery.getMaxDischargeCurrentA())));
             }
         }
+        report.about(KitSection.CABLES);
         return segment;
     }
 
@@ -661,6 +724,7 @@ public class KitCompatibilityService {
                     .filter(p -> p.remainingMeters > 0 && p.cable.getGauge().isAtLeast(segment.getGauge()))
                     .sorted(Comparator.comparing(p -> p.cable.getGauge()))
                     .toList();
+            WireGauge usedGauge = null;
             for (CablePool pool : candidates) {
                 if (covered >= needed) {
                     break;
@@ -669,26 +733,44 @@ public class KitCompatibilityService {
                 pool.remainingMeters -= take;
                 covered += take;
                 usedNames.add(pool.cable.getName());
+                usedGauge = thicker(usedGauge, pool.cable.getGauge());
             }
+            segment.setCableGauge(usedGauge != null ? usedGauge : segment.getGauge());
 
             if (covered + 1e-6 >= needed) {
                 segment.setCoveredBy(String.join(", ", usedNames));
                 report.ok(String.format(Locale.US, "%s: el kit incluye cable suficiente (%s m de %s o más grueso).",
                         segment.getSegment(), fmt(needed), segment.getGaugeLabel()));
             } else {
+                Optional<ConnectionCable> suggestion = suggestCable(segment.getGauge());
                 report.warn(String.format(Locale.US,
                         "%s: se necesitan %s m de cable %s o más grueso (positivo y negativo) y el kit cubre %s m.%s",
                         segment.getSegment(), fmt(needed), segment.getGaugeLabel(), fmt(covered),
-                        suggestCable(segment.getGauge()).map(s -> " Sugerencia: " + s + ".").orElse("")));
+                        suggestion.map(c -> " Sugerencia: " + c.getSku() + " – " + c.getName() + " (" + c.getGauge().getLabel()
+                                + ", " + fmt(c.getLengthMeters()) + " m).").orElse("")));
+                double missingMeters = needed - covered;
+                suggestion.ifPresent(c -> segment.setCableGauge(thicker(segment.getCableGauge(), c.getGauge())));
+                suggestion.filter(c -> c.getLengthMeters() > 0).ifPresent(c -> {
+                    int pieces = (int) Math.ceil(missingMeters / c.getLengthMeters() - 1e-9);
+                    report.suggest(new SuggestedItemDto(c.getId(), c.getSku(), c.getName(), pieces, c.getPrice(), segment.getSegment()));
+                    // A separate copy: the report's list merges quantities when the same cable serves several runs.
+                    segment.setSuggestion(new SuggestedItemDto(c.getId(), c.getSku(), c.getName(), pieces, c.getPrice(), segment.getSegment()));
+                });
             }
         }
     }
 
-    private Optional<String> suggestCable(WireGauge required) {
+    private static WireGauge thicker(WireGauge a, WireGauge b) {
+        if (a == null) {
+            return b;
+        }
+        return b == null || a.compareTo(b) >= 0 ? a : b;
+    }
+
+    private Optional<ConnectionCable> suggestCable(WireGauge required) {
         return cableRepository.findAll().stream()
                 .filter(c -> c.isActive() && c.getGauge() != null && c.getGauge().isAtLeast(required))
-                .min(Comparator.comparing(ConnectionCable::getGauge).thenComparing(ConnectionCable::getPrice))
-                .map(c -> c.getSku() + " – " + c.getName() + " (" + c.getGauge().getLabel() + ", " + fmt(c.getLengthMeters()) + " m)");
+                .min(Comparator.comparing(ConnectionCable::getGauge).thenComparing(ConnectionCable::getPrice));
     }
 
     // ---- Helpers ----

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Kit | Panel de administración | Baja Solar Supply</title>
+
+    <th:block th:replace="~{fragments/layout :: commonHead}"></th:block>
+    <style>
+        .editor-side { position: static; }
+        .editor-review { max-height: none; overflow-y: visible; }
+        @media (min-width: 992px) {
+            .editor-side { position: sticky; top: 1rem; }
+            .editor-review { max-height: calc(100vh - 22rem); min-height: 8rem; overflow-y: auto; }
+        }
+        .editor-card { overflow: hidden; }
+        /* A colored bar on the left of each section shows its state: green ok, yellow check, red error, blue missing, grey optional. */
+        .editor-section { padding: .6rem .9rem .7rem .7rem; scroll-margin-top: 1rem; border-left: 4px solid transparent; }
+        .editor-section[data-tone="ok"] { border-left-color: var(--bs-success); }
+        .editor-section[data-tone="warn"] { border-left-color: var(--bs-warning); }
+        .editor-section[data-tone="error"] { border-left-color: var(--bs-danger); }
+        .editor-section[data-tone="info"] { border-left-color: var(--bs-info); }
+        .editor-section[data-tone="muted"] { border-left-color: var(--bs-gray-500, #adb5bd); }
+        .editor-section + .editor-section { border-top: 1px solid var(--bs-border-color); }
+        .section-head { margin-bottom: .4rem; min-height: 1.4rem; }
+        .section-title {
+            font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
+            color: var(--bs-secondary-color);
+        }
+        .review-note { font-size: .85rem; }
+        /* Folding sections: the title is a button; while closed it also shows what is chosen. */
+        .section-toggle, .more-toggle {
+            background: none; border: 0; padding: 0; color: inherit; text-align: left; cursor: pointer;
+            display: flex; align-items: center; gap: .4rem; min-width: 0;
+        }
+        .section-toggle { flex: 1 1 0; }
+        .more-toggle { font-size: .85rem; color: var(--bs-secondary-color); }
+        .more-toggle:hover, .section-toggle:hover .section-title { color: var(--bs-body-color); }
+        .chev { font-size: .75rem; transition: transform .15s; flex: none; }
+        [aria-expanded="true"] > .chev { transform: rotate(90deg); }
+        .section-summary {
+            display: none; font-size: .8rem; color: var(--bs-secondary-color); font-weight: 400;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+        }
+        .section-toggle[aria-expanded="false"] .section-summary { display: block; }
+        .section-title { white-space: nowrap; }
+        .section-cost { white-space: nowrap; flex-shrink: 0; }
+    </style>
+</head>
+
+<body class="admin" th:attr="data-kit-id=${kitId}">
+
+<nav class="navbar navbar-expand-lg site-nav">
+    <div class="container-fluid px-3 px-lg-4">
+        <a class="navbar-brand fw-bold fs-4" href="/admin">Baja Solar<span>Supply</span> Admin</a>
+        <div class="d-flex gap-2">
+            <th:block th:replace="~{fragments/layout :: themeToggle}"></th:block>
+            <button type="button" class="btn btn-ghost btn-sm" id="logout-btn">
+                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+            </button>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <a href="/admin" class="btn btn-outline-secondary btn-sm" id="back-link"><i class="bi bi-arrow-left"></i> Kits</a>
+        <h2 class="fw-bold mb-0 me-auto" id="editor-title">Kit</h2>
+    </div>
+
+    <div id="editor-alert" class="alert alert-danger d-none" role="alert"></div>
+
+    <div id="editor-loading" class="text-center text-secondary py-5">
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Cargando...
+    </div>
+
+    <div id="editor-root" class="row g-4 d-none">
+        <div class="col-lg-8">
+            <div id="editor-sections"></div>
+        </div>
+        <div class="col-lg-4">
+            <div class="editor-side" id="editor-side"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/theme.js}"></script>
+<script th:src="@{/js/admin-common.js}"></script>
+<script th:src="@{/js/kit-editor.js}"></script>
+
+</body>
+</html>

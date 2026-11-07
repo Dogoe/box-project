@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
 @Entity
 @Table(name = "solar_panels")
@@ -42,6 +43,17 @@ public class SolarPanel extends Product {
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
     private PanelConnector connector = PanelConnector.MC4;
+
+    @Override
+    protected String codeType() {
+        return "PANEL";
+    }
+
+    /** Watts, open-circuit voltage (when captured) and connector. */
+    @Override
+    protected List<String> codeSpecs() {
+        return java.util.Arrays.asList(ProductCode.num(wattage) + "W", voc > 0 ? ProductCode.num(voc) + "Voc" : null, getConnector().name());
+    }
 
     public PanelConnector getConnector() {
         return connector == null ? PanelConnector.MC4 : connector;

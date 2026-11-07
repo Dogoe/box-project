@@ -1,5 +1,6 @@
 package com.endel.demobox.model.dto.catalog;
 
+import com.endel.demobox.model.catalog.TerminalSize;
 import com.endel.demobox.model.catalog.BatteryChemistry;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -17,6 +18,9 @@ public class BatteryDto {
 
     @NotBlank
     private String sku;
+
+    /** Short identifier built from the type, specs and price (computed by the server), e.g. "PANEL-550W-49.5Voc-MC4-$2450". */
+    private String code;
 
     @NotBlank
     private String name;
@@ -56,6 +60,11 @@ public class BatteryDto {
     /** Optional, lithium only: the BMS's continuous discharge limit (A). Empty = capacity in amps (1C). */
     @Positive(message = "La corriente del BMS debe ser mayor que 0")
     private Double bmsMaxDischargeA;
+    /** Optional: output breaker built into the battery (A); then no separate main fuse/switch is needed. */
+    @Positive(message = "El breaker integrado debe ser mayor que 0")
+    private Double integratedBreakerA;
+    /** Stud size of its connection terminals: M8 (default when missing), M6 or M10. */
+    private TerminalSize terminalSize;
 
     // Read-only, derived from capacityAh/voltage/chemistry.
     private double capacityKwh;
