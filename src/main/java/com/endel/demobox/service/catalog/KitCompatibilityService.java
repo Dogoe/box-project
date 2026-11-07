@@ -16,6 +16,7 @@ import com.endel.demobox.model.dto.catalog.compatibility.ExpansionAspectDto;
 import com.endel.demobox.model.dto.catalog.compatibility.ExpansionLevel;
 import com.endel.demobox.model.dto.catalog.compatibility.KitCompatibilityReportDto;
 import com.endel.demobox.model.dto.catalog.compatibility.KitExpansionDto;
+import com.endel.demobox.model.dto.catalog.compatibility.KitLayoutDto;
 import com.endel.demobox.model.dto.catalog.compatibility.SuggestedItemDto;
 import com.endel.demobox.model.dto.catalog.compatibility.WiringSegmentDto;
 import com.endel.demobox.repository.catalog.ConnectionCableRepository;
@@ -133,11 +134,42 @@ public class KitCompatibilityService {
                 inverter.getRatedPowerKw()), ofType(lines, Protection.class));
         terminalPlanner.plan(report, bank == null ? null : bank.battery(), inverter, batteryRun, controllerRun,
                 protectionPlan, ofType(lines, Terminal.class));
+        report.setLayout(layout(inverter, charger, controllers, bank, pv, batteryRun, controllerRun, pvRun));
 
         if (report.getStatus() != CompatibilitySeverity.ERROR) {
             report.setExpansion(expansion(inverter, charger, !panels.isEmpty(), !batteries.isEmpty(), pv, bank));
         }
         return report;
+    }
+
+    private static KitLayoutDto layout(Inverter inverter, SolarCharger charger, List<KitLine> controllers, BatteryBank bank, PvArray pv,
+                                       WiringSegmentDto batteryRun, WiringSegmentDto controllerRun, WiringSegmentDto pvRun) {
+        KitLayoutDto layout = new KitLayoutDto();
+        layout.setInverter(inverter);
+        layout.setBusVolts(inverter.getBatteryVoltage() == null ? 0 : inverter.getBatteryVoltage());
+        layout.setBuiltInCharger(charger != null && charger.builtIn());
+        if (charger != null && !charger.builtIn() && !controllers.isEmpty()) {
+            layout.setController((ChargeController) controllers.get(0).product());
+        }
+        if (bank != null) {
+            layout.setBattery(bank.battery());
+            layout.setBatterySeries(bank.series());
+            layout.setBatteryParallel(bank.parallel());
+            layout.setBatteryCount(bank.series() * bank.parallel());
+        }
+        if (pv != null) {
+            layout.setPanel(pv.panel());
+            layout.setPanelCount(pv.count());
+            layout.setPvSeries(pv.series());
+            layout.setPvStrings(pv.strings());
+            layout.setPvInputs(Math.max(1, Math.min(pv.strings(), pv.channels())));
+            layout.setPvStringsPerInput(pv.stringsPerChannel());
+            layout.setPvColdStringVoc(round1(pv.series() * pv.panel().getVoc() * PV_COLD_VOC_FACTOR));
+        }
+        layout.setBatteryRun(batteryRun);
+        layout.setControllerRun(controllerRun);
+        layout.setPvRun(pvRun);
+        return layout;
     }
 
     // ---- Solar charger ----

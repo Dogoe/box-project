@@ -1,5 +1,7 @@
 package com.endel.demobox.model.dto.catalog.compatibility;
 
+import com.endel.demobox.model.catalog.Protection;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 /** One protection the kit needs, and whether the kit's products cover it. */
@@ -17,4 +19,12 @@ public class ProtectionCheckDto {
     private String problem;
     /** Cheapest catalog product that meets it, when it isn't covered. */
     private SuggestedItemDto suggestion;
+    /** Where it goes in the system. */
+    private ProtectionSlot slot;
+    /** True when the battery's own breaker does this job (nothing extra to install). */
+    @JsonIgnore
+    private boolean builtIntoBattery;
+    /** The product that does the job: the kit's own, else the suggested one; null when neither exists. */
+    @JsonIgnore
+    private Protection product;
 }

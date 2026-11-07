@@ -1,0 +1,18 @@
+<!-- Small pieces of the kit wiring diagram (admin/kit-diagram-content.html). -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:th="http://www.thymeleaf.org">
+
+    <!-- Terminal (lug) tag, e.g. "T3", only when that position exists in this kit. -->
+    <g th:fragment="tag(id, x, y, color)" th:if="${id != null}" th:attr="transform=|translate(${x},${y})|">
+        <rect width="36" height="18" rx="4" th:attr="fill=${color}"/>
+        <text x="18" y="13" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle" th:text="${id}">T1</text>
+    </g>
+
+    <!-- Dashed frame around a protection that isn't in the kit: amber when a catalog product is suggested, red when missing. -->
+    <rect th:fragment="frame(slot, x, y, w, h)" th:if="${slot != null and slot.state != 'kit'}"
+          th:attr="x=${x},y=${y},width=${w},height=${h},stroke=${slot.missing ? '#dc2626' : '#d97706'}"
+          rx="8" fill="none" stroke-width="2.5" stroke-dasharray="8 5"/>
+
+    <!-- Second label line of a protection, colored by its state. -->
+    <text th:fragment="slotLine(slot, x, y)" th:if="${slot != null}" th:attr="x=${x},y=${y},fill=${slot.missing ? '#dc2626' : (slot.suggested ? '#b45309' : '#111827')}"
+          font-size="12" th:text="${slot.line}">80 A</text>
+</svg>

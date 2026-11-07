@@ -1,5 +1,6 @@
 package com.endel.demobox.model.dto.catalog.compatibility;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -23,6 +24,9 @@ public class KitCompatibilityReportDto {
     private List<TerminalNeedDto> terminals = new ArrayList<>();
     /** Cables, protections and terminals the kit is missing, ready to add (merged by product). */
     private List<SuggestedItemDto> suggestedItems = new ArrayList<>();
+    /** How the kit is wired, for the wiring diagram; null when the kit has no inverter or can't be worked out. */
+    @JsonIgnore
+    private KitLayoutDto layout;
 
     /** Adds a suggestion, summing quantities when the same product is already suggested. */
     public void suggest(SuggestedItemDto item) {

@@ -463,6 +463,17 @@
             '</td>';
     }
 
+    /** Kits also get a link to their wiring diagram (opens in a new tab, ready to print). */
+    function kitActionButtonsHtml(id) {
+        return actionButtonsHtml(id).replace('<td class="text-end">', '<td class="text-end text-nowrap">' + kitDiagramLinkHtml(id, true) + ' ');
+    }
+
+    function kitDiagramLinkHtml(id, iconOnly) {
+        return '<a class="btn btn-sm btn-outline-primary" href="/admin/kits/' + encodeURIComponent(id) + '/diagrama" target="_blank" rel="noopener"' +
+            ' title="Diagrama de conexión (guardado)" aria-label="Diagrama de conexión"><i class="bi bi-diagram-3"></i>' +
+            (iconOnly ? '' : ' Diagrama de conexión') + '</a>';
+    }
+
     function wireRowActions(onEdit, onDelete) {
         tableBody.querySelectorAll('.edit-btn').forEach((btn) => {
             btn.addEventListener('click', () => onEdit(Number(btn.dataset.id)));
@@ -1052,7 +1063,7 @@
                 const cover = kit.imageUrl || (kit.collage && kit.collage[0] && kit.collage[0].imageUrl);
                 return '<tr><td>' + formatValue({ cover: cover }, { key: 'cover', type: 'thumb' }) + '</td><td>' + escapeHtml(kit.name) + '</td><td>' + priceCell + '</td><td>' + kit.items.length + '</td>' +
                     '<td>' + expansionBadgeHtml(report && report.expansion) + '</td>' +
-                    '<td>' + (kit.active ? 'Sí' : 'No') + '</td>' + actionButtonsHtml(kit.id) + '</tr>';
+                    '<td>' + (kit.active ? 'Sí' : 'No') + '</td>' + kitActionButtonsHtml(kit.id) + '</tr>';
             }).join('');
 
             wireRowActions((id) => openKitModal(id), (id) => deleteItem(id));
@@ -1098,7 +1109,9 @@
             '<div id="kit-items-container">' + itemsHtml + '</div>' +
             '<button type="button" class="btn btn-sm btn-outline-success mt-2" id="add-kit-item-btn">' +
             '<i class="bi bi-plus-lg"></i> Agregar producto</button>' +
-            '<div id="kit-compat-panel" class="mt-3"></div>';
+            '<div id="kit-compat-panel" class="mt-3"></div>' +
+            (id ? '<div class="mt-2 small">' + kitDiagramLinkHtml(id, false) +
+                ' <span class="text-secondary">Muestra el kit guardado; guarda primero si hiciste cambios.</span></div>' : '');
 
         initPhotoManager('kit-photos', kit ? kit.imageUrls : []);
         const itemsContainer = document.getElementById('kit-items-container');

@@ -6,6 +6,7 @@ import com.endel.demobox.model.catalog.Protection;
 import com.endel.demobox.model.catalog.ProtectionType;
 import com.endel.demobox.model.dto.catalog.compatibility.KitCompatibilityReportDto;
 import com.endel.demobox.model.dto.catalog.compatibility.ProtectionCheckDto;
+import com.endel.demobox.model.dto.catalog.compatibility.ProtectionSlot;
 import com.endel.demobox.model.dto.catalog.compatibility.SuggestedItemDto;
 import com.endel.demobox.model.dto.catalog.compatibility.WiringSegmentDto;
 import com.endel.demobox.repository.catalog.ProtectionRepository;
@@ -65,12 +66,12 @@ public class KitProtectionPlanner {
         }
     }
 
-    record Requirement(String label, int quantity, Set<ProtectionType> types, double minA, double maxA, double minV,
+    record Requirement(ProtectionSlot slot, String label, int quantity, Set<ProtectionType> types, double minA, double maxA, double minV,
                        int minPoles, Set<FuseClass> fuseClasses, Run run) {
 
-        Requirement(String label, int quantity, Set<ProtectionType> types, double minA, double maxA, double minV,
+        Requirement(ProtectionSlot slot, String label, int quantity, Set<ProtectionType> types, double minA, double maxA, double minV,
                     int minPoles, Set<FuseClass> fuseClasses) {
-            this(label, quantity, types, minA, maxA, minV, minPoles, fuseClasses, Run.OTHER);
+            this(slot, label, quantity, types, minA, maxA, minV, minPoles, fuseClasses, Run.OTHER);
         }
 
         boolean isMetBy(Protection p) {
@@ -137,7 +138,7 @@ public class KitProtectionPlanner {
             if (builtIn != null) {
                 // The battery's own breaker switches it off; it also protects the cable when there's a
                 // single battery string and it isn't bigger than what the cable carries.
-                ProtectionCheckDto disconnect = coveredRow("Desconexión de batería", "Breaker integrado de la batería ("
+                ProtectionCheckDto disconnect = coveredRow(ProtectionSlot.BATTERY_SWITCH, "Desconexión de batería", "Breaker integrado de la batería ("
                         + fmt(builtIn) + " A)", in.parallelStrings());
                 report.getProtections().add(disconnect);
                 if (builtIn + 1e-9 < batteryRun.getOperatingCurrentA()) {
@@ -145,35 +146,35 @@ public class KitProtectionPlanner {
                             fmt(builtIn), fmt(batteryRun.getOperatingCurrentA())));
                 }
                 if (in.parallelStrings() == 1 && builtIn <= cableA + 1e-9) {
-                    report.getProtections().add(coveredRow("Fusible principal de batería", "Breaker integrado de la batería ("
+                    report.getProtections().add(coveredRow(ProtectionSlot.MAIN_FUSE, "Fusible principal de batería", "Breaker integrado de la batería ("
                             + fmt(builtIn) + " A)", 1));
                 } else {
-                    requirements.add(new Requirement("Fusible principal de batería", 1, EnumSet.of(ProtectionType.FUSE),
+                    requirements.add(new Requirement(ProtectionSlot.MAIN_FUSE, "Fusible principal de batería", 1, EnumSet.of(ProtectionType.FUSE),
                             designA, cableA, chargeVolts, 1, fuseClasses, Run.BATTERY));
                 }
             } else {
-                requirements.add(new Requirement("Fusible principal de batería", 1, EnumSet.of(ProtectionType.FUSE),
+                requirements.add(new Requirement(ProtectionSlot.MAIN_FUSE, "Fusible principal de batería", 1, EnumSet.of(ProtectionType.FUSE),
                         designA, cableA, chargeVolts, 1, fuseClasses, Run.BATTERY));
-                requirements.add(new Requirement("Interruptor / breaker DC de batería", 1, EnumSet.of(ProtectionType.DC_BREAKER),
+                requirements.add(new Requirement(ProtectionSlot.BATTERY_SWITCH, "Interruptor / breaker DC de batería", 1, EnumSet.of(ProtectionType.DC_BREAKER),
                         designA, Double.MAX_VALUE, chargeVolts, 1, BATTERY_FUSES, Run.BATTERY));
             }
         }
 
         WiringSegmentDto controllerRun = in.controllerRun();
         if (controllerRun != null && controllerRun.getGauge() != null) {
-            requirements.add(new Requirement("Protección controlador – batería", 1, EnumSet.of(ProtectionType.FUSE, ProtectionType.DC_BREAKER),
+            requirements.add(new Requirement(ProtectionSlot.CONTROLLER, "Protección controlador – batería", 1, EnumSet.of(ProtectionType.FUSE, ProtectionType.DC_BREAKER),
                     controllerRun.getDesignCurrentA(), controllerRun.getGauge().getAmpacityA(), chargeVolts, 1, BATTERY_FUSES, Run.CONTROLLER));
         }
 
         WiringSegmentDto pvRun = in.pvRun();
         if (pvRun != null && in.pvStrings() > 0) {
             int inputsUsed = Math.max(1, Math.min(in.pvStrings(), in.pvInputs()));
-            requirements.add(new Requirement("Desconectador DC de paneles", inputsUsed, EnumSet.of(ProtectionType.PV_DISCONNECT),
+            requirements.add(new Requirement(ProtectionSlot.PV_DISCONNECT, "Desconectador DC de paneles", inputsUsed, EnumSet.of(ProtectionType.PV_DISCONNECT),
                     round1(in.panelIscA() * CONTINUOUS_FACTOR * in.pvStringsPerInput()), Double.MAX_VALUE,
                     round1(in.pvColdStringVoc()), 2, BATTERY_FUSES));
             if (pvRun.getFuseA() != null && in.pvStringsPerInput() >= KitCompatibilityService.MIN_PARALLEL_STRINGS_NEEDING_FUSE
                     && pvRun.getGauge() != null) {
-                requirements.add(new Requirement("Fusible por cadena de paneles", in.pvStrings(), EnumSet.of(ProtectionType.FUSE),
+                requirements.add(new Requirement(ProtectionSlot.PV_STRING_FUSE, "Fusible por cadena de paneles", in.pvStrings(), EnumSet.of(ProtectionType.FUSE),
                         pvRun.getFuseA(), pvRun.getGauge().getAmpacityA(), round1(in.pvColdStringVoc()), 1, PV_FUSES));
             }
         }
@@ -183,7 +184,7 @@ public class KitProtectionPlanner {
             Integer size = KitCompatibilityService.standardFuse(outputDesignA);
             if (size != null) {
                 // The standard size, or one size up if that's what the catalog has.
-                requirements.add(new Requirement("Breaker AC de salida del inversor", 1, EnumSet.of(ProtectionType.AC_BREAKER),
+                requirements.add(new Requirement(ProtectionSlot.AC_BREAKER, "Breaker AC de salida del inversor", 1, EnumSet.of(ProtectionType.AC_BREAKER),
                         size, nextStandardSize(size), AC_VOLTS, 1, BATTERY_FUSES));
             }
         }
@@ -202,6 +203,7 @@ public class KitProtectionPlanner {
 
         for (Requirement requirement : requirements) {
             ProtectionCheckDto row = new ProtectionCheckDto();
+            row.setSlot(requirement.slot());
             row.setLabel(requirement.label());
             row.setRequirement(requirement.describe());
             row.setQuantity(requirement.quantity());
@@ -217,6 +219,9 @@ public class KitProtectionPlanner {
                     pool.remaining -= take;
                     missing -= take;
                     used.add(take + " × " + pool.protection.getName());
+                    if (row.getProduct() == null) {
+                        row.setProduct(pool.protection);
+                    }
                     record(requirement, pool.protection, take, onBatteryRun, onControllerRun);
                 }
             }
@@ -238,6 +243,9 @@ public class KitProtectionPlanner {
                         .min(Comparator.comparing(Protection::getPrice).thenComparingDouble(Protection::getRatedCurrentA));
                 final int toAdd = missing;
                 best.ifPresent(p -> record(requirement, p, toAdd, onBatteryRun, onControllerRun));
+                if (row.getProduct() == null) {
+                    best.ifPresent(row::setProduct);
+                }
                 best.ifPresent(p -> {
                     SuggestedItemDto suggestion = new SuggestedItemDto(p.getId(), p.getSku(), p.getName(), toAdd, p.getPrice(), requirement.label());
                     row.setSuggestion(suggestion);
@@ -275,8 +283,10 @@ public class KitProtectionPlanner {
         }
     }
 
-    private static ProtectionCheckDto coveredRow(String label, String coveredBy, int quantity) {
+    private static ProtectionCheckDto coveredRow(ProtectionSlot slot, String label, String coveredBy, int quantity) {
         ProtectionCheckDto row = new ProtectionCheckDto();
+        row.setSlot(slot);
+        row.setBuiltIntoBattery(true);
         row.setLabel(label);
         row.setRequirement("Incluida en la batería");
         row.setQuantity(quantity);

@@ -1,0 +1,357 @@
+<!--
+  Kit wiring diagram for the installer, rendered by AdminKitDiagramController and injected into
+  admin/kit-diagram.html. Fixed layout; parts appear or disappear with the kit (separate controller
+  or the inverter's own MPPT, built-in battery breaker, missing protections). Values come from
+  KitDiagramService. Kept in one coordinate system (1800 x 960) so it prints and exports as SVG.
+-->
+<div class="kit-diagram" xmlns:th="http://www.thymeleaf.org">
+
+<div th:unless="${d.drawable}" class="alert alert-warning" id="diagram-blocked">
+    <h2 class="h5">Este kit todavía no se puede dibujar</h2>
+    <ul class="mb-0">
+        <li th:each="b : ${d.blockers}" th:text="${b}">Motivo</li>
+    </ul>
+</div>
+
+<th:block th:if="${d.drawable}">
+<div class="diagram-sheet">
+<svg id="kit-diagram-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 960" width="1800" height="960"
+     font-family="'DejaVu Sans', Arial, Helvetica, sans-serif">
+    <rect x="0" y="0" width="1800" height="960" fill="#ffffff"/>
+
+    <!-- Header -->
+    <rect x="0" y="0" width="1800" height="90" fill="#14213d"/>
+    <text x="40" y="48" fill="#fff" font-size="28" font-weight="bold" th:text="|Diagrama de conexión · ${d.kitName}|">Diagrama de conexión</text>
+    <text x="40" y="76" fill="#cbd5e1" font-size="16" th:text="${d.subtitle}">resumen</text>
+
+    <!-- ================= Panels, connectors, PV disconnect ================= -->
+    <g th:if="${d.hasPv}">
+        <text x="60" y="112" fill="#111827" font-size="17" font-weight="bold" th:text="${d.panelTitle}">Paneles</text>
+        <text x="60" y="130" fill="#111827" font-size="12" th:text="${d.panelLine2}">1 en serie</text>
+        <rect th:if="${d.panelCount > 1}" x="72" y="150" width="240" height="165" rx="4" fill="#1e3a8a" opacity="0.45"/>
+        <rect x="60" y="140" width="240" height="165" rx="4" fill="#1e3a8a" stroke="#94a3b8" stroke-width="5"/>
+        <g stroke="#3b5bb5" stroke-width="1.5">
+            <line x1="120" y1="142" x2="120" y2="303"/><line x1="180" y1="142" x2="180" y2="303"/><line x1="240" y1="142" x2="240" y2="303"/>
+            <line x1="62" y1="195" x2="298" y2="195"/><line x1="62" y1="250" x2="298" y2="250"/>
+        </g>
+        <rect x="280" y="203" width="16" height="54" rx="2" fill="#111"/>
+        <g th:if="${d.panelCount > 1}">
+            <circle cx="300" cy="140" r="19" fill="#f59e0b"/>
+            <text x="300" y="145" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle" th:text="|×${d.panelCount}|">×2</text>
+        </g>
+        <text th:each="note, it : ${d.panelNotes}" x="60" th:attr="y=${326 + it.index * 17}" fill="#111827" font-size="12" th:text="${note}">nota</text>
+
+        <!-- connectors -->
+        <text x="314" y="196" fill="#111827" font-size="12" font-weight="bold" th:text="|${d.nums['CONNECTOR']} ${d.connectorLabel}|">② MC4</text>
+        <path d="M296,212 H330" stroke="#d62828" stroke-width="4.5" fill="none"/>
+        <path d="M296,248 H330" stroke="#1b1b1b" stroke-width="4.5" fill="none"/>
+        <rect x="330" y="205" width="18" height="14" rx="3" fill="#262626"/><rect x="348" y="206" width="18" height="12" rx="2" fill="#404040"/>
+        <rect x="330" y="241" width="18" height="14" rx="3" fill="#262626"/><rect x="348" y="242" width="18" height="12" rx="2" fill="#404040"/>
+        <text x="339" y="234" font-size="11" font-weight="bold" fill="#d62828" text-anchor="middle">+</text>
+        <text x="339" y="270" font-size="11" font-weight="bold" fill="#111" text-anchor="middle">−</text>
+
+        <!-- PV disconnect -->
+        <text x="420" y="112" fill="#111827" font-size="14" font-weight="bold" th:text="|${d.nums['PV_DISCONNECT']} ${d.pvDisconnect.title}|">③ Desconectador PV</text>
+        <text th:replace="~{admin/kit-diagram-parts :: slotLine(${d.pvDisconnect}, 420, 130)}"></text>
+        <rect x="420" y="140" width="170" height="190" rx="10" fill="#e5e7eb" stroke="#6b7280" stroke-width="2"/>
+        <rect th:replace="~{admin/kit-diagram-parts :: frame(${d.pvDisconnect}, 413, 135, 184, 202)}"></rect>
+        <text x="580" y="322" font-size="11" fill="#6b7280" text-anchor="end">caja IP65</text>
+        <rect x="430" y="228" width="150" height="8" fill="#9ca3af"/>
+        <rect x="465" y="180" width="80" height="110" rx="4" fill="#fff" stroke="#374151" stroke-width="2"/>
+        <rect x="478" y="220" width="16" height="28" rx="2" fill="#1f2937"/><rect x="516" y="220" width="16" height="28" rx="2" fill="#1f2937"/>
+        <text x="486" y="210" font-size="14" font-weight="bold" fill="#111" text-anchor="middle">−</text>
+        <text x="524" y="210" font-size="14" font-weight="bold" fill="#d62828" text-anchor="middle">+</text>
+        <text x="505" y="272" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" th:text="${d.pvDisconnect.body}">32A</text>
+        <path d="M366,212 H395 V155 H523 V186" stroke="#d62828" stroke-width="4.5" fill="none" stroke-linejoin="round"/>
+        <path d="M366,248 H408 V168 H487 V186" stroke="#1b1b1b" stroke-width="4.5" fill="none" stroke-linejoin="round"/>
+        <!-- PV out: to a separate controller, or to the inverter's own PV input -->
+        <g th:if="${d.hasController}">
+            <path d="M523,284 V350 H705 V318" stroke="#d62828" stroke-width="4.5" fill="none" stroke-linejoin="round"/>
+            <path d="M487,284 V362 H735 V318" stroke="#1b1b1b" stroke-width="4.5" fill="none" stroke-linejoin="round"/>
+        </g>
+        <g th:if="${d.builtInCharger}">
+            <path d="M523,284 V350 H1180 V436" stroke="#d62828" stroke-width="4.5" fill="none" stroke-linejoin="round"/>
+            <path d="M487,284 V362 H1150 V436" stroke="#1b1b1b" stroke-width="4.5" fill="none" stroke-linejoin="round"/>
+        </g>
+        <g fill="#cbd5e1" stroke="#475569" stroke-width="2">
+            <circle cx="487" cy="186" r="5"/><circle cx="523" cy="186" r="5"/><circle cx="487" cy="284" r="5"/><circle cx="523" cy="284" r="5"/>
+        </g>
+        <!-- panel frames to ground -->
+        <path d="M60,280 H40 V770 H980" stroke="#b87333" stroke-width="4" fill="none" stroke-linejoin="round"/>
+        <text x="60" y="792" fill="#111827" font-size="12">Marcos de paneles y estructura → 6 AWG cobre desnudo</text>
+        <g th:replace="~{admin/kit-diagram-parts :: tag(${d.tags['GND_PANEL']}, 2, 252, '#15803d')}"></g>
+    </g>
+
+    <!-- ================= Separate charge controller ================= -->
+    <g th:if="${d.hasController}">
+        <text x="680" y="112" fill="#111827" font-size="14" font-weight="bold" th:text="${d.controllerTitle}">④ Controlador</text>
+        <text x="680" y="130" fill="#111827" font-size="12">Conecta primero la batería y después los paneles</text>
+        <rect x="680" y="145" width="230" height="190" rx="10" fill="#1e293b"/>
+        <rect x="700" y="163" width="130" height="48" rx="4" fill="#86efac"/>
+        <text x="712" y="194" font-family="'DejaVu Sans Mono', monospace" font-size="16" fill="#064e3b" th:text="${d.controllerScreen}">14.4V 10A</text>
+        <text x="700" y="232" font-size="10" fill="#e2e8f0">CONTROLADOR DE CARGA</text>
+        <text x="720" y="276" font-size="11" font-weight="bold" fill="#fbbf24" text-anchor="middle">PANEL</text>
+        <text x="790" y="276" font-size="11" font-weight="bold" fill="#fbbf24" text-anchor="middle">BATERÍA</text>
+        <text x="860" y="276" font-size="11" font-weight="bold" fill="#94a3b8" text-anchor="middle">CARGA</text>
+        <g font-size="12" font-weight="bold" text-anchor="middle">
+            <text x="705" y="294" fill="#f87171">+</text><text x="735" y="294" fill="#e5e7eb">−</text>
+            <text x="775" y="294" fill="#f87171">+</text><text x="805" y="294" fill="#e5e7eb">−</text>
+            <text x="845" y="294" fill="#94a3b8">+</text><text x="875" y="294" fill="#94a3b8">−</text>
+        </g>
+        <rect x="690" y="302" width="210" height="30" rx="3" fill="#0b1220" stroke="#475569"/>
+        <g fill="#cbd5e1" stroke="#475569" stroke-width="2">
+            <circle cx="705" cy="318" r="7"/><circle cx="735" cy="318" r="7"/><circle cx="775" cy="318" r="7"/><circle cx="805" cy="318" r="7"/>
+            <circle cx="845" cy="318" r="7" opacity="0.45"/><circle cx="875" cy="318" r="7" opacity="0.45"/>
+        </g>
+
+        <!-- controller + → its protection → battery + post -->
+        <path d="M775,318 V410 H300" stroke="#d62828" stroke-width="3.5" fill="none" stroke-linejoin="round"/>
+        <path d="M250,410 H95 V540 H114" stroke="#d62828" stroke-width="3.5" fill="none" stroke-linejoin="round"/>
+        <rect x="250" y="400" width="50" height="20" rx="5" fill="#111"/>
+        <rect x="262" y="403" width="26" height="14" rx="2" th:attr="fill=${d.controllerProtection != null and d.controllerProtection.missing ? '#fca5a5' : '#3b82f6'}"/>
+        <text x="275" y="414" font-size="9" font-weight="bold" fill="#fff" text-anchor="middle"
+              th:text="${d.controllerProtection != null ? d.controllerProtection.body : '?'}">15A</text>
+        <rect th:replace="~{admin/kit-diagram-parts :: frame(${d.controllerProtection}, 244, 394, 62, 32)}"></rect>
+        <text x="135" y="438" fill="#111827" font-size="13" font-weight="bold"
+              th:text="|${d.nums['CONTROLLER_PROTECTION']} ${d.controllerProtection != null ? d.controllerProtection.title : 'Protección controlador'}|">⑤ Protección controlador</text>
+        <text th:replace="~{admin/kit-diagram-parts :: slotLine(${d.controllerProtection}, 135, 454)}"></text>
+        <!-- controller − → battery − post (hops over the main positive) -->
+        <path d="M805,318 V462 a8,8 0 0 1 0,16 V515 H271 V533" stroke="#1b1b1b" stroke-width="3.5" fill="none" stroke-linejoin="round"/>
+        <rect x="832" y="372" width="150" height="38" rx="4" fill="#fff" stroke="#cbd5e1"/>
+        <text th:each="label, it : ${d.controllerRunLabels}" x="840" th:attr="y=${388 + it.index * 16}" fill="#111827" font-size="12" th:text="${label}">14 AWG</text>
+
+        <g th:replace="~{admin/kit-diagram-parts :: tag(${d.tags['CTL_PROT_IN']}, 300, 380, '#7c3aed')}"></g>
+        <g th:replace="~{admin/kit-diagram-parts :: tag(${d.tags['CTL_PROT_OUT']}, 214, 380, '#7c3aed')}"></g>
+        <g th:replace="~{admin/kit-diagram-parts :: tag(${d.tags['CTL_BAT_POS']}, 54, 506, '#7c3aed')}"></g>
+        <g th:replace="~{admin/kit-diagram-parts :: tag(${d.tags['CTL_BAT_NEG']}, 280, 519, '#7c3aed')}"></g>
+    </g>
+
+    <!-- ================= Battery → fuse → switch → inverter ================= -->
+    <path d="M121,533 V470 H986" stroke="#d62828" stroke-width="7" fill="none" stroke-linejoin="round"/>
+    <path d="M278,540 H335 V620 H986" stroke="#1b1b1b" stroke-width="7" fill="none" stroke-linejoin="round"/>
+
+    <rect th:if="${d.batteryCount > 1}" x="72" y="564" width="250" height="160" rx="8" fill="#374151" opacity="0.45"/>
+    <rect x="60" y="552" width="250" height="160" rx="8" fill="#374151"/>
+    <rect x="108" y="534" width="26" height="18" fill="#d62828"/><rect x="258" y="534" width="26" height="18" fill="#111"/>
+    <g fill="#cbd5e1" stroke="#475569" stroke-width="2"><circle cx="121" cy="540" r="7"/><circle cx="271" cy="540" r="7"/></g>
+    <text x="121" y="577" fill="#fca5a5" font-size="18" font-weight="bold" text-anchor="middle">+</text>
+    <text x="271" y="577" fill="#e5e7eb" font-size="18" font-weight="bold" text-anchor="middle">−</text>
+    <g th:if="${d.batteryCount > 1}">
+        <circle cx="310" cy="552" r="19" fill="#f59e0b"/>
+        <text x="310" y="557" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle" th:text="|×${d.batteryCount}|">×2</text>
+    </g>
+    <text x="80" y="608" fill="#fff" font-size="17" font-weight="bold" th:text="${d.batteryTitle}">⑥ Batería</text>
+    <text th:each="line, it : ${d.batteryLines}" x="80" th:attr="y=${630 + it.index * 18}" fill="#e5e7eb" font-size="12" th:text="${line}">12.8 V</text>
+    <g th:replace="~{admin/kit-diagram-parts :: tag(${d.tags['BAT_POS']}, 128, 488, '#2563eb')}"></g>
+    <g th:replace="~{admin/kit-diagram-parts :: tag(${d.tags['BAT_NEG']}, 228, 488, '#2563eb')}"></g>
+
+    <g th:if="${d.mainFuse != null}">
+        <rect x="370" y="450" width="140" height="40" rx="6" fill="#1f2937"/>
+        <rect x="405" y="460" width="70" height="20" rx="3" th:attr="fill=${d.mainFuse.missing ? '#fca5a5' : '#d4d4d8'}"/>
+        <text x="440" y="474" font-size="11" font-weight="bold" fill="#111" text-anchor="middle" th:text="${d.mainFuse.body}">80A</text>
+        <g fill="#cbd5e1" stroke="#475569" stroke-width="2"><circle cx="390" cy="470" r="7"/><circle cx="490" cy="470" r="7"/></g>
+        <rect th:replace="~{admin/kit-diagram-parts :: frame(${d.mainFuse}, 363, 443, 154, 54)}"></rect>
+        <text x="370" y="532" fill="#111827" font-size="13" font-weight="bold" th:text="|${d.nums['MAIN_FUSE']} ${d.mainFuse.title}|">⑦ Fusible principal</text>
+        <text th:replace="~{admin/kit-diagram-parts :: slotLine(${d.mainFuse}, 370, 548)}"></text>
+        <g th:replace="~{admin/kit-diagram-parts :: tag(${d.tags['FUSE_IN']}, 372, 428, '#2563eb')}"></g>
+        <g th:replace="~{admin/kit-diagram-parts :: tag(${d.tags['FUSE_OUT']}, 472, 428, '#2563eb')}"></g>
+    </g>
+
+    <g th:if="${d.batterySwitch != null}">
+        <rect x="590" y="440" width="120" height="60" rx="10" fill="#111"/>
+        <rect x="636" y="446" width="28" height="12" rx="3" fill="#d62828"/>
+        <text x="650" y="492" font-size="11" fill="#fff" font-weight="bold" text-anchor="middle" th:text="${d.batterySwitch.body}">250A</text>
+        <g fill="#cbd5e1" stroke="#475569" stroke-width="2"><circle cx="612" cy="470" r="7"/><circle cx="688" cy="470" r="7"/></g>
+        <rect th:replace="~{admin/kit-diagram-parts :: frame(${d.batterySwitch}, 583, 433, 134, 74)}"></rect>
+        <text x="590" y="532" fill="#111827" font-size="13" font-weight="bold" th:text="|${d.nums['BATTERY_SWITCH']} ${d.batterySwitch.title}|">⑧ Switch</text>
+        <text th:replace="~{admin/kit-diagram-parts :: slotLine(${d.batterySwitch}, 590, 548)}"></text>
+        <g th:replace="~{admin/kit-diagram-parts :: tag(${d.tags['SW_IN']}, 594, 418, '#2563eb')}"></g>
+        <g th:replace="~{admin/kit-diagram-parts :: tag(${d.tags['SW_OUT']}, 668, 418, '#2563eb')}"></g>
+    </g>
+
+    <text th:each="label, it : ${d.batteryRunLabels}" x="420" th:attr="y=${645 + it.index * 17}" fill="#111827" font-size="12" th:text="${label}">4 AWG</text>
+
+    <!-- ================= Inverter ================= -->
+    <text x="1000" y="418" fill="#111827" font-size="14" font-weight="bold" th:text="${d.inverterTitle}">⑨ Inversor</text>
+    <rect x="1000" y="430" width="280" height="220" rx="8" fill="#d1d5db" stroke="#6b7280" stroke-width="2"/>
+    <g stroke="#9ca3af" stroke-width="5">
+        <line x1="1052" y1="438" x2="1052" y2="454"/><line x1="1072" y1="438" x2="1072" y2="454"/>
+        <line x1="1092" y1="438" x2="1092" y2="454"/><line x1="1112" y1="438" x2="1112" y2="454"/>
+        <line x1="1212" y1="438" x2="1212" y2="454"/><line x1="1232" y1="438" x2="1232" y2="454"/><line x1="1252" y1="438" x2="1252" y2="454"/>
+    </g>
+    <g th:if="${d.builtInCharger}">
+        <g fill="#cbd5e1" stroke="#475569" stroke-width="2"><circle cx="1150" cy="438" r="6"/><circle cx="1180" cy="438" r="6"/></g>
+        <text x="1165" y="462" font-size="11" font-weight="bold" fill="#111827" text-anchor="middle">PV − +</text>
+    </g>
+    <text th:each="line, it : ${d.inverterLines}" x="1050" th:attr="y=${490 + it.index * 20},font-weight=${it.first ? 'bold' : 'normal'}"
+          fill="#111827" font-size="13" th:text="${line}">12 V DC → 120 V AC</text>
+    <circle cx="995" cy="470" r="9" fill="#cbd5e1" stroke="#d62828" stroke-width="2"/>
+    <circle cx="995" cy="620" r="9" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
+    <text x="1012" y="494" fill="#d62828" font-size="15" font-weight="bold">+</text>
+    <text x="1012" y="614" fill="#111" font-size="15" font-weight="bold">−</text>
+    <rect x="1262" y="480" width="24" height="90" rx="3" fill="#111"/>
+    <g fill="#cbd5e1" stroke="#475569" stroke-width="2"><circle cx="1274" cy="495" r="5"/><circle cx="1274" cy="525" r="5"/><circle cx="1274" cy="555" r="5"/></g>
+    <g font-size="11" font-weight="bold" fill="#111827" text-anchor="end">
+        <text x="1254" y="499">L</text><text x="1254" y="529">N</text><text x="1254" y="559">G</text>
+    </g>
+    <circle cx="1130" cy="650" r="6" fill="#2a9d3f" stroke="#14532d" stroke-width="2"/>
+    <g th:replace="~{admin/kit-diagram-parts :: tag(${d.tags['INV_POS']}, 1008, 446, '#2563eb')}"></g>
+    <g th:replace="~{admin/kit-diagram-parts :: tag(${d.tags['INV_NEG']}, 1008, 626, '#2563eb')}"></g>
+
+    <!-- ================= AC side ================= -->
+    <g th:if="${d.acBreaker != null}">
+        <text x="1360" y="408" fill="#111827" font-size="14" font-weight="bold" th:text="|${d.nums['AC_BREAKER']} ${d.acBreaker.title}|">⑩ Breaker AC</text>
+        <text th:replace="~{admin/kit-diagram-parts :: slotLine(${d.acBreaker}, 1360, 426)}"></text>
+        <rect th:replace="~{admin/kit-diagram-parts :: frame(${d.acBreaker}, 1353, 433, 194, 234)}"></rect>
+    </g>
+    <rect x="1360" y="440" width="180" height="220" rx="6" fill="#e5e7eb" stroke="#6b7280" stroke-width="2"/>
+    <rect x="1400" y="465" width="40" height="60" rx="3" fill="#111"/>
+    <rect x="1412" y="476" width="16" height="22" rx="2" fill="#4b5563"/>
+    <text x="1420" y="518" font-size="10" fill="#fff" font-weight="bold" text-anchor="middle" th:text="${d.acBreaker != null ? d.acBreaker.body : ''}">15A</text>
+    <text x="1404" y="557" font-size="10" fill="#374151">barra neutro</text>
+    <rect x="1400" y="563" width="120" height="14" rx="2" fill="#c0c0c0" stroke="#6b7280"/>
+    <text x="1404" y="607" font-size="10" fill="#374151">barra tierra</text>
+    <rect x="1400" y="613" width="120" height="14" rx="2" fill="#2a9d3f"/>
+    <path d="M1274,495 H1400" stroke="#1b1b1b" stroke-width="3.5" fill="none"/>
+    <path d="M1274,525 H1340 V570 H1400" stroke="#4b5563" stroke-width="6" fill="none" stroke-linejoin="round"/>
+    <path d="M1274,525 H1340 V570 H1400" stroke="#ffffff" stroke-width="3" fill="none" stroke-linejoin="round"/>
+    <path d="M1274,555 H1325 V620 H1400" stroke="#2a9d3f" stroke-width="3.5" fill="none" stroke-linejoin="round"/>
+    <text x="1420" y="700" fill="#111827" font-size="11">Unión N–G: una sola,</text>
+    <text x="1420" y="715" fill="#111827" font-size="11">según manual del inversor</text>
+
+    <text x="1600" y="410" fill="#111827" font-size="14" font-weight="bold" th:text="|${d.nums['OUTLET']} Contactos 120 V|">⑪ Contactos</text>
+    <text x="1600" y="428" fill="#111827" font-size="12">NEMA 5-15 · cargas</text>
+    <rect x="1600" y="450" width="130" height="190" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="2"/>
+    <g>
+        <rect x="1630" y="475" width="70" height="62" rx="16" fill="#fff" stroke="#9ca3af" stroke-width="2"/>
+        <rect x="1647" y="488" width="6" height="20" rx="1" fill="#374151"/><rect x="1677" y="490" width="6" height="16" rx="1" fill="#374151"/>
+        <path d="M1659,528 a6,6 0 0 1 12,0 v4 h-12 z" fill="#374151"/>
+        <rect x="1630" y="555" width="70" height="62" rx="16" fill="#fff" stroke="#9ca3af" stroke-width="2"/>
+        <rect x="1647" y="568" width="6" height="20" rx="1" fill="#374151"/><rect x="1677" y="570" width="6" height="16" rx="1" fill="#374151"/>
+        <path d="M1659,608 a6,6 0 0 1 12,0 v4 h-12 z" fill="#374151"/>
+    </g>
+    <path d="M1440,495 H1600" stroke="#1b1b1b" stroke-width="3.5" fill="none"/>
+    <path d="M1520,570 H1600" stroke="#4b5563" stroke-width="6" fill="none"/>
+    <path d="M1520,570 H1600" stroke="#ffffff" stroke-width="3" fill="none"/>
+    <path d="M1520,620 H1600" stroke="#2a9d3f" stroke-width="3.5" fill="none"/>
+    <text th:each="label, it : ${d.acLabels}" x="1600" th:attr="y=${666 + it.index * 16}" fill="#111827" font-size="12" th:text="${label}">AC</text>
+
+    <!-- ================= Ground ================= -->
+    <path d="M1130,656 V762" stroke="#2a9d3f" stroke-width="3.5" fill="none"/>
+    <text x="1138" y="722" fill="#111827" font-size="11" th:text="${d.chassisGroundLabel}">8 AWG verde</text>
+    <path d="M1405,627 V770 H1200" stroke="#2a9d3f" stroke-width="3.5" fill="none" stroke-linejoin="round"/>
+    <path d="M995,629 V762" stroke="#2a9d3f" stroke-width="2.5" stroke-dasharray="7 5" fill="none"/>
+    <g fill="#111827" font-size="10">
+        <text x="1003" y="672">opcional: negativo DC</text>
+        <text x="1003" y="686">a tierra en un solo</text>
+        <text x="1003" y="700">punto (según manual)</text>
+    </g>
+    <rect x="980" y="762" width="220" height="16" rx="2" fill="#2a9d3f"/>
+    <text x="1090" y="774" font-size="11" fill="#fff" font-weight="bold" text-anchor="middle">barra de tierra</text>
+    <path d="M1090,778 V822" stroke="#b87333" stroke-width="4" fill="none"/>
+    <line x1="1000" y1="836" x2="1180" y2="836" stroke="#78716c" stroke-width="2"/>
+    <g stroke="#a8a29e" stroke-width="1.5">
+        <line x1="1005" y1="836" x2="995" y2="848"/><line x1="1025" y1="836" x2="1015" y2="848"/><line x1="1045" y1="836" x2="1035" y2="848"/>
+        <line x1="1065" y1="836" x2="1055" y2="848"/><line x1="1125" y1="836" x2="1115" y2="848"/><line x1="1145" y1="836" x2="1135" y2="848"/>
+        <line x1="1165" y1="836" x2="1155" y2="848"/><line x1="1185" y1="836" x2="1175" y2="848"/>
+    </g>
+    <rect x="1086" y="826" width="8" height="78" fill="#b87333"/>
+    <rect x="1080" y="820" width="20" height="10" rx="2" fill="#7c4a1e"/>
+    <text x="1210" y="862" fill="#111827" font-size="14" font-weight="bold"><tspan th:text="${d.nums['GROUND']}">⑫</tspan> Varilla de tierra 5/8" × 2.4 m</text>
+    <text x="1210" y="880" fill="#111827" font-size="12">copperweld + abrazadera · 6 AWG cobre desnudo</text>
+    <g th:replace="~{admin/kit-diagram-parts :: tag(${d.tags['GND_INV']}, 1140, 658, '#15803d')}"></g>
+
+    <!-- ================= Legend ================= -->
+    <g transform="translate(40,935)" font-size="13" fill="#111827">
+        <line x1="0" y1="0" x2="40" y2="0" stroke="#d62828" stroke-width="6"/><text x="48" y="5">Positivo DC (+)</text>
+        <line x1="190" y1="0" x2="230" y2="0" stroke="#1b1b1b" stroke-width="6"/><text x="238" y="5">Negativo DC (−) / Fase AC (L)</text>
+        <path d="M470,0 H510" stroke="#4b5563" stroke-width="6"/><path d="M470,0 H510" stroke="#fff" stroke-width="3"/><text x="518" y="5">Neutro AC (N)</text>
+        <line x1="650" y1="0" x2="690" y2="0" stroke="#2a9d3f" stroke-width="5"/><text x="698" y="5">Tierra (G)</text>
+        <line x1="800" y1="0" x2="840" y2="0" stroke="#b87333" stroke-width="5"/><text x="848" y="5">Cobre desnudo</text>
+        <rect x="980" y="-9" width="30" height="18" rx="4" fill="#2563eb"/><text x="1018" y="5">Terminal cable principal</text>
+        <rect x="1200" y="-9" width="30" height="18" rx="4" fill="#7c3aed"/><text x="1238" y="5">Terminal controlador</text>
+        <rect x="1400" y="-9" width="30" height="18" rx="4" fill="#15803d"/><text x="1438" y="5">Tierra</text>
+        <rect x="1520" y="-9" width="30" height="18" rx="4" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="5 3"/><text x="1558" y="5">Falta / sugerido</text>
+    </g>
+</svg>
+</div>
+
+<!-- ================= Reference tables ================= -->
+<div class="diagram-tables">
+    <div class="alert alert-warning py-2 small" th:if="${!#lists.isEmpty(d.warnings)}">
+        <strong th:text="|La revisión del kit tiene ${#lists.size(d.warnings)} aviso(s):|">Avisos</strong>
+        <ul class="mb-0">
+            <li th:each="w : ${d.warnings}" th:text="${w}">aviso</li>
+        </ul>
+    </div>
+
+    <h2 class="h5 mt-3">Componentes</h2>
+    <table class="table table-sm table-bordered align-middle">
+        <thead><tr><th>#</th><th>Elemento</th><th>Producto</th><th>Cant.</th><th>Datos</th></tr></thead>
+        <tbody>
+        <tr th:each="r : ${d.components}">
+            <td class="num" th:text="${r.num}">①</td><td th:text="${r.element}">Panel</td>
+            <td th:text="${r.product}" th:classappend="${r.product == 'FALTA'} ? 'text-danger fw-bold'">Panel X</td>
+            <td th:text="${r.quantity}">1</td><td th:text="${r.data}">datos</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h2 class="h5 mt-3">Cables</h2>
+    <table class="table table-sm table-bordered align-middle">
+        <thead><tr><th>Tramo</th><th>Cable</th><th>Corriente normal</th><th>Diseño (×1.25)</th><th>El cable aguanta</th><th>Largo (por lado)</th><th>Notas</th></tr></thead>
+        <tbody>
+        <tr th:each="r : ${d.cables}">
+            <td th:text="${r.run}">tramo</td><td th:text="${r.cable}">4 AWG</td><td th:text="${r.current}">50 A</td>
+            <td th:text="${r.design}">62.5 A</td><td th:text="${r.ampacity}">85 A</td><td th:text="${r.length}">2 m</td><td th:text="${r.note}">nota</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h2 class="h5 mt-3">Protecciones</h2>
+    <table class="table table-sm table-bordered align-middle">
+        <thead><tr><th>#</th><th>Qué</th><th>Lo que pide</th><th>En el kit</th></tr></thead>
+        <tbody>
+        <tr th:each="r : ${d.protections}">
+            <td class="num" th:text="${r.num}">⑦</td><td th:text="${r.what}">Fusible</td><td th:text="${r.requirement}">req</td>
+            <td th:text="${r.inKit}" th:classappend="${r.state == 'missing'} ? 'text-danger fw-bold' : (${r.state == 'suggested'} ? 'text-warning-emphasis')">en kit</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h2 class="h5 mt-3">Terminales (ojillo de cobre) por posición</h2>
+    <table class="table table-sm table-bordered align-middle">
+        <thead><tr><th>T#</th><th>Dónde</th><th>Calibre</th><th>Borne</th><th>Nota</th></tr></thead>
+        <tbody>
+        <tr th:each="r : ${d.tagRows}">
+            <td class="fw-bold" th:text="${r.ids}">T1</td><td th:text="${r.where}">Batería +</td><td th:text="${r.gauge}">4 AWG</td>
+            <td th:text="${r.size}">M8</td><td th:text="${r.note}">nota</td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="small text-secondary" th:if="${!#lists.isEmpty(d.terminalTotals)}">
+        Total que cuenta la revisión del kit:
+        <span th:each="t, it : ${d.terminalTotals}"><strong th:text="|${t.quantity} × ${t.gaugeLabel} ${t.sizeLabel}|">8 × 4 AWG M8</strong><span
+                th:text="${t.covered ? ' (en el kit)' : ' (faltan)'}"></span><span th:unless="${it.last}"> · </span></span>.
+        Las de tierra y las punteras no se cuentan.
+    </p>
+
+    <div class="row g-3 mt-1">
+        <div class="col-md-6">
+            <h2 class="h5">Orden para conectar</h2>
+            <ol class="small">
+                <li th:each="s : ${d.connectSteps}" th:text="${s}">paso</li>
+            </ol>
+            <h2 class="h5">Para desconectar</h2>
+            <p class="small" th:text="${#strings.listJoin(d.disconnectSteps, ' → ')} + '.'">pasos</p>
+        </div>
+        <div class="col-md-6">
+            <h2 class="h5">Reglas</h2>
+            <ul class="small">
+                <li th:each="r : ${d.rules}" th:text="${r}">regla</li>
+            </ul>
+        </div>
+    </div>
+</div>
+</th:block>
+</div>
